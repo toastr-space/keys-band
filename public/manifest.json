@@ -6,5 +6,17 @@
   "browser_action": {
     "default_popup": "index.html"
   },
-  "permissions": ["activeTab"]
+  "permissions": ["storage", "tabs", "<all_urls>"],
+  "externally_connectable": {
+    "matches": ["<all_urls>"]
+  },
+  "background": {
+    "scripts": ["build/bundle.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["build/bundle.js"]
+    }
+  ]
 }

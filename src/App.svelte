@@ -1,14 +1,13 @@
 <script lang="ts">
-  import { keyStore } from "./stores/key-store";
+  import { addPrivateKey, keyStore } from "./stores/key-store";
 
   function addKey() {
     const value = document.getElementById("value") as HTMLInputElement;
-    keyStore.set(value.value);
-    alert("Key added");
+    addPrivateKey(value.value);
   }
 </script>
 
-<div class="w-full h-full flex flex-wrap">
+<div class="w-full h-full flex flex-wrap fixed-width shadow-xl">
   <div class="w-full h-24 bg-primary">
     <p class="p-7 text-4xl text-center text-white">Nos2x Svelte</p>
   </div>
@@ -17,12 +16,14 @@
       Add new private key to your nos2x key manager, this will allow you to auth
       and sign event on different nostr platform.
       <br />
-      <input
-        type="text"
-        class="input input-bordered border-gray-400 w-full"
-        id="value"
-        placeholder="Enter key"
-      />
+      {#if !$keyStore}
+        <input
+          type="text"
+          class="input input-bordered border-gray-400 w-full"
+          id="value"
+          placeholder="Enter key"
+        />
+      {/if}
     </p>
     <p>
       {$keyStore}
@@ -43,5 +44,9 @@
     left: 30%;
     right: 30%;
     transform: translate(0%, -50%);
+  }
+  .fixed-width {
+    width: 400px;
+    max-width: 400px;
   }
 </style>
