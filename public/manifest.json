@@ -1,0 +1,10 @@
+{
+  "manifest_version": 2,
+  "name": "Nos2x Svelte - Remake",
+  "version": "1.0",
+  "description": "This is nos2x remake with svelte",
+  "browser_action": {
+    "default_popup": "index.html"
+  },
+  "permissions": ["activeTab"]
+}
