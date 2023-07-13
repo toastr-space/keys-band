@@ -11605,7 +11605,7 @@ zoo`.split('\n');
     	return block;
     }
 
-    // (122:4) {:else}
+    // (150:4) {:else}
     function create_else_block_2$1(ctx) {
     	let button;
     	let mounted;
@@ -11616,13 +11616,13 @@ zoo`.split('\n');
     			button = element("button");
     			button.textContent = "Authorize now";
     			attr_dev(button, "class", "btn rounded-full ml-20 text-center align-center justify-center item-center badge border-1 border-gray-300 px-5 py-3");
-    			add_location(button, file$1, 122, 6, 3924);
+    			add_location(button, file$1, 150, 6, 4923);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
 
     			if (!mounted) {
-    				dispose = listen_dev(button, "click", /*click_handler_5*/ ctx[10], false, false, false, false);
+    				dispose = listen_dev(button, "click", /*click_handler_7*/ ctx[12], false, false, false, false);
     				mounted = true;
     			}
     		},
@@ -11638,7 +11638,7 @@ zoo`.split('\n');
     		block,
     		id: create_else_block_2$1.name,
     		type: "else",
-    		source: "(122:4) {:else}",
+    		source: "(150:4) {:else}",
     		ctx
     	});
 
@@ -11658,19 +11658,24 @@ zoo`.split('\n');
     	let show_if;
     	let show_if_1;
     	let show_if_2;
+    	let show_if_3;
     	let if_block_anchor;
 
     	function select_block_type_2(ctx, dirty) {
     		if (dirty & /*webSite*/ 2) show_if = null;
     		if (dirty & /*webSite*/ 2) show_if_1 = null;
     		if (dirty & /*webSite*/ 2) show_if_2 = null;
-    		if (/*webSite*/ ctx[1].permission.always === true) return create_if_block_2$1;
-    		if (show_if == null) show_if = !!(new Date(/*webSite*/ ctx[1].permission.authorizationStop) > new Date() && /*webSite*/ ctx[1].permission.accept === true);
-    		if (show_if) return create_if_block_3;
-    		if (show_if_1 == null) show_if_1 = !!(new Date(/*webSite*/ ctx[1].permission.authorizationStop) > new Date() && /*webSite*/ ctx[1].permission.reject === true);
-    		if (show_if_1) return create_if_block_4;
-    		if (show_if_2 == null) show_if_2 = !!(new Date(/*webSite*/ ctx[1].permission.authorizationStop) < new Date() && /*webSite*/ ctx[1].permission.accept === true);
-    		if (show_if_2) return create_if_block_5;
+    		if (dirty & /*webSite*/ 2) show_if_3 = null;
+    		if (/*webSite*/ ctx[1].permission.always === true && /*webSite*/ ctx[1].permission.accept === true) return create_if_block_2$1;
+    		if (/*webSite*/ ctx[1].permission.always === true && /*webSite*/ ctx[1].permission.reject === true) return create_if_block_3;
+    		if (show_if == null) show_if = !!(new Date(/*webSite*/ ctx[1].permission.authorizationStop) < new Date());
+    		if (show_if) return create_if_block_4;
+    		if (show_if_1 == null) show_if_1 = !!(new Date(/*webSite*/ ctx[1].permission.authorizationStop) > new Date() && /*webSite*/ ctx[1].permission.accept === true);
+    		if (show_if_1) return create_if_block_5;
+    		if (show_if_2 == null) show_if_2 = !!(new Date(/*webSite*/ ctx[1].permission.authorizationStop) > new Date() && /*webSite*/ ctx[1].permission.reject === true);
+    		if (show_if_2) return create_if_block_6;
+    		if (show_if_3 == null) show_if_3 = !!(new Date(/*webSite*/ ctx[1].permission.authorizationStop) < new Date() && /*webSite*/ ctx[1].permission.accept === true);
+    		if (show_if_3) return create_if_block_7;
     		return create_else_block_1$1;
     	}
 
@@ -11743,7 +11748,7 @@ zoo`.split('\n');
     	return block;
     }
 
-    // (111:6) {:else}
+    // (139:6) {:else}
     function create_else_block_1$1(ctx) {
     	let div1;
     	let span;
@@ -11762,12 +11767,12 @@ zoo`.split('\n');
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Authorize now";
-    			add_location(span, file$1, 112, 10, 3669);
+    			add_location(span, file$1, 140, 10, 4668);
     			attr_dev(button, "class", "btn btn-sm");
-    			add_location(button, file$1, 114, 12, 3727);
-    			add_location(div0, file$1, 113, 10, 3709);
+    			add_location(button, file$1, 142, 12, 4726);
+    			add_location(div0, file$1, 141, 10, 4708);
     			attr_dev(div1, "class", "alert alert-error");
-    			add_location(div1, file$1, 111, 8, 3627);
+    			add_location(div1, file$1, 139, 8, 4626);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -11777,7 +11782,7 @@ zoo`.split('\n');
     			append_dev(div0, button);
 
     			if (!mounted) {
-    				dispose = listen_dev(button, "click", /*click_handler_4*/ ctx[9], false, false, false, false);
+    				dispose = listen_dev(button, "click", /*click_handler_6*/ ctx[11], false, false, false, false);
     				mounted = true;
     			}
     		},
@@ -11793,15 +11798,15 @@ zoo`.split('\n');
     		block,
     		id: create_else_block_1$1.name,
     		type: "else",
-    		source: "(111:6) {:else}",
+    		source: "(139:6) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (99:114) 
-    function create_if_block_5(ctx) {
+    // (127:114) 
+    function create_if_block_7(ctx) {
     	let div1;
     	let span;
     	let t1;
@@ -11819,12 +11824,12 @@ zoo`.split('\n');
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Update";
-    			add_location(span, file$1, 100, 10, 3348);
+    			add_location(span, file$1, 128, 10, 4347);
     			attr_dev(button, "class", "btn btn-sm");
-    			add_location(button, file$1, 102, 12, 3412);
-    			add_location(div0, file$1, 101, 10, 3394);
+    			add_location(button, file$1, 130, 12, 4411);
+    			add_location(div0, file$1, 129, 10, 4393);
     			attr_dev(div1, "class", "alert alert-warning");
-    			add_location(div1, file$1, 99, 8, 3304);
+    			add_location(div1, file$1, 127, 8, 4303);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -11834,7 +11839,7 @@ zoo`.split('\n');
     			append_dev(div0, button);
 
     			if (!mounted) {
-    				dispose = listen_dev(button, "click", /*click_handler_3*/ ctx[8], false, false, false, false);
+    				dispose = listen_dev(button, "click", /*click_handler_5*/ ctx[10], false, false, false, false);
     				mounted = true;
     			}
     		},
@@ -11848,17 +11853,17 @@ zoo`.split('\n');
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_if_block_5.name,
+    		id: create_if_block_7.name,
     		type: "if",
-    		source: "(99:114) ",
+    		source: "(127:114) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (83:114) 
-    function create_if_block_4(ctx) {
+    // (111:114) 
+    function create_if_block_6(ctx) {
     	let div1;
     	let span;
     	let t0;
@@ -11882,12 +11887,145 @@ zoo`.split('\n');
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Update";
-    			add_location(span, file$1, 84, 10, 2790);
+    			add_location(span, file$1, 112, 10, 3789);
     			attr_dev(button, "class", "btn btn-sm");
-    			add_location(button, file$1, 90, 12, 2988);
-    			add_location(div0, file$1, 89, 10, 2970);
+    			add_location(button, file$1, 118, 12, 3987);
+    			add_location(div0, file$1, 117, 10, 3969);
     			attr_dev(div1, "class", "alert alert-error");
-    			add_location(div1, file$1, 83, 8, 2748);
+    			add_location(div1, file$1, 111, 8, 3747);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div1, anchor);
+    			append_dev(div1, span);
+    			append_dev(span, t0);
+    			append_dev(span, t1);
+    			append_dev(span, t2);
+    			append_dev(div1, t3);
+    			append_dev(div1, div0);
+    			append_dev(div0, button);
+
+    			if (!mounted) {
+    				dispose = listen_dev(button, "click", /*click_handler_4*/ ctx[9], false, false, false, false);
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*webSite*/ 2 && t1_value !== (t1_value = remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop)) + "")) set_data_dev(t1, t1_value);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div1);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_6.name,
+    		type: "if",
+    		source: "(111:114) ",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (95:114) 
+    function create_if_block_5(ctx) {
+    	let div1;
+    	let span;
+    	let t0;
+    	let t1_value = remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop)) + "";
+    	let t1;
+    	let t2;
+    	let div0;
+    	let button;
+    	let mounted;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			div1 = element("div");
+    			span = element("span");
+    			t0 = text("Authorization expire in ");
+    			t1 = text(t1_value);
+    			t2 = space();
+    			div0 = element("div");
+    			button = element("button");
+    			button.textContent = "Update";
+    			add_location(span, file$1, 96, 10, 3250);
+    			attr_dev(button, "class", "btn btn-sm");
+    			add_location(button, file$1, 102, 12, 3431);
+    			add_location(div0, file$1, 101, 10, 3413);
+    			attr_dev(div1, "class", "alert alert-warning");
+    			add_location(div1, file$1, 95, 8, 3206);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div1, anchor);
+    			append_dev(div1, span);
+    			append_dev(span, t0);
+    			append_dev(span, t1);
+    			append_dev(div1, t2);
+    			append_dev(div1, div0);
+    			append_dev(div0, button);
+
+    			if (!mounted) {
+    				dispose = listen_dev(button, "click", /*click_handler_3*/ ctx[8], false, false, false, false);
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*webSite*/ 2 && t1_value !== (t1_value = remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop)) + "")) set_data_dev(t1, t1_value);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div1);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_5.name,
+    		type: "if",
+    		source: "(95:114) ",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (79:76) 
+    function create_if_block_4(ctx) {
+    	let div1;
+    	let span;
+    	let t0;
+    	let t1_value = remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop)) + "";
+    	let t1;
+    	let t2;
+    	let t3;
+    	let div0;
+    	let button;
+    	let mounted;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			div1 = element("div");
+    			span = element("span");
+    			t0 = text("Authorization expired (time remaining ");
+    			t1 = text(t1_value);
+    			t2 = text(").");
+    			t3 = space();
+    			div0 = element("div");
+    			button = element("button");
+    			button.textContent = "Update";
+    			add_location(span, file$1, 80, 10, 2693);
+    			attr_dev(button, "class", "btn btn-sm");
+    			add_location(button, file$1, 86, 12, 2890);
+    			add_location(div0, file$1, 85, 10, 2872);
+    			attr_dev(div1, "class", "alert alert-error");
+    			add_location(div1, file$1, 79, 8, 2651);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -11918,21 +12056,18 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_4.name,
     		type: "if",
-    		source: "(83:114) ",
+    		source: "(79:76) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (67:114) 
+    // (67:89) 
     function create_if_block_3(ctx) {
     	let div1;
     	let span;
-    	let t0;
-    	let t1_value = remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop)) + "";
     	let t1;
-    	let t2;
     	let div0;
     	let button;
     	let mounted;
@@ -11942,25 +12077,23 @@ zoo`.split('\n');
     		c: function create() {
     			div1 = element("div");
     			span = element("span");
-    			t0 = text("Authorization expire in ");
-    			t1 = text(t1_value);
-    			t2 = space();
+    			span.textContent = "Always rejected.";
+    			t1 = space();
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Update";
-    			add_location(span, file$1, 68, 10, 2251);
-    			attr_dev(button, "class", "btn btn-sm");
-    			add_location(button, file$1, 74, 12, 2432);
-    			add_location(div0, file$1, 73, 10, 2414);
-    			attr_dev(div1, "class", "alert alert-warning");
-    			add_location(div1, file$1, 67, 8, 2207);
+    			attr_dev(span, "class", "text-lg text-white font-sans");
+    			add_location(span, file$1, 68, 10, 2272);
+    			attr_dev(button, "class", "btn btn-sm px-4");
+    			add_location(button, file$1, 70, 12, 2368);
+    			add_location(div0, file$1, 69, 10, 2350);
+    			attr_dev(div1, "class", "alert alert-error shadow-xl");
+    			add_location(div1, file$1, 67, 8, 2220);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
     			append_dev(div1, span);
-    			append_dev(span, t0);
-    			append_dev(span, t1);
-    			append_dev(div1, t2);
+    			append_dev(div1, t1);
     			append_dev(div1, div0);
     			append_dev(div0, button);
 
@@ -11969,9 +12102,7 @@ zoo`.split('\n');
     				mounted = true;
     			}
     		},
-    		p: function update(ctx, dirty) {
-    			if (dirty & /*webSite*/ 2 && t1_value !== (t1_value = remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop)) + "")) set_data_dev(t1, t1_value);
-    		},
+    		p: noop,
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div1);
     			mounted = false;
@@ -11983,14 +12114,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(67:114) ",
+    		source: "(67:89) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (55:6) {#if webSite.permission.always === true}
+    // (55:6) {#if webSite.permission.always === true && webSite.permission.accept === true}
     function create_if_block_2$1(ctx) {
     	let div1;
     	let span;
@@ -12010,12 +12141,12 @@ zoo`.split('\n');
     			button = element("button");
     			button.textContent = "Update";
     			attr_dev(span, "class", "text-lg text-white font-sans");
-    			add_location(span, file$1, 56, 10, 1788);
+    			add_location(span, file$1, 56, 10, 1826);
     			attr_dev(button, "class", "btn btn-sm px-4");
-    			add_location(button, file$1, 58, 12, 1886);
-    			add_location(div0, file$1, 57, 10, 1868);
+    			add_location(button, file$1, 58, 12, 1924);
+    			add_location(div0, file$1, 57, 10, 1906);
     			attr_dev(div1, "class", "alert alert-success shadow-xl");
-    			add_location(div1, file$1, 55, 8, 1734);
+    			add_location(div1, file$1, 55, 8, 1772);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -12041,7 +12172,7 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_2$1.name,
     		type: "if",
-    		source: "(55:6) {#if webSite.permission.always === true}",
+    		source: "(55:6) {#if webSite.permission.always === true && webSite.permission.accept === true}",
     		ctx
     	});
 
@@ -12192,9 +12323,17 @@ zoo`.split('\n');
     		$$invalidate(2, showAuthorization = true);
     	};
 
-    	const click_handler_4 = () => $$invalidate(2, showAuthorization = true);
+    	const click_handler_4 = () => {
+    		$$invalidate(2, showAuthorization = true);
+    	};
 
     	const click_handler_5 = () => {
+    		$$invalidate(2, showAuthorization = true);
+    	};
+
+    	const click_handler_6 = () => $$invalidate(2, showAuthorization = true);
+
+    	const click_handler_7 = () => {
     		$$invalidate(2, showAuthorization = true);
     	};
 
@@ -12232,7 +12371,9 @@ zoo`.split('\n');
     		click_handler_2,
     		click_handler_3,
     		click_handler_4,
-    		click_handler_5
+    		click_handler_5,
+    		click_handler_6,
+    		click_handler_7
     	];
     }
 

@@ -56,12 +56,40 @@
           </div>
         </div>
       </div>
-      {#if webSite.permission.always === true}
+      {#if webSite.permission.always === true && webSite.permission.accept === true}
         <div class="alert alert-success shadow-xl">
           <span class="text-lg text-white font-sans">Always authorized. </span>
           <div>
             <button
               class="btn btn-sm px-4"
+              on:click={() => {
+                showAuthorization = true;
+              }}>Update</button
+            >
+          </div>
+        </div>
+      {:else if webSite.permission.always === true && webSite.permission.reject === true}
+        <div class="alert alert-error shadow-xl">
+          <span class="text-lg text-white font-sans">Always rejected. </span>
+          <div>
+            <button
+              class="btn btn-sm px-4"
+              on:click={() => {
+                showAuthorization = true;
+              }}>Update</button
+            >
+          </div>
+        </div>
+      {:else if new Date(webSite.permission.authorizationStop) < new Date()}
+        <div class="alert alert-error">
+          <span
+            >Authorization expired (time remaining {remainingTime(
+              new Date(webSite.permission.authorizationStop)
+            )}).</span
+          >
+          <div>
+            <button
+              class="btn btn-sm"
               on:click={() => {
                 showAuthorization = true;
               }}>Update</button
