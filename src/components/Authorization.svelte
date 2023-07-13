@@ -1,6 +1,6 @@
 <script lang="ts">
   import { domainToUrl, web } from "../stores/utils";
-  import { loadPrivateKey, webSites } from "../stores/key-store";
+  import { loadPrivateKey, loadWebSites, webSites } from "../stores/key-store";
   import { createEventDispatcher } from "svelte";
   let login = false;
   export let parameter;
@@ -64,8 +64,15 @@
       });
     } else {
       loadPrivateKey().then(async () => {
-        if (Object.keys($webSites).indexOf(domain) !== -1) {
+        let _webSites = await loadWebSites();
+        if (_webSites === undefined || _webSites === null) {
+          _webSites = {};
+        }
+        if (Object.keys(_webSites).indexOf(domain) !== -1) {
           let site = $webSites;
+          if (site === undefined || site === null) {
+            site = {};
+          }
           let st = site[domain];
           st.permission = {
             always: choice === 1,
@@ -86,6 +93,9 @@
           await web.storage.local.set({ webSites: site });
         } else {
           let site = $webSites;
+          if (site === undefined || site === null) {
+            site = {};
+          }
           let st = {
             auth: true,
             history: [

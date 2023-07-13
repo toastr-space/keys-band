@@ -23,9 +23,12 @@
 
   let showAuthorization = false;
 
-  loadWebSites().then(() => {
-    if (Object.keys($webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
-      webSite = $webSites[domainToUrl(currentTab.url)];
+  loadWebSites().then((_webSites) => {
+    if (_webSites === null || _webSites === undefined) {
+      _webSites = {};
+    }
+    if (Object.keys(_webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
+      webSite = _webSites[domainToUrl(currentTab.url)];
   });
 </script>
 
@@ -83,9 +86,7 @@
       {:else if new Date(webSite.permission.authorizationStop) < new Date()}
         <div class="alert alert-error">
           <span
-            >Authorization expired (time remaining {remainingTime(
-              new Date(webSite.permission.authorizationStop)
-            )}).</span
+            >Authorization expired.</span
           >
           <div>
             <button

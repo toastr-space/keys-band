@@ -145,8 +145,26 @@ async function manageResult(message, sender) {
     if (responders[message.requestId]) {
       let responderData = responders[message.requestId];
       const domain = responderData.domain;
+      let _webSites = get(webSites);
       let site;
-      if (Object.keys(get(webSites)).indexOf(domain) === -1) {
+      if (_webSites === undefined || _webSites === null) {
+        site = {
+          auth: false,
+          permission: {
+            always: false,
+            accept: true,
+            reject: false,
+          },
+          history: [],
+        };
+
+        _webSites = {
+          [domain]: site,
+        }
+      }
+
+      
+      if (Object.keys(_webSites).indexOf(domain) === -1) {
         site = {
           auth: false,
           permission: {

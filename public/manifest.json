@@ -1,9 +1,9 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Nos2x Svelte - Remake",
   "version": "1.0",
   "description": "This is nos2x remake with svelte",
-  "browser_action": {
+  "action": {
     "default_popup": "index.html"
   },
   "background": {
@@ -13,8 +13,11 @@
     "storage",
     "activeTab",
     "tabs",
-    "nativeMessaging",
-    "<all_urls>"
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*" 
   ],
   "content_scripts": [
     {
@@ -24,9 +27,11 @@
     }
   ],
   "web_accessible_resources": [
-    "https://*/*",
-    "build/popup.js",
-    "build/popup.css",
-    "build/nostr-provider.js"
+    {
+      "resources": [ "build/popup.js",
+      "build/popup.css",
+      "build/nostr-provider.js" ],
+      "matches": [ "https://*/*" ]
+    }
   ]
 }
