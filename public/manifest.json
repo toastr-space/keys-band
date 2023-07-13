@@ -6,17 +6,27 @@
   "browser_action": {
     "default_popup": "index.html"
   },
-  "permissions": ["storage", "tabs", "<all_urls>"],
-  "externally_connectable": {
-    "matches": ["<all_urls>"]
-  },
   "background": {
-    "scripts": ["build/bundle.js"]
+    "service_worker": "build/background.js"
   },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "nativeMessaging",
+    "<all_urls>"
+  ],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["build/bundle.js"]
+      "js": ["build/content.js"],
+      "run_at": "document_end"
     }
+  ],
+  "web_accessible_resources": [
+    "https://*/*",
+    "build/popup.js",
+    "build/popup.css",
+    "build/nostr-provider.js"
   ]
 }

@@ -1,39 +1,125 @@
-import { db } from "./utils";
-import { nip19 } from "nostr-tools";
-import { writable, type Writable } from "svelte/store";
+import { web } from "./utils";
+import { getPublicKey, nip19, SimplePool } from "nostr-tools";
+import { get, writable, type Writable } from "svelte/store";
+
+interface UserProfile {
+  name?: string;
+  picture?: string;
+  nip05?: string;
+}
+
+export interface Authorization {
+  always: boolean;
+  accept: boolean;
+  reject: boolean;
+  authorizationStop?: Date;
+}
+
+export interface WebSite {
+  auth: boolean;
+  permission?: Authorization;
+  history?: { type: string; data: {}; created_at: string; accepted: boolean }[];
+}
+
+export interface Relay {
+  url: string;
+  enabled: boolean;
+  created_at: Date;
+}
+
+const _relays = ["wss://relay.damus.io"];
+
+const pool = new SimplePool();
 
 export const keyStore: Writable<string> = writable("");
-
-export function addPrivateKey(value: string) {
-  let key: string;
-  if (value.startsWith("nsec")) {
-    let { type, data } = nip19.decode(value);
-    // TODO: check if not type is private key and return error
-    // TODO: ...
-  } else {
-    // TODO: check if not type is private key and return error
-    // TODO: ...
-  }
-
-  // TODO: store the key in the local storage
-  // INIT: author profile fetching...
-}
+export const userProfile: Writable<UserProfile> = writable({});
+export let webSites: Writable<{}> = writable();
+export let relays: Writable<Relay[]> = writable([]);
 
 // ------------------ Key Manager ------------------ //
 
-// Store the private key in the local storage
-export function registerPrivateKey(value: string) {
-  db.storage.local.set({ privateKey: value }, () => {
+function registerPrivateKey(value: string): void {
+  web.storage.local.set({ privateKey: value }, () => {
     keyStore.set(value);
   });
 }
 
-// Get the private key from the local storage
-export async function getPublicKey(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    db.storage.local.get("privateKey", (value) => {
-      keyStore.set(value.privateKey);
-      resolve(value.privateKey);
+export async function loadRelays(): Promise<void> {
+  return new Promise((resolve) => {
+    web.storage.local.get("relays", (value) => {
+      relays.set(value.relays || []);
+      resolve(value.relays);
     });
   });
+}
+
+export async function loadPrivateKey(): Promise<void> {
+  return new Promise((resolve) => {
+    web.storage.local.get("privateKey", (value) => {
+      keyStore.set(value.privateKey);
+      resolve(value.privateKey);
+      getProfile();
+      loadWebSites();
+      loadRelays();
+    });
+  });
+}
+
+export async function loadWebSites() {
+  return new Promise((resolve) => {
+    web.storage.local.get("webSites", (value) => {
+      webSites.set(value.webSites);
+      resolve(value.webSites);
+    });
+  });
+}
+
+webSites.subscribe((value) => {
+  web.storage.local.set({ webSites: value });
+});
+
+export async function getProfile(): Promise<void> {
+  if (!get(keyStore)) return;
+  let event = pool
+    .get(_relays, {
+      authors: [getPublicKey(get(keyStore))],
+      kinds: [0],
+    })
+    .then((event) => {
+      const profile = JSON.parse(event.content);
+      userProfile.set(profile);
+      web.storage.local.set({ profile: profile });
+    })
+    .catch((err) => {
+      //alert(err);
+    });
+  return new Promise((resolve) => {
+    web.storage.local.get("profile", (value) => {
+      userProfile.set(value.profile);
+      resolve(value.profile);
+    });
+  });
+}
+
+export function addKey(value) {
+  if (!value) return;
+
+  if (value.length < 63) {
+    alert("Invalid key");
+    return;
+  }
+
+  let decodedValue;
+
+  if (value.toString().startsWith("nsec")) {
+    decodedValue = nip19.decode(value).data;
+  } else if (value.length === 64) {
+    decodedValue = value;
+  } else {
+    alert("Invalid key");
+    return;
+  }
+
+  registerPrivateKey(decodedValue);
+  loadPrivateKey();
 }

@@ -33,15 +33,8 @@ function serve() {
   };
 }
 
-export default {
-  input: "src/main.ts",
-  output: {
-    file: "public/build/bundle.js",
-    format: "iife",
-
-    name: "app",
-  },
-  plugins: [
+function getPlugins(cssOutputFile) {
+  return [
     svelte({
       include: "src/**/*.svelte",
       preprocess: sveltePreprocess({ sourceMap: !production }),
@@ -54,7 +47,7 @@ export default {
       plugins: [tailwindcss, autoprefixer],
       extract: true,
     }),
-    css({ output: "bundle.css" }),
+    css({ output: cssOutputFile }),
 
     commonjs(),
     typescript({ sourceMap: !production, inlineSources: !production }),
@@ -62,8 +55,59 @@ export default {
     !production && serve(),
     !production && livereload("public"),
     resolve({ browser: true, dedupe: ["svelte"] }),
-  ],
-  watch: {
-    clearScreen: false,
+  ];
+}
+
+export default [
+  {
+    input: "src/main.ts",
+    output: {
+      file: "public/build/bundle.js",
+      format: "iife",
+
+      name: "app",
+    },
+    plugins: getPlugins("bundle.css"),
+    watch: {
+      clearScreen: false,
+    },
   },
-};
+  {
+    input: "src/popup.ts",
+    output: {
+      file: "public/build/popup.js",
+      format: "iife",
+
+      name: "app",
+    },
+    plugins: getPlugins("popup.css"),
+    watch: {
+      clearScreen: false,
+    },
+  },
+  {
+    input: "src/services/background.ts",
+    output: {
+      file: "public/build/background.js",
+      format: "iife",
+
+      name: "app",
+    },
+    plugins: getPlugins("test.css"),
+    watch: {
+      clearScreen: false,
+    },
+  },
+  {
+    input: "src/services/content.ts",
+    output: {
+      file: "public/build/content.js",
+      format: "iife",
+
+      name: "app",
+    },
+    watch: {
+      clearScreen: false,
+    },
+  },
+];
