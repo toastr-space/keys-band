@@ -9509,7 +9509,7 @@ zoo`.split('\n');
     	return child_ctx;
     }
 
-    // (114:29) 
+    // (117:29) 
     function create_if_block_2$3(ctx) {
     	let div4;
     	let button0;
@@ -9615,20 +9615,20 @@ zoo`.split('\n');
     			button2.textContent = "Add";
     			attr_dev(path0, "fill", "currentColor");
     			attr_dev(path0, "d", "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zM7.35 18.5C8.66 17.56 10.26 17 12 17s3.34.56 4.65 1.5c-1.31.94-2.91 1.5-4.65 1.5s-3.34-.56-4.65-1.5zm10.79-1.38a9.947 9.947 0 0 0-12.28 0A7.957 7.957 0 0 1 4 12c0-4.42 3.58-8 8-8s8 3.58 8 8c0 1.95-.7 3.73-1.86 5.12z");
-    			add_location(path0, file$3, 128, 11, 3664);
+    			add_location(path0, file$3, 131, 11, 3746);
     			attr_dev(path1, "fill", "currentColor");
     			attr_dev(path1, "d", "M12 6c-1.93 0-3.5 1.57-3.5 3.5S10.07 13 12 13s3.5-1.57 3.5-3.5S13.93 6 12 6zm0 5c-.83 0-1.5-.67-1.5-1.5S11.17 8 12 8s1.5.67 1.5 1.5S12.83 11 12 11z");
-    			add_location(path1, file$3, 131, 12, 4012);
+    			add_location(path1, file$3, 134, 12, 4094);
     			attr_dev(svg0, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg0, "width", "24");
     			attr_dev(svg0, "height", "24");
     			attr_dev(svg0, "viewBox", "0 0 24 24");
-    			add_location(svg0, file$3, 123, 8, 3530);
+    			add_location(svg0, file$3, 126, 8, 3612);
     			attr_dev(button0, "class", "btn btn-base-100 bg-base-100 bordered border-2 border-base-200 my-8 ml-28");
-    			add_location(button0, file$3, 115, 6, 3261);
-    			add_location(hr0, file$3, 138, 6, 4285);
+    			add_location(button0, file$3, 118, 6, 3343);
+    			add_location(hr0, file$3, 141, 6, 4367);
     			attr_dev(span0, "class", "w-full pb-1 pl-2 font-sans font-bold");
-    			add_location(span0, file$3, 140, 8, 4365);
+    			add_location(span0, file$3, 143, 8, 4447);
 
     			attr_dev(input0, "type", input0_type_value = /*secretEchoMode*/ ctx[3] === /*EchoMode*/ ctx[1].Password
     			? "password"
@@ -9637,52 +9637,52 @@ zoo`.split('\n');
     			input0.value = input0_value_value = nip19_exports.nsecEncode(/*$keyStore*/ ctx[6]);
     			attr_dev(input0, "placeholder", "nsec");
     			attr_dev(input0, "class", "input input-bordered w-9/12");
-    			add_location(input0, file$3, 141, 8, 4443);
+    			add_location(input0, file$3, 144, 8, 4525);
     			attr_dev(path2, "d", "M20.998 10c-.012-2.175-.108-3.353-.877-4.121C19.243 5 17.828 5 15 5h-3c-2.828 0-4.243 0-5.121.879C6 6.757 6 8.172 6 11v5c0 2.828 0 4.243.879 5.121C7.757 22 9.172 22 12 22h3c2.828 0 4.243 0 5.121-.879C21 20.243 21 18.828 21 16v-1");
-    			add_location(path2, file$3, 166, 15, 5312);
+    			add_location(path2, file$3, 169, 15, 5394);
     			attr_dev(path3, "d", "M3 10v6a3 3 0 0 0 3 3M18 5a3 3 0 0 0-3-3h-4C7.229 2 5.343 2 4.172 3.172C3.518 3.825 3.229 4.7 3.102 6");
-    			add_location(path3, file$3, 168, 16, 5583);
+    			add_location(path3, file$3, 171, 16, 5665);
     			attr_dev(g, "fill", "none");
     			attr_dev(g, "stroke", "currentColor");
     			attr_dev(g, "stroke-linecap", "round");
     			attr_dev(g, "stroke-width", "1.5");
-    			add_location(g, file$3, 161, 13, 5162);
+    			add_location(g, file$3, 164, 13, 5244);
     			attr_dev(svg1, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg1, "width", "24");
     			attr_dev(svg1, "height", "24");
     			attr_dev(svg1, "viewBox", "0 0 24 24");
-    			add_location(svg1, file$3, 156, 10, 5018);
+    			add_location(svg1, file$3, 159, 10, 5100);
     			attr_dev(button1, "class", "btn w-2/12 p-2");
-    			add_location(button1, file$3, 149, 8, 4791);
+    			add_location(button1, file$3, 152, 8, 4873);
     			attr_dev(div0, "class", "p-4 w-full flex flex-row flex-wrap space-x-2");
-    			add_location(div0, file$3, 139, 6, 4298);
-    			add_location(hr1, file$3, 175, 6, 5799);
+    			add_location(div0, file$3, 142, 6, 4380);
+    			add_location(hr1, file$3, 178, 6, 5881);
     			attr_dev(span1, "class", "w-full pb-1 pl-2 font-sans font-bold");
-    			add_location(span1, file$3, 177, 8, 5879);
-    			add_location(th0, file$3, 183, 16, 6114);
+    			add_location(span1, file$3, 180, 8, 5961);
+    			add_location(th0, file$3, 186, 16, 6196);
     			attr_dev(th1, "width", "80");
     			attr_dev(th1, "class", "text-center");
-    			add_location(th1, file$3, 184, 16, 6145);
-    			add_location(tr, file$3, 182, 14, 6093);
-    			add_location(thead, file$3, 181, 12, 6071);
-    			add_location(tbody, file$3, 187, 12, 6246);
+    			add_location(th1, file$3, 187, 16, 6227);
+    			add_location(tr, file$3, 185, 14, 6175);
+    			add_location(thead, file$3, 184, 12, 6153);
+    			add_location(tbody, file$3, 190, 12, 6328);
     			attr_dev(table, "class", "table table-zebra");
-    			add_location(table, file$3, 179, 10, 5999);
+    			add_location(table, file$3, 182, 10, 6081);
     			attr_dev(div1, "class", "overflow-x-auto w-full");
-    			add_location(div1, file$3, 178, 8, 5952);
+    			add_location(div1, file$3, 181, 8, 6034);
     			attr_dev(input1, "type", "text");
     			attr_dev(input1, "class", "input input-bordered w-9/12 h-10");
     			attr_dev(input1, "id", "value");
     			attr_dev(input1, "placeholder", "Enter relay url");
-    			add_location(input1, file$3, 248, 10, 8991);
+    			add_location(input1, file$3, 251, 10, 9073);
     			attr_dev(button2, "class", "btn btn-sm w-2/12 h-10");
-    			add_location(button2, file$3, 255, 10, 9199);
+    			add_location(button2, file$3, 258, 10, 9281);
     			attr_dev(div2, "class", "w-full flex flex-row flex-wrap space-x-2 mt-4");
-    			add_location(div2, file$3, 247, 8, 8921);
+    			add_location(div2, file$3, 250, 8, 9003);
     			attr_dev(div3, "class", "p-4 w-full flex flex-row flex-wrap space-x-2");
-    			add_location(div3, file$3, 176, 6, 5812);
+    			add_location(div3, file$3, 179, 6, 5894);
     			attr_dev(div4, "class", "w-full");
-    			add_location(div4, file$3, 114, 4, 3234);
+    			add_location(div4, file$3, 117, 4, 3316);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div4, anchor);
@@ -9797,14 +9797,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_2$3.name,
     		type: "if",
-    		source: "(114:29) ",
+    		source: "(117:29) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (87:29) 
+    // (90:29) 
     function create_if_block_1$3(ctx) {
     	let div;
     	let table;
@@ -9847,16 +9847,16 @@ zoo`.split('\n');
     			}
 
     			attr_dev(th0, "class", "text-primary fond-bold");
-    			add_location(th0, file$3, 92, 12, 2506);
-    			add_location(th1, file$3, 93, 12, 2565);
-    			add_location(th2, file$3, 94, 12, 2591);
-    			add_location(tr, file$3, 91, 10, 2489);
-    			add_location(thead, file$3, 90, 8, 2471);
-    			add_location(tbody, file$3, 97, 8, 2646);
+    			add_location(th0, file$3, 95, 12, 2588);
+    			add_location(th1, file$3, 96, 12, 2647);
+    			add_location(th2, file$3, 97, 12, 2673);
+    			add_location(tr, file$3, 94, 10, 2571);
+    			add_location(thead, file$3, 93, 8, 2553);
+    			add_location(tbody, file$3, 100, 8, 2728);
     			attr_dev(table, "class", "table table-zebra w-full");
-    			add_location(table, file$3, 89, 6, 2422);
+    			add_location(table, file$3, 92, 6, 2504);
     			attr_dev(div, "class", "w-full");
-    			add_location(div, file$3, 87, 4, 2357);
+    			add_location(div, file$3, 90, 4, 2439);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -9912,14 +9912,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_1$3.name,
     		type: "if",
-    		source: "(87:29) ",
+    		source: "(90:29) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (63:2) {#if currentTab === 0}
+    // (66:2) {#if currentTab === 0}
     function create_if_block$3(ctx) {
     	let div;
     	let button;
@@ -9936,10 +9936,10 @@ zoo`.split('\n');
     			t1 = space();
     			hr = element("hr");
     			attr_dev(button, "class", "btn btn-base-100 bg-base-100 bordered border-2 border-base-200 my-8 mr-auto mx-4");
-    			add_location(button, file$3, 65, 6, 1782);
-    			add_location(hr, file$3, 84, 6, 2305);
+    			add_location(button, file$3, 68, 6, 1864);
+    			add_location(hr, file$3, 87, 6, 2387);
     			attr_dev(div, "class", "w-full");
-    			add_location(div, file$3, 63, 4, 1726);
+    			add_location(div, file$3, 66, 4, 1808);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -9964,14 +9964,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block$3.name,
     		type: "if",
-    		source: "(63:2) {#if currentTab === 0}",
+    		source: "(66:2) {#if currentTab === 0}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (190:14) {#each $relays as relay}
+    // (193:14) {#each $relays as relay}
     function create_each_block_2(ctx) {
     	let tr;
     	let td0;
@@ -10017,36 +10017,36 @@ zoo`.split('\n');
     			svg1 = svg_element("svg");
     			path2 = svg_element("path");
     			t3 = space();
-    			add_location(td0, file$3, 191, 18, 6361);
+    			add_location(td0, file$3, 194, 18, 6443);
     			attr_dev(path0, "d", "M20.998 10c-.012-2.175-.108-3.353-.877-4.121C19.243 5 17.828 5 15 5h-3c-2.828 0-4.243 0-5.121.879C6 6.757 6 8.172 6 11v5c0 2.828 0 4.243.879 5.121C7.757 22 9.172 22 12 22h3c2.828 0 4.243 0 5.121-.879C21 20.243 21 18.828 21 16v-1");
-    			add_location(path0, file$3, 211, 27, 7187);
+    			add_location(path0, file$3, 214, 27, 7269);
     			attr_dev(path1, "d", "M3 10v6a3 3 0 0 0 3 3M18 5a3 3 0 0 0-3-3h-4C7.229 2 5.343 2 4.172 3.172C3.518 3.825 3.229 4.7 3.102 6");
-    			add_location(path1, file$3, 213, 28, 7482);
+    			add_location(path1, file$3, 216, 28, 7564);
     			attr_dev(g, "fill", "none");
     			attr_dev(g, "stroke", "currentColor");
     			attr_dev(g, "stroke-linecap", "round");
     			attr_dev(g, "stroke-width", "1.5");
-    			add_location(g, file$3, 206, 25, 6977);
+    			add_location(g, file$3, 209, 25, 7059);
     			attr_dev(svg0, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg0, "width", "24");
     			attr_dev(svg0, "height", "24");
     			attr_dev(svg0, "viewBox", "0 0 24 24");
-    			add_location(svg0, file$3, 201, 22, 6773);
+    			add_location(svg0, file$3, 204, 22, 6855);
     			attr_dev(button0, "class", "btn btn-xs h-8");
-    			add_location(button0, file$3, 193, 20, 6448);
+    			add_location(button0, file$3, 196, 20, 6530);
     			attr_dev(path2, "fill", "currentColor");
     			attr_dev(path2, "d", "M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59L7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12L5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z");
-    			add_location(path2, file$3, 235, 25, 8417);
+    			add_location(path2, file$3, 238, 25, 8499);
     			attr_dev(svg1, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg1, "width", "24");
     			attr_dev(svg1, "height", "24");
     			attr_dev(svg1, "viewBox", "0 0 24 24");
-    			add_location(svg1, file$3, 230, 22, 8213);
+    			add_location(svg1, file$3, 233, 22, 8295);
     			attr_dev(button1, "class", "btn btn-xs h-8");
-    			add_location(button1, file$3, 219, 20, 7759);
+    			add_location(button1, file$3, 222, 20, 7841);
     			attr_dev(td1, "class", "flex space-x-2");
-    			add_location(td1, file$3, 192, 18, 6400);
-    			add_location(tr, file$3, 190, 16, 6338);
+    			add_location(td1, file$3, 195, 18, 6482);
+    			add_location(tr, file$3, 193, 16, 6420);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, tr, anchor);
@@ -10089,14 +10089,14 @@ zoo`.split('\n');
     		block,
     		id: create_each_block_2.name,
     		type: "each",
-    		source: "(190:14) {#each $relays as relay}",
+    		source: "(193:14) {#each $relays as relay}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (99:10) {#each reverseArray(currentSite.history) as site, i}
+    // (102:10) {#each reverseArray(currentSite.history) as site, i}
     function create_each_block_1(ctx) {
     	let tr;
     	let td0;
@@ -10127,11 +10127,11 @@ zoo`.split('\n');
     			attr_dev(td0, "class", "text-primary fond-bold");
     			toggle_class(td0, "text-success", /*site*/ ctx[26].accepted || false);
     			toggle_class(td0, "text-error", !/*site*/ ctx[26].accepted || false);
-    			add_location(td0, file$3, 100, 14, 2748);
+    			add_location(td0, file$3, 103, 14, 2830);
     			attr_dev(td1, "class", "text-primary fond-bold");
-    			add_location(td1, file$3, 106, 14, 3009);
-    			add_location(td2, file$3, 107, 14, 3075);
-    			add_location(tr, file$3, 99, 12, 2729);
+    			add_location(td1, file$3, 109, 14, 3091);
+    			add_location(td2, file$3, 110, 14, 3157);
+    			add_location(tr, file$3, 102, 12, 2811);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, tr, anchor);
@@ -10168,14 +10168,14 @@ zoo`.split('\n');
     		block,
     		id: create_each_block_1.name,
     		type: "each",
-    		source: "(99:10) {#each reverseArray(currentSite.history) as site, i}",
+    		source: "(102:10) {#each reverseArray(currentSite.history) as site, i}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (284:2) {#each notifications as toast}
+    // (287:2) {#each notifications as toast}
     function create_each_block(ctx) {
     	let div;
     	let span;
@@ -10190,9 +10190,9 @@ zoo`.split('\n');
     			t0 = text(t0_value);
     			t1 = space();
     			attr_dev(span, "class", "flex flex-row space-x-4");
-    			add_location(span, file$3, 285, 6, 9939);
+    			add_location(span, file$3, 288, 6, 10021);
     			attr_dev(div, "class", "alert alert-white bordered border-1 border-gray-300");
-    			add_location(div, file$3, 284, 4, 9867);
+    			add_location(div, file$3, 287, 4, 9949);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -10212,7 +10212,7 @@ zoo`.split('\n');
     		block,
     		id: create_each_block.name,
     		type: "each",
-    		source: "(284:2) {#each notifications as toast}",
+    		source: "(287:2) {#each notifications as toast}",
     		ctx
     	});
 
@@ -10272,19 +10272,19 @@ zoo`.split('\n');
 
     			attr_dev(button0, "class", "tab tab-bordered w-1/3");
     			toggle_class(button0, "tab-active", /*currentTab*/ ctx[4] === 0);
-    			add_location(button0, file$3, 44, 2, 1241);
+    			add_location(button0, file$3, 47, 2, 1323);
     			attr_dev(button1, "class", "tab tab-bordered w-1/3");
     			toggle_class(button1, "tab-active", /*currentTab*/ ctx[4] === 1);
-    			add_location(button1, file$3, 49, 2, 1384);
+    			add_location(button1, file$3, 52, 2, 1466);
     			attr_dev(button2, "class", "tab tab-bordered w-1/3");
     			toggle_class(button2, "tab-active", /*currentTab*/ ctx[4] === 2);
-    			add_location(button2, file$3, 54, 2, 1527);
+    			add_location(button2, file$3, 57, 2, 1609);
     			attr_dev(div0, "class", "tabs w-full");
-    			add_location(div0, file$3, 43, 0, 1213);
+    			add_location(div0, file$3, 46, 0, 1295);
     			attr_dev(div1, "class", "w-full");
-    			add_location(div1, file$3, 61, 0, 1676);
+    			add_location(div1, file$3, 64, 0, 1758);
     			attr_dev(div2, "class", "toast toast-center opacity-50");
-    			add_location(div2, file$3, 282, 0, 9786);
+    			add_location(div2, file$3, 285, 0, 9868);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -10453,6 +10453,10 @@ zoo`.split('\n');
 
     	loadWebSites().then(() => {
     		$$invalidate(5, currentSite = $webSites[domainToUrl(_currentTab.url)]);
+
+    		if (currentSite === undefined) {
+    			$$invalidate(5, currentSite = { history: [] });
+    		}
     	});
 
     	const writable_props = [];
