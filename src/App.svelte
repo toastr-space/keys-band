@@ -62,7 +62,10 @@
       <div class="w-6/12 p-4 pl-2 pt-2">
         <!-- profile name and subtitle (nip05) -->
         <div class="text-2xl font-bold">
-          {$userProfile?.name || getPublicKey($keyStore).substr(0, 16)}
+          <!-- manage long name -->
+          {$userProfile?.name?.length > 12
+            ? $userProfile?.name.substr(0, 12) + "..."
+            : $userProfile?.name || getPublicKey($keyStore).substr(0, 16)}
         </div>
         <div class="text-sm text-secondary text-gray-500">
           {$userProfile?.nip05 || ""}
@@ -177,6 +180,15 @@
     </div>
   </div>
 {/if}
+
+<div
+  class="absolute bottom-0 left-0 w-full text-center text-gray-500 font-sans pb-1"
+>
+  Built with ❤️ by the <a
+    href="https://toastr.space"
+    class="link link-hover text-secondary">toastr.space</a
+  > team
+</div>
 
 <style>
   /* .center-btn {

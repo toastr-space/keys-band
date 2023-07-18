@@ -169,13 +169,13 @@
     </div>
     <div class="w-full flex flex-col justify-center items-center p-10 pt-0">
       <button
-        class="w-full btn btn-success bg-green-100 border border-2 border-gray-700"
+        class="w-full btn btn-success mb-2"
         on:click={() => accept(true, new Date())}
       >
         Accept
       </button>
       <button
-        class="w-full btn btn-error bg-red-200 border border-2 border-gray-700 mt-2"
+        class="w-full btn btn-error mb-2"
         on:click={() => accept(false, new Date())}
       >
         Reject
@@ -183,7 +183,7 @@
 
       {#if !isPopup}
         <button
-          class="w-full btn btn-error bg-gray-400 border border-2 border-gray-700 mt-2"
+          class="w-full btn btn-base-300 bg-gray-700"
           on:click={() => cancel()}
         >
           Cancel

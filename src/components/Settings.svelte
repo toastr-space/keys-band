@@ -104,7 +104,7 @@
                   </td>
                   <td class="flex space-x-2">
                     <button
-                      class="btn btn-xs h-8"
+                      class="btn btn-xs h-8 rounded-2"
                       class:btn-primary={notif.state == false}
                       class:btn-seconday={notif.state == true}
                       on:click={() => updateNotification(notif.name)}
@@ -121,7 +121,7 @@
       <hr />
       <center>
         <button
-          class="btn btn-base-100 bg-base-100 bordered border-2 border-base-200 my-8 mr-auto mx-4"
+          class="btn btn-secondary bordered border-2 border-base-200 my-8"
           on:click={async () => {
             await logout();
             showNotification("logged out");

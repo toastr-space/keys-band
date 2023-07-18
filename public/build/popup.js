@@ -9600,10 +9600,10 @@ zoo`.split('\n');
     			add_location(div5, file, 160, 6, 5384);
     			attr_dev(div6, "class", "w-full p-4 pt-2 flex flex-row flex-wrap justify-center space-x-2");
     			add_location(div6, file, 125, 4, 4072);
-    			attr_dev(button0, "class", "w-full btn btn-success bg-green-100 border border-2 border-gray-700");
+    			attr_dev(button0, "class", "w-full btn btn-success mb-2");
     			add_location(button0, file, 168, 6, 5716);
-    			attr_dev(button1, "class", "w-full btn btn-error bg-red-200 border border-2 border-gray-700 mt-2");
-    			add_location(button1, file, 174, 6, 5903);
+    			attr_dev(button1, "class", "w-full btn btn-error mb-2");
+    			add_location(button1, file, 174, 6, 5863);
     			attr_dev(div7, "class", "w-full flex flex-col justify-center items-center p-10 pt-0");
     			add_location(div7, file, 167, 4, 5637);
     			binding_group.p(input0, input1, input2, input3, input4, input5);
@@ -9848,8 +9848,8 @@ zoo`.split('\n');
     		c: function create() {
     			button = element("button");
     			button.textContent = "Cancel";
-    			attr_dev(button, "class", "w-full btn btn-error bg-gray-400 border border-2 border-gray-700 mt-2");
-    			add_location(button, file, 182, 8, 6116);
+    			attr_dev(button, "class", "w-full btn btn-base-300 bg-gray-700");
+    			add_location(button, file, 182, 8, 6033);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -9891,9 +9891,9 @@ zoo`.split('\n');
     			code = element("code");
     			t = text(t_value);
     			attr_dev(code, "class", "prose break-words p-4");
-    			add_location(code, file, 192, 10, 6403);
+    			add_location(code, file, 192, 10, 6286);
     			attr_dev(div, "class", "mockup-code justify-center mt-4 w-11/12 mx-2");
-    			add_location(div, file, 191, 8, 6334);
+    			add_location(div, file, 191, 8, 6217);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
