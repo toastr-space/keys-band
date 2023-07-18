@@ -9325,6 +9325,23 @@ zoo`.split('\n');
     const userProfile = writable({});
     let webSites = writable();
     let relays = writable([]);
+    let theme = writable("light");
+    async function loadTheme() {
+        return new Promise((resolve) => {
+            web.storage.local.get("theme", (value) => {
+                if (value.theme) {
+                    theme.set(value.theme);
+                    document.documentElement.setAttribute("data-theme", value.theme);
+                }
+                else {
+                    web.storage.local.set({ theme: "light" });
+                    theme.set("light");
+                    document.documentElement.setAttribute("data-theme", "light");
+                }
+                resolve();
+            });
+        });
+    }
     function loadKeyInfo() {
         return new Promise(async (resolve) => {
             await Promise.all([getProfile(), loadWebSites(), loadRelays()]);
@@ -10304,13 +10321,19 @@ zoo`.split('\n');
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('Popup', slots, []);
     	let parameter = new URLSearchParams(document.location.search);
+    	loadTheme();
     	const writable_props = [];
 
     	Object.keys($$props).forEach(key => {
     		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<Popup> was created with unknown prop '${key}'`);
     	});
 
-    	$$self.$capture_state = () => ({ domainToUrl, Authorization, parameter });
+    	$$self.$capture_state = () => ({
+    		domainToUrl,
+    		loadTheme,
+    		Authorization,
+    		parameter
+    	});
 
     	$$self.$inject_state = $$props => {
     		if ('parameter' in $$props) $$invalidate(0, parameter = $$props.parameter);
