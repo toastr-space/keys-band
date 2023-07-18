@@ -14791,6 +14791,7 @@ zoo`.split('\n');
     			add_location(h1, file$1, 54, 4, 1575);
     			if (!src_url_equal(img.src, img_src_value = /*qrcodeUrl*/ ctx[3])) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "qrcode");
+    			attr_dev(img, "width", "132");
     			add_location(img, file$1, 58, 14, 1727);
     			add_location(center, file$1, 58, 6, 1719);
     			attr_dev(div0, "class", "w-full");
@@ -14912,7 +14913,7 @@ zoo`.split('\n');
     			button = element("button");
     			button.textContent = "Authorize now";
     			attr_dev(button, "class", "btn rounded-full ml-20 text-center align-center justify-center item-center badge border-1 border-gray-300 px-5 py-3");
-    			add_location(button, file$1, 161, 6, 5175);
+    			add_location(button, file$1, 161, 6, 5187);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -14991,13 +14992,13 @@ zoo`.split('\n');
     			if_block.c();
     			if_block_anchor = empty();
     			attr_dev(div0, "class", "stat-title");
-    			add_location(div0, file$1, 63, 10, 1886);
+    			add_location(div0, file$1, 63, 10, 1898);
     			attr_dev(div1, "class", "stat-value");
-    			add_location(div1, file$1, 64, 10, 1940);
+    			add_location(div1, file$1, 64, 10, 1952);
     			attr_dev(div2, "class", "stat");
-    			add_location(div2, file$1, 62, 8, 1857);
+    			add_location(div2, file$1, 62, 8, 1869);
     			attr_dev(div3, "class", "stats shadow");
-    			add_location(div3, file$1, 61, 6, 1822);
+    			add_location(div3, file$1, 61, 6, 1834);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div3, anchor);
@@ -15063,12 +15064,12 @@ zoo`.split('\n');
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Authorize now";
-    			add_location(span, file$1, 151, 10, 4920);
+    			add_location(span, file$1, 151, 10, 4932);
     			attr_dev(button, "class", "btn btn-sm");
-    			add_location(button, file$1, 153, 12, 4978);
-    			add_location(div0, file$1, 152, 10, 4960);
+    			add_location(button, file$1, 153, 12, 4990);
+    			add_location(div0, file$1, 152, 10, 4972);
     			attr_dev(div1, "class", "alert alert-error");
-    			add_location(div1, file$1, 150, 8, 4878);
+    			add_location(div1, file$1, 150, 8, 4890);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -15120,12 +15121,12 @@ zoo`.split('\n');
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Update";
-    			add_location(span, file$1, 139, 10, 4599);
+    			add_location(span, file$1, 139, 10, 4611);
     			attr_dev(button, "class", "btn btn-sm");
-    			add_location(button, file$1, 141, 12, 4663);
-    			add_location(div0, file$1, 140, 10, 4645);
+    			add_location(button, file$1, 141, 12, 4675);
+    			add_location(div0, file$1, 140, 10, 4657);
     			attr_dev(div1, "class", "alert alert-warning");
-    			add_location(div1, file$1, 138, 8, 4555);
+    			add_location(div1, file$1, 138, 8, 4567);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -15183,12 +15184,12 @@ zoo`.split('\n');
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Update";
-    			add_location(span, file$1, 123, 10, 4041);
+    			add_location(span, file$1, 123, 10, 4053);
     			attr_dev(button, "class", "btn btn-sm");
-    			add_location(button, file$1, 129, 12, 4239);
-    			add_location(div0, file$1, 128, 10, 4221);
+    			add_location(button, file$1, 129, 12, 4251);
+    			add_location(div0, file$1, 128, 10, 4233);
     			attr_dev(div1, "class", "alert alert-error");
-    			add_location(div1, file$1, 122, 8, 3999);
+    			add_location(div1, file$1, 122, 8, 4011);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -15249,12 +15250,12 @@ zoo`.split('\n');
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Update";
-    			add_location(span, file$1, 107, 10, 3502);
+    			add_location(span, file$1, 107, 10, 3514);
     			attr_dev(button, "class", "btn btn-sm");
-    			add_location(button, file$1, 113, 12, 3683);
-    			add_location(div0, file$1, 112, 10, 3665);
+    			add_location(button, file$1, 113, 12, 3695);
+    			add_location(div0, file$1, 112, 10, 3677);
     			attr_dev(div1, "class", "alert alert-warning");
-    			add_location(div1, file$1, 106, 8, 3458);
+    			add_location(div1, file$1, 106, 8, 3470);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -15310,12 +15311,12 @@ zoo`.split('\n');
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Update";
-    			add_location(span, file$1, 95, 10, 3078);
+    			add_location(span, file$1, 95, 10, 3090);
     			attr_dev(button, "class", "btn btn-sm");
-    			add_location(button, file$1, 97, 12, 3142);
-    			add_location(div0, file$1, 96, 10, 3124);
+    			add_location(button, file$1, 97, 12, 3154);
+    			add_location(div0, file$1, 96, 10, 3136);
     			attr_dev(div1, "class", "alert alert-error");
-    			add_location(div1, file$1, 94, 8, 3036);
+    			add_location(div1, file$1, 94, 8, 3048);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -15368,12 +15369,12 @@ zoo`.split('\n');
     			button = element("button");
     			button.textContent = "Update";
     			attr_dev(span, "class", "text-lg text-white font-sans");
-    			add_location(span, file$1, 83, 10, 2657);
+    			add_location(span, file$1, 83, 10, 2669);
     			attr_dev(button, "class", "btn btn-sm px-4");
-    			add_location(button, file$1, 85, 12, 2753);
-    			add_location(div0, file$1, 84, 10, 2735);
+    			add_location(button, file$1, 85, 12, 2765);
+    			add_location(div0, file$1, 84, 10, 2747);
     			attr_dev(div1, "class", "alert alert-error shadow-xl");
-    			add_location(div1, file$1, 82, 8, 2605);
+    			add_location(div1, file$1, 82, 8, 2617);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -15426,12 +15427,12 @@ zoo`.split('\n');
     			button = element("button");
     			button.textContent = "Update";
     			attr_dev(span, "class", "text-lg text-white font-sans");
-    			add_location(span, file$1, 71, 10, 2211);
+    			add_location(span, file$1, 71, 10, 2223);
     			attr_dev(button, "class", "btn btn-sm px-4");
-    			add_location(button, file$1, 73, 12, 2309);
-    			add_location(div0, file$1, 72, 10, 2291);
+    			add_location(button, file$1, 73, 12, 2321);
+    			add_location(div0, file$1, 72, 10, 2303);
     			attr_dev(div1, "class", "alert alert-success shadow-xl");
-    			add_location(div1, file$1, 70, 8, 2157);
+    			add_location(div1, file$1, 70, 8, 2169);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);

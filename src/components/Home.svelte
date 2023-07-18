@@ -60,7 +60,7 @@
       {domainToUrl(currentTab.url)}
     </h1>
     <div class="w-full">
-      <center><img src={qrcodeUrl} alt="qrcode" /></center>
+      <center><img src={qrcodeUrl} alt="qrcode" width="132" /></center>
     </div>
     {#if webSite.auth === true}
       <div class="stats shadow">
