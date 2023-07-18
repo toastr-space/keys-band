@@ -68,7 +68,7 @@
           {$userProfile?.nip05 || ""}
         </div>
       </div>
-      <div class="w-4/12 p-4 pt-2">
+      <div class="w-4/12 py-4 pt-2 pl-8">
         <!-- cog icon button -->
         <button
           class="btn btn-ghost btn-circle"
