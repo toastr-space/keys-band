@@ -9024,6 +9024,10 @@ zoo`.split('\n');
             };
             _webSites[domain] = site;
             await web.storage.local.set({ webSites: _webSites });
+            await addHistory({
+                acceptance: duration.accept,
+                type: type,
+            }, domain);
             return true;
         }
     }
@@ -9170,10 +9174,6 @@ zoo`.split('\n');
                 }
                 await updatePermission(message.response.permission, site, responderData.domain, responderData.type);
                 if (message.response.error) {
-                    addHistory({
-                        acceptance: false,
-                        type: responderData.type,
-                    }, domain);
                     responderData.resolve({
                         id: message.requestId,
                         type: responderData.type,
@@ -9188,12 +9188,6 @@ zoo`.split('\n');
                     web.windows.remove(sender.tab.windowId);
                     delete responders[message.requestId];
                     return;
-                }
-                else {
-                    addHistory({
-                        acceptance: true,
-                        type: responderData.type,
-                    }, domain);
                 }
                 let res = await makeResponse(responderData.type, responderData.data);
                 responderData.resolve({

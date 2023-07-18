@@ -71,8 +71,9 @@
           });
           st["history"] = array;
           site[domain] = st;
-          webSites.set(site);
+          _webSites[domain] = st;
           await web.storage.local.set({ webSites: site });
+          await loadWebSites();
         } else {
           let site = $webSites;
           if (site === undefined || site === null) {
@@ -98,6 +99,7 @@
 
           site[domain] = st;
           await web.storage.local.set({ webSites: site });
+          await loadWebSites();
         }
 
         cancel();

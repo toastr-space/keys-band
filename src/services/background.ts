@@ -88,6 +88,14 @@ async function updatePermission(
 
     await web.storage.local.set({ webSites: _webSites });
 
+    await addHistory(
+      {
+        acceptance: duration.accept,
+        type: type,
+      },
+      domain
+    );
+
     return true;
   }
 }
@@ -248,14 +256,6 @@ async function manageResult(message, sender) {
       );
 
       if (message.response.error) {
-        addHistory(
-          {
-            acceptance: false,
-            type: responderData.type,
-          },
-          domain
-        );
-
         responderData.resolve({
           id: message.requestId,
           type: responderData.type,
@@ -270,14 +270,6 @@ async function manageResult(message, sender) {
         web.windows.remove(sender.tab.windowId);
         delete responders[message.requestId];
         return;
-      } else {
-        addHistory(
-          {
-            acceptance: true,
-            type: responderData.type,
-          },
-          domain
-        );
       }
 
       let res = await makeResponse(
