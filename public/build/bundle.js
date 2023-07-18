@@ -15899,7 +15899,7 @@ zoo`.split('\n');
     			add_location(button0, file, 64, 8, 2112);
     			attr_dev(button1, "class", "btn btn-ghost btn-circle");
     			add_location(button1, file, 94, 8, 3632);
-    			attr_dev(div6, "class", "w-4/12 py-4 pt-2 pl-8");
+    			attr_dev(div6, "class", "w-4/12 py-4 pt-2 pl-7");
     			add_location(div6, file, 62, 6, 2035);
     			attr_dev(div7, "class", "w-full h-16 bg-base-100 flex shadow-sm");
     			add_location(div7, file, 35, 4, 1096);
