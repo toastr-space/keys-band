@@ -8775,6 +8775,33 @@ zoo`.split('\n');
     function domainToUrl(url) {
         return url.split("/")[2];
     }
+    const defaultWebNotificationSettings = [
+        {
+            name: "signEvent",
+            description: "Sign Event",
+            state: false,
+        },
+        {
+            name: "permission",
+            description: "Authentifcation",
+            state: false,
+        },
+        {
+            name: "nip04",
+            description: "Message",
+            state: false,
+        },
+        {
+            name: "getPublicKey",
+            description: "Get Public Key",
+            state: false,
+        },
+        {
+            name: "getRelays",
+            description: "Get Relays",
+            state: false,
+        },
+    ];
 
     function noop() { }
     function safe_not_equal(a, b) {
@@ -8867,6 +8894,30 @@ zoo`.split('\n');
     const userProfile = writable({});
     let webSites = writable();
     let relays = writable([]);
+    let webNotifications = writable([]);
+    // html theme change <html data-theme="cupcake"></html>
+    async function loadNotifications() {
+        return new Promise((resolve) => {
+            web.storage.local.get("notificationsSettings", (value) => {
+                if (value.notificationsSettings) {
+                    webNotifications.set(value.notificationsSettings);
+                }
+                else {
+                    web.storage.local.set({
+                        notificationsSettings: defaultWebNotificationSettings,
+                    });
+                    webNotifications.set(defaultWebNotificationSettings);
+                }
+                resolve();
+            });
+        });
+    }
+    function loadKeyInfo() {
+        return new Promise(async (resolve) => {
+            await Promise.all([getProfile(), loadWebSites(), loadRelays()]);
+            resolve();
+        });
+    }
     async function loadRelays() {
         return new Promise((resolve) => {
             web.storage.local.get("relays", (value) => {
@@ -8880,9 +8931,7 @@ zoo`.split('\n');
             web.storage.local.get("privateKey", (value) => {
                 keyStore.set(value.privateKey);
                 resolve(value.privateKey);
-                getProfile();
-                loadWebSites();
-                loadRelays();
+                loadKeyInfo();
             });
         });
     }
@@ -8909,9 +8958,6 @@ zoo`.split('\n');
             const profile = JSON.parse(event.content);
             userProfile.set(profile);
             web.storage.local.set({ profile: profile });
-        })
-            .catch((err) => {
-            //alert(err);
         });
         return new Promise((resolve) => {
             web.storage.local.get("profile", (value) => {
@@ -8923,6 +8969,20 @@ zoo`.split('\n');
 
     web.runtime.onInstalled.addListener(function (details) {
         loadPrivateKey();
+        web.tabs.query({}, async (tabs) => {
+            for (let tab of tabs) {
+                try {
+                    await web.scripting.executeScript({
+                        target: { tabId: tab.id },
+                        files: ["build/content.js"],
+                    });
+                    console.log("Injected Nostr Provider");
+                }
+                catch (e) {
+                    console.log("Error injecting Nostr Provider", e);
+                }
+            }
+        });
     });
     web.runtime.onStartup.addListener(() => {
         loadPrivateKey();
@@ -8950,12 +9010,6 @@ zoo`.split('\n');
                 accept: duration.accept,
                 reject: duration.reject,
             };
-            site.history.push({
-                accepted: duration.accept,
-                type: type,
-                data: data,
-                created_at: new Date().toString(),
-            });
             _webSites[domain] = site;
             await web.storage.local.set({ webSites: _webSites });
             return true;
@@ -8968,12 +9022,6 @@ zoo`.split('\n');
                 reject: duration.reject,
                 authorizationStop: duration.duration,
             };
-            site.history.push({
-                accepted: duration.accept,
-                type: type,
-                data: data,
-                created_at: new Date().toString(),
-            });
             _webSites[domain] = site;
             await web.storage.local.set({ webSites: _webSites });
             return true;
@@ -9026,8 +9074,64 @@ zoo`.split('\n');
             default:
                 res = null;
         }
-        console.log(res);
         return res;
+    }
+    async function showNotification(type, accepted) {
+        await loadNotifications();
+        let _notifications = get_store_value(webNotifications);
+        _notifications.forEach((notification) => {
+            if (type.indexOf(notification.name) !== -1 && notification.state === true) {
+                web.notifications.create({
+                    type: "basic",
+                    iconUrl: "https://toastr.space/images/toastr/body.png",
+                    title: type + " permission requested",
+                    message: "Permission " + (accepted ? "accepted" : "rejected") + " for " + type,
+                    priority: 0,
+                });
+            }
+        });
+    }
+    async function addHistory(info, domain) {
+        await showNotification(info.type, info.acceptance);
+        let _webSites = await loadWebSites();
+        if (_webSites === undefined || _webSites === null) {
+            _webSites = {};
+        }
+        if (Object.keys(_webSites).indexOf(domain) !== -1) {
+            let site = _webSites[domain];
+            if (site === undefined || site === null) {
+                site = {};
+            }
+            let array = site.history || [];
+            array.push({
+                accepted: info.acceptance,
+                type: info.type,
+                created_at: new Date().toString(),
+                data: undefined,
+            });
+            site["history"] = array;
+            _webSites[domain] = site;
+            await web.storage.local.set({ webSites: _webSites });
+        }
+        else {
+            let site = {
+                auth: false,
+                permission: {
+                    always: false,
+                    accept: true,
+                    reject: false,
+                },
+                history: [
+                    {
+                        accepted: info.acceptance,
+                        type: info.type,
+                        created_at: new Date().toString(),
+                    },
+                ],
+            };
+            _webSites[domain] = site;
+            await web.storage.local.set({ webSites: _webSites });
+        }
     }
     async function manageResult(message, sender) {
         if (message.response !== undefined && message.response !== null) {
@@ -9062,24 +9166,14 @@ zoo`.split('\n');
                     };
                 }
                 else {
-                    site = get_store_value(webSites)[domain];
+                    site = _webSites[domain];
                 }
                 await updatePermission(message.response.permission, site, responderData.domain, responderData.type);
                 if (message.response.error) {
-                    // update history
-                    let _webSites = get_store_value(webSites);
-                    let st = _webSites[domainToUrl(message.url)];
-                    let array = st.history || [];
-                    array.push({
-                        accepted: false,
-                        type: message.type,
-                        data: message.params,
-                        created_at: new Date().toString(),
-                    });
-                    st.history = array;
-                    _webSites[domainToUrl(message.url)] = st;
-                    await web.storage.local.set({ webSites: _webSites });
-                    await loadWebSites();
+                    addHistory({
+                        acceptance: false,
+                        type: responderData.type,
+                    }, domain);
                     responderData.resolve({
                         id: message.requestId,
                         type: responderData.type,
@@ -9094,6 +9188,12 @@ zoo`.split('\n');
                     web.windows.remove(sender.tab.windowId);
                     delete responders[message.requestId];
                     return;
+                }
+                else {
+                    addHistory({
+                        acceptance: true,
+                        type: responderData.type,
+                    }, domain);
                 }
                 let res = await makeResponse(responderData.type, responderData.data);
                 responderData.resolve({
@@ -9141,20 +9241,10 @@ zoo`.split('\n');
                         site.permission.always !== undefined)) {
                     if (site.permission.accept && site.permission.always) {
                         let res = await makeResponse(message.type, message.params.event || message.params, domainToUrl(message.url));
-                        // update history
-                        let _webSites = get_store_value(webSites);
-                        let st = _webSites[domainToUrl(message.url)];
-                        let array = st.history || [];
-                        array.push({
-                            accepted: true,
+                        addHistory({
+                            acceptance: true,
                             type: message.type,
-                            data: message.params,
-                            created_at: new Date().toString(),
-                        });
-                        st.history = array;
-                        _webSites[domainToUrl(message.url)] = st;
-                        await web.storage.local.set({ webSites: _webSites });
-                        await loadWebSites();
+                        }, domainToUrl(message.url));
                         resolved = true;
                         resolve({
                             id: message.id,
@@ -9167,20 +9257,10 @@ zoo`.split('\n');
                     else if (site.permission.accept && !site.permission.always) {
                         if (new Date(site.permission.authorizationStop) > new Date()) {
                             let res = await makeResponse(message.type, message.params.event || message.params, domainToUrl(message.url));
-                            // update history
-                            let _webSites = get_store_value(webSites);
-                            let st = _webSites[domainToUrl(message.url)];
-                            let array = st.history || [];
-                            array.push({
-                                accepted: true,
+                            addHistory({
+                                acceptance: true,
                                 type: message.type,
-                                data: message.params.event || message.params,
-                                created_at: new Date().toString(),
-                            });
-                            st.history = array;
-                            _webSites[domainToUrl(message.url)] = st;
-                            await web.storage.local.set({ webSites: _webSites });
-                            await loadWebSites();
+                            }, domainToUrl(message.url));
                             resolved = true;
                             resolve({
                                 id: message.id,
@@ -9201,20 +9281,10 @@ zoo`.split('\n');
                             }
                             else {
                                 resolved = true;
-                                // update history
-                                let _webSites = get_store_value(webSites);
-                                let st = _webSites[domainToUrl(message.url)];
-                                let array = st.history || [];
-                                array.push({
-                                    accepted: false,
+                                addHistory({
+                                    acceptance: false,
                                     type: message.type,
-                                    data: message.params,
-                                    created_at: new Date().toString(),
-                                });
-                                st.history = array;
-                                _webSites[domainToUrl(message.url)] = st;
-                                await web.storage.local.set({ webSites: _webSites });
-                                await loadWebSites();
+                                }, domainToUrl(message.url));
                                 resolve({
                                     id: message.id,
                                     type: message.type,

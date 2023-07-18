@@ -95,17 +95,20 @@ window.addEventListener("message", (message) => {
 });
 
 // hack to replace nostr:nprofile.../etc links with something else
-let replacing = null;
-document.addEventListener("mousedown", replaceNostrSchemeLink);
-async function replaceNostrSchemeLink(e) {
-  if (e.target.tagName !== "A" || !e.target.href.startsWith("nostr:")) return;
-  if (replacing === false) return;
+if (typeof replacing !== "undefined") {
+  document.addEventListener("mousedown", replaceNostrSchemeLink);
+  async function replaceNostrSchemeLink(e) {
+    if (e.target.tagName !== "A" || !e.target.href.startsWith("nostr:")) return;
+    if (replacing === false) return;
 
-  let response = await window.nostr._call("replaceURL", { url: e.target.href });
-  if (response === false) {
-    replacing = false;
-    return;
+    let response = await window.nostr._call("replaceURL", {
+      url: e.target.href,
+    });
+    if (response === false) {
+      replacing = false;
+      return;
+    }
+
+    e.target.href = response;
   }
-
-  e.target.href = response;
 }

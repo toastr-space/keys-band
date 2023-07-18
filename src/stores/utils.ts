@@ -48,13 +48,30 @@ export function remainingTime(datetime) {
   return _hours + ":" + _minutes + ":" + _seconds + "";
 }
 
-// add minute or hours or days to a date and
-export function updateDate(days: number, hours: number, minute: number) {
-  let now = new Date();
-  now.setDate(now.getDate() + days);
-  now.setHours(now.getHours() + hours);
-  now.setMinutes(now.getMinutes() + minute);
-  return now;
+export function getDuration(choice: number): Date {
+  let duration = new Date();
+  switch (choice) {
+    case 0:
+      return new Date();
+    case 1:
+      return new Date(duration.getTime() + 100 * 365 * 24 * 60 * 60 * 1000);
+    case 2:
+      return new Date(duration.getTime() + 5 * 60 * 1000);
+    case 3:
+      return new Date(duration.getTime() + 60 * 60 * 1000);
+    case 4:
+      return new Date(duration.getTime() + 5 * 60 * 60 * 1000);
+    case 5:
+      return new Date(duration.getTime() + 5 * 24 * 60 * 60 * 1000);
+  }
+}
+
+export function reverseArray(arr) {
+  var newArray = [];
+  for (var i = arr.length - 1; i >= 0; i--) {
+    newArray.push(arr[i]);
+  }
+  return newArray;
 }
 
 export function timeAgo(date) {
@@ -76,3 +93,31 @@ export function timeAgo(date) {
   }
   return "now";
 }
+
+export const defaultWebNotificationSettings = [
+  {
+    name: "signEvent",
+    description: "Sign Event",
+    state: false,
+  },
+  {
+    name: "permission",
+    description: "Authentifcation",
+    state: false,
+  },
+  {
+    name: "nip04",
+    description: "Message",
+    state: false,
+  },
+  {
+    name: "getPublicKey",
+    description: "Get Public Key",
+    state: false,
+  },
+  {
+    name: "getRelays",
+    description: "Get Relays",
+    state: false,
+  },
+];

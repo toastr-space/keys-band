@@ -14,11 +14,13 @@ function getBrowser() {
 
 let web = getBrowser();
 
-let script = document.createElement("script");
-script.setAttribute("async", "false");
-script.setAttribute("type", "text/javascript");
-script.setAttribute("src", web.runtime.getURL("build/nostr-provider.js"));
-document.head.appendChild(script);
+if (window["nostr"] === undefined) {
+  let script = document.createElement("script");
+  script.setAttribute("async", "false");
+  script.setAttribute("type", "text/javascript");
+  script.setAttribute("src", web.runtime.getURL("build/nostr-provider.js"));
+  document.head.appendChild(script);
+}
 
 window.addEventListener("message", (event) => {
   if (event.source !== window) return;

@@ -1,17 +1,25 @@
 {
   "manifest_version": 3,
-  "name": "Nos2x Svelte - Remake",
+  "name": "Keys.Band",
   "version": "1.0",
-  "description": "This is nos2x remake with svelte",
+  "description": "Nostr Nip07 implementation",
   "action": {
     "default_popup": "index.html"
+  },
+  "icons": {
+    "16": "assets/logo.png",
+    "32": "assets/logo.png",
+    "48": "assets/logo.png",
+    "128": "assets/logo.png"
   },
   "background": {
     "service_worker": "build/background.js"
   },
   "permissions": [
+    "notifications",
     "storage",
     "activeTab",
+    "scripting",
     "tabs",
     "nativeMessaging"
   ],

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { domainToUrl, web } from "../stores/utils";
+  import { domainToUrl, getDuration, web } from "../stores/utils";
   import { loadPrivateKey, loadWebSites, webSites } from "../stores/key-store";
   import { createEventDispatcher } from "svelte";
   let login = false;
@@ -24,24 +24,6 @@
 
   let choice: number = 0;
 
-  function getDuration() {
-    let duration = new Date();
-    switch (choice) {
-      case 0:
-        return new Date();
-      case 1:
-        return new Date(duration.getTime() + 100 * 365 * 24 * 60 * 60 * 1000);
-      case 2:
-        return new Date(duration.getTime() + 5 * 60 * 1000);
-      case 3:
-        return new Date(duration.getTime() + 60 * 60 * 1000);
-      case 4:
-        return new Date(duration.getTime() + 5 * 60 * 60 * 1000);
-      case 5:
-        return new Date(duration.getTime() + 5 * 24 * 60 * 60 * 1000);
-    }
-  }
-
   function accept(accept: boolean, duration: Date = new Date()) {
     if (isPopup) {
       loadPrivateKey().then(() => {
@@ -52,7 +34,7 @@
             error: accept ? false : true,
             permission: {
               always: choice === 1,
-              duration: getDuration(),
+              duration: getDuration(choice),
               accept: accept,
               reject: !accept,
             },
@@ -76,7 +58,7 @@
           let st = site[domain];
           st.permission = {
             always: choice === 1,
-            authorizationStop: getDuration().toString(),
+            authorizationStop: getDuration(choice).toString(),
             accept: accept,
             reject: !accept,
           };
@@ -108,7 +90,7 @@
             ],
             permission: {
               always: choice === 1,
-              authorizationStop: getDuration().toString(),
+              authorizationStop: getDuration(choice).toString(),
               accept: accept,
               reject: !accept,
             },

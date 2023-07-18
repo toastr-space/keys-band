@@ -2,21 +2,44 @@
   import {
     keyStore,
     loadPrivateKey,
+    loadTheme,
     userProfile,
     addKey,
+    theme,
+    switchTheme,
   } from "./stores/key-store";
 
   import Settings from "./components/Settings.svelte";
   import Home from "./components/Home.svelte";
+  import { getPublicKey } from "nostr-tools";
 
   enum Page {
     Home,
     Settings,
   }
-  let currentPage = Page.Home;
+  let currentPage: Page = Page.Home;
   let _keyStore = "";
 
+  function registerKeyStore(value: string): void {
+    addKey(value)
+      .then((_) => {
+        loadPrivateKey();
+        const i = setInterval(() => {
+          if ($userProfile?.name !== "") {
+            clearInterval(i);
+            currentPage = Page.Home;
+          } else {
+            loadPrivateKey();
+          }
+        }, 100);
+      })
+      .catch((err) => {
+        alert(err);
+      });
+  }
+
   loadPrivateKey();
+  loadTheme();
 </script>
 
 {#if $keyStore !== "" && $keyStore !== undefined}
@@ -29,23 +52,54 @@
           >
             <img
               loading="lazy"
-              src={$userProfile.picture || "https://picsum.photos/200"}
+              src={$userProfile?.picture ||
+                "https://toastr.space/images/toastr.png"}
               alt=""
             />
           </div>
         </div>
       </div>
-      <div class="w-8/12 p-4 pl-2 pt-2">
+      <div class="w-6/12 p-4 pl-2 pt-2">
         <!-- profile name and subtitle (nip05) -->
         <div class="text-2xl font-bold">
-          {$userProfile.name || ""}
+          {$userProfile?.name || getPublicKey($keyStore).substr(0, 16)}
         </div>
         <div class="text-sm text-secondary text-gray-500">
-          {$userProfile.nip05 || "-"}
+          {$userProfile?.nip05 || ""}
         </div>
       </div>
-      <div class="w-2/12 p-4 pt-2">
+      <div class="w-4/12 p-4 pt-2">
         <!-- cog icon button -->
+        <button
+          class="btn btn-ghost btn-circle"
+          on:click={() => {
+            switchTheme();
+          }}
+        >
+          {#if $theme !== "dark"}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 256 256"
+              ><path
+                fill="currentColor"
+                d="M235.54 150.21a104.84 104.84 0 0 1-37 52.91A104 104 0 0 1 32 120a103.09 103.09 0 0 1 20.88-62.52a104.84 104.84 0 0 1 52.91-37a8 8 0 0 1 10 10a88.08 88.08 0 0 0 109.8 109.8a8 8 0 0 1 10 10Z"
+              /></svg
+            >
+          {:else}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 256 256"
+              ><path
+                fill="currentColor"
+                d="M120 40V16a8 8 0 0 1 16 0v24a8 8 0 0 1-16 0Zm72 88a64 64 0 1 1-64-64a64.07 64.07 0 0 1 64 64Zm-16 0a48 48 0 1 0-48 48a48.05 48.05 0 0 0 48-48ZM58.34 69.66a8 8 0 0 0 11.32-11.32l-16-16a8 8 0 0 0-11.32 11.32Zm0 116.68l-16 16a8 8 0 0 0 11.32 11.32l16-16a8 8 0 0 0-11.32-11.32ZM192 72a8 8 0 0 0 5.66-2.34l16-16a8 8 0 0 0-11.32-11.32l-16 16A8 8 0 0 0 192 72Zm5.66 114.34a8 8 0 0 0-11.32 11.32l16 16a8 8 0 0 0 11.32-11.32ZM48 128a8 8 0 0 0-8-8H16a8 8 0 0 0 0 16h24a8 8 0 0 0 8-8Zm80 80a8 8 0 0 0-8 8v24a8 8 0 0 0 16 0v-24a8 8 0 0 0-8-8Zm112-88h-24a8 8 0 0 0 0 16h24a8 8 0 0 0 0-16Z"
+              /></svg
+            >
+          {/if}
+        </button>
         <button
           class="btn btn-ghost btn-circle"
           on:click={() => {
@@ -115,7 +169,7 @@
       <button
         class="btn btn-primary w-full mt-4"
         on:click={() => {
-          addKey(_keyStore);
+          registerKeyStore(_keyStore);
         }}
       >
         Login

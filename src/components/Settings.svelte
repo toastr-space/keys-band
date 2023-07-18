@@ -4,11 +4,15 @@
     getProfile,
     keyStore,
     loadWebSites,
+    logout,
     relays,
+    webNotifications,
+    loadNotifications,
+    updateNotification,
     userProfile,
     webSites,
   } from "src/stores/key-store";
-  import { domainToUrl, timeAgo, web } from "src/stores/utils";
+  import { domainToUrl, reverseArray, timeAgo, web } from "src/stores/utils";
 
   let notifications = [];
   enum EchoMode {
@@ -41,20 +45,13 @@
 
   let currentSite = { history: [] };
 
-  function reverseArray(arr) {
-    var newArray = [];
-    for (var i = arr.length - 1; i >= 0; i--) {
-      newArray.push(arr[i]);
-    }
-    return newArray;
-  }
-
   loadWebSites().then(() => {
     currentSite = $webSites[domainToUrl(_currentTab.url)];
     if (currentSite === undefined) {
       currentSite = { history: [] };
     }
   });
+  loadNotifications();
 </script>
 
 <!-- tabs -->
@@ -81,25 +78,58 @@
   {#if currentTab === 0}
     <div class="w-full">
       <!-- logout button -->
-      <button
-        class="btn btn-base-100 bg-base-100 bordered border-2 border-base-200 my-8 mr-auto mx-4"
-        on:click={() => {
-          keyStore.set("");
-          web.storage.local.set({
-            privateKey: "",
-            userProfile: {},
-            relays: [],
-            webSites: {},
-          });
-          webSites.set({});
-          relays.set([]);
-          userProfile.set({});
-          relays.set([]);
-          showNotification("logged out");
-        }}
-      >
-        logout
-      </button>
+      <div class="p-4 w-full flex flex-row flex-wrap space-x-2">
+        <span class="w-full pb-1 pl-2 font-sans font-bold">Notifications</span>
+        <div class="overflow-x-auto w-full">
+          <table class="table table-zebra">
+            <!-- head -->
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th class="text-center w-16">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- row 1 -->
+              {#each $webNotifications as notif}
+                <tr>
+                  <td
+                    >{notif.name}
+                    <span
+                      class="badge badge-sm"
+                      class:badge-error={notif.state == false}
+                      class:badge-success={notif.state == true}
+                      >{notif ? "enabled" : "disabled"}</span
+                    >
+                  </td>
+                  <td class="flex space-x-2">
+                    <button
+                      class="btn btn-xs h-8"
+                      class:btn-primary={notif.state == false}
+                      class:btn-seconday={notif.state == true}
+                      on:click={() => updateNotification(notif.name)}
+                    >
+                      {notif.state ? "Disable" : "Enable"}
+                    </button>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <hr />
+      <center>
+        <button
+          class="btn btn-base-100 bg-base-100 bordered border-2 border-base-200 my-8 mr-auto mx-4"
+          on:click={async () => {
+            await logout();
+            showNotification("logged out");
+          }}
+        >
+          logout
+        </button>
+      </center>
       <hr />
     </div>
   {:else if currentTab === 1}
@@ -108,7 +138,7 @@
       <table class="table table-zebra w-full">
         <thead>
           <tr>
-            <th class="text-primary fond-bold">Status</th>
+            <th class="fond-bold">Status</th>
             <th>Type</th>
             <th>Time</th>
           </tr>
@@ -122,7 +152,7 @@
                 class:text-error={!site.accepted || false}
                 >{site.accepted || false ? "Yes" : "No"}</td
               >
-              <td class="text-primary fond-bold">{site.type}</td>
+              <td class="text-secondary fond-bold">{site.type}</td>
               <td>{timeAgo(new Date(site.created_at))}</td>
             </tr>
           {/each}
@@ -200,7 +230,7 @@
             <thead>
               <tr>
                 <th>Relay</th>
-                <th width="80" class="text-center">Actions</th>
+                <th class="text-center w-16">Actions</th>
               </tr>
             </thead>
             <tbody>

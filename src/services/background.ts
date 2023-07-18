@@ -7,12 +7,27 @@ import {
   keyStore,
   loadWebSites,
   loadRelays,
+  loadNotifications,
+  webNotifications,
 } from "src/stores/key-store";
 import { get } from "svelte/store";
 import { escape } from "svelte/internal";
 
 web.runtime.onInstalled.addListener(function (details) {
   loadPrivateKey();
+  web.tabs.query({}, async (tabs) => {
+    for (let tab of tabs) {
+      try {
+        await web.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["build/content.js"],
+        });
+        console.log("Injected Nostr Provider");
+      } catch (e) {
+        console.log("Error injecting Nostr Provider", e);
+      }
+    }
+  });
 });
 
 web.runtime.onStartup.addListener(() => {
@@ -56,13 +71,6 @@ async function updatePermission(
       reject: duration.reject,
     };
 
-    site.history.push({
-      accepted: duration.accept,
-      type: type,
-      data: data,
-      created_at: new Date().toString(),
-    });
-
     _webSites[domain] = site;
 
     await web.storage.local.set({ webSites: _webSites });
@@ -76,13 +84,6 @@ async function updatePermission(
       authorizationStop: duration.duration,
     };
 
-    site.history.push({
-      accepted: duration.accept,
-      type: type,
-      data: data,
-      created_at: new Date().toString(),
-    });
-
     _webSites[domain] = site;
 
     await web.storage.local.set({ webSites: _webSites });
@@ -91,7 +92,7 @@ async function updatePermission(
   }
 }
 
-async function makeResponse(type: string, data, domain: string) {
+async function makeResponse(type: string, data: any, domain: string) {
   await loadPrivateKey();
   let res;
   switch (type) {
@@ -136,8 +137,70 @@ async function makeResponse(type: string, data, domain: string) {
     default:
       res = null;
   }
-  console.log(res);
   return res;
+}
+
+async function showNotification(type: string, accepted) {
+  await loadNotifications();
+  let _notifications = get(webNotifications);
+  _notifications.forEach((notification) => {
+    if (type.indexOf(notification.name) !== -1 && notification.state === true) {
+      web.notifications.create({
+        type: "basic",
+        iconUrl: "https://toastr.space/images/toastr/body.png",
+        title: type + " permission requested",
+        message:
+          "Permission " + (accepted ? "accepted" : "rejected") + " for " + type,
+        priority: 0,
+      });
+    }
+  });
+}
+
+async function addHistory(
+  info: { acceptance: boolean; type: string },
+  domain: string
+) {
+  await showNotification(info.type, info.acceptance);
+  let _webSites = await loadWebSites();
+  if (_webSites === undefined || _webSites === null) {
+    _webSites = {};
+  }
+  if (Object.keys(_webSites).indexOf(domain) !== -1) {
+    let site = _webSites[domain];
+    if (site === undefined || site === null) {
+      site = {};
+    }
+    let array = site.history || [];
+    array.push({
+      accepted: info.acceptance,
+      type: info.type,
+      created_at: new Date().toString(),
+      data: undefined,
+    });
+    site["history"] = array;
+    _webSites[domain] = site;
+    await web.storage.local.set({ webSites: _webSites });
+  } else {
+    let site = {
+      auth: false,
+      permission: {
+        always: false,
+        accept: true,
+        reject: false,
+      },
+      history: [
+        {
+          accepted: info.acceptance,
+          type: info.type,
+          created_at: new Date().toString(),
+        },
+      ],
+    };
+
+    _webSites[domain] = site;
+    await web.storage.local.set({ webSites: _webSites });
+  }
 }
 
 async function manageResult(message, sender) {
@@ -146,7 +209,7 @@ async function manageResult(message, sender) {
       let responderData = responders[message.requestId];
       const domain = responderData.domain;
       let _webSites = get(webSites);
-      let site;
+      let site: WebSite;
       if (_webSites === undefined || _webSites === null) {
         site = {
           auth: false,
@@ -160,10 +223,9 @@ async function manageResult(message, sender) {
 
         _webSites = {
           [domain]: site,
-        }
+        };
       }
 
-      
       if (Object.keys(_webSites).indexOf(domain) === -1) {
         site = {
           auth: false,
@@ -175,7 +237,7 @@ async function manageResult(message, sender) {
           history: [],
         };
       } else {
-        site = get(webSites)[domain];
+        site = _webSites[domain];
       }
 
       await updatePermission(
@@ -186,20 +248,13 @@ async function manageResult(message, sender) {
       );
 
       if (message.response.error) {
-        // update history
-        let _webSites = get(webSites);
-        let st = _webSites[domainToUrl(message.url)];
-        let array = st.history || [];
-        array.push({
-          accepted: false,
-          type: message.type,
-          data: message.params,
-          created_at: new Date().toString(),
-        });
-        st.history = array;
-        _webSites[domainToUrl(message.url)] = st;
-        await web.storage.local.set({ webSites: _webSites });
-        await loadWebSites();
+        addHistory(
+          {
+            acceptance: false,
+            type: responderData.type,
+          },
+          domain
+        );
 
         responderData.resolve({
           id: message.requestId,
@@ -215,6 +270,14 @@ async function manageResult(message, sender) {
         web.windows.remove(sender.tab.windowId);
         delete responders[message.requestId];
         return;
+      } else {
+        addHistory(
+          {
+            acceptance: true,
+            type: responderData.type,
+          },
+          domain
+        );
       }
 
       let res = await makeResponse(
@@ -276,20 +339,14 @@ async function manageRequest(message, sendResponse) {
             message.params.event || message.params,
             domainToUrl(message.url)
           );
-          // update history
-          let _webSites = get(webSites);
-          let st = _webSites[domainToUrl(message.url)];
-          let array = st.history || [];
-          array.push({
-            accepted: true,
-            type: message.type,
-            data: message.params,
-            created_at: new Date().toString(),
-          });
-          st.history = array;
-          _webSites[domainToUrl(message.url)] = st;
-          await web.storage.local.set({ webSites: _webSites });
-          await loadWebSites();
+
+          addHistory(
+            {
+              acceptance: true,
+              type: message.type,
+            },
+            domainToUrl(message.url)
+          );
 
           resolved = true;
           resolve({
@@ -307,20 +364,13 @@ async function manageRequest(message, sendResponse) {
               domainToUrl(message.url)
             );
 
-            // update history
-            let _webSites = get(webSites);
-            let st = _webSites[domainToUrl(message.url)];
-            let array = st.history || [];
-            array.push({
-              accepted: true,
-              type: message.type,
-              data: message.params.event || message.params,
-              created_at: new Date().toString(),
-            });
-            st.history = array;
-            _webSites[domainToUrl(message.url)] = st;
-            await web.storage.local.set({ webSites: _webSites });
-            await loadWebSites();
+            addHistory(
+              {
+                acceptance: true,
+                type: message.type,
+              },
+              domainToUrl(message.url)
+            );
 
             resolved = true;
             resolve({
@@ -343,20 +393,13 @@ async function manageRequest(message, sendResponse) {
             } else {
               resolved = true;
 
-              // update history
-              let _webSites = get(webSites);
-              let st = _webSites[domainToUrl(message.url)];
-              let array = st.history || [];
-              array.push({
-                accepted: false,
-                type: message.type,
-                data: message.params,
-                created_at: new Date().toString(),
-              });
-              st.history = array;
-              _webSites[domainToUrl(message.url)] = st;
-              await web.storage.local.set({ webSites: _webSites });
-              await loadWebSites();
+              addHistory(
+                {
+                  acceptance: false,
+                  type: message.type,
+                },
+                domainToUrl(message.url)
+              );
 
               resolve({
                 id: message.id,

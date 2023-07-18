@@ -7,8 +7,6 @@
   web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     var activeTab = tabs[0];
     currentTab = activeTab;
-    var activeTabUrl = activeTab.url;
-    console.log(activeTabUrl);
   });
   let webSite = {
     auth: false,
@@ -85,9 +83,7 @@
         </div>
       {:else if new Date(webSite.permission.authorizationStop) < new Date()}
         <div class="alert alert-error">
-          <span
-            >Authorization expired.</span
-          >
+          <span>Authorization expired.</span>
           <div>
             <button
               class="btn btn-sm"
