@@ -1,7 +1,9 @@
 <script lang="ts">
   import { web, domainToUrl, remainingTime } from "src/stores/utils";
-  import { loadWebSites, webSites } from "src/stores/key-store";
+  import QRCode from "qrcode";
+  import { keyStore, loadWebSites, webSites } from "src/stores/key-store";
   import Authorization from "./Authorization.svelte";
+  import { getPublicKey } from "nostr-tools";
 
   let currentTab = { url: "" };
   web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -28,6 +30,15 @@
     if (Object.keys(_webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
       webSite = _webSites[domainToUrl(currentTab.url)];
   });
+  let qrcodeUrl: string = "";
+  QRCode.toDataURL(getPublicKey($keyStore))
+    .then((url) => {
+      console.log(url);
+      qrcodeUrl = url;
+    })
+    .catch((err) => {
+      console.error(err);
+    });
 </script>
 
 {#if showAuthorization}
@@ -48,6 +59,9 @@
     <h1 class="text-center text-2xl text-primary font-bold font-sans">
       {domainToUrl(currentTab.url)}
     </h1>
+    <div class="w-full">
+      <center><img src={qrcodeUrl} alt="qrcode" /></center>
+    </div>
     {#if webSite.auth === true}
       <div class="stats shadow">
         <div class="stat">
