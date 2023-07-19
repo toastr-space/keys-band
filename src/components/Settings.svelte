@@ -149,12 +149,12 @@
           {#each reverseArray(currentSite.history) as site, i}
             <tr>
               <td
-                class="text-primary fond-bold"
+                class="text fond-bold"
                 class:text-accent={site.accepted || false}
                 class:text-secondary={!site.accepted || false}
                 >{site.accepted || false ? "Yes" : "No"}</td
               >
-              <td class="text-neutral-content fond-bold">{site.type}</td>
+              <td class="text fond-bold">{site.type}</td>
               <td>{timeAgo(new Date(site.created_at))}</td>
             </tr>
           {/each}
