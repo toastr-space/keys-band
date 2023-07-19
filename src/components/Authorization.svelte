@@ -112,8 +112,8 @@
   {#if login}
     <p class="w-full text-center p-10 pt-4 pb-6">
       <span class="text-center text-xl prose prose-lg">
-        <span class="text-blue-400 font-sans font-italic italic"
-          >"{domain}"
+        <span class="text-primary-content font-sans font-italic italic"
+          >{domain}
         </span>
         <br />
         <span class="badge p-4 mt-2 badge-secondary">
@@ -169,23 +169,20 @@
     </div>
     <div class="w-full flex flex-col justify-center items-center p-10 pt-0">
       <button
-        class="w-full btn btn-success mb-2"
+        class="w-full btn btn-accent mb-2"
         on:click={() => accept(true, new Date())}
       >
         Accept
       </button>
       <button
-        class="w-full btn btn-error mb-2"
+        class="w-full btn btn-secondary mb-2"
         on:click={() => accept(false, new Date())}
       >
         Reject
       </button>
 
       {#if !isPopup}
-        <button
-          class="w-full btn btn-base-300 bg-gray-700"
-          on:click={() => cancel()}
-        >
+        <button class="w-full btn btn-neutral" on:click={() => cancel()}>
           Cancel
         </button>
       {/if}

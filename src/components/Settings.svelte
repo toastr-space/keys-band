@@ -14,6 +14,9 @@
   } from "src/stores/key-store";
   import { domainToUrl, reverseArray, timeAgo, web } from "src/stores/utils";
 
+  const hexPubKey = getPublicKey($keyStore);
+  const nPubKey = nip19.npubEncode(hexPubKey);
+
   let notifications = [];
   enum EchoMode {
     Password,
@@ -97,16 +100,16 @@
                     >{notif.name}
                     <span
                       class="badge badge-sm"
-                      class:badge-error={notif.state == false}
-                      class:badge-success={notif.state == true}
+                      class:badge-secondary={notif.state == false}
+                      class:badge-accent={notif.state == true}
                       >{notif ? "enabled" : "disabled"}</span
                     >
                   </td>
                   <td class="flex space-x-2">
                     <button
                       class="btn btn-xs h-8 rounded-2"
-                      class:btn-primary={notif.state == false}
-                      class:btn-seconday={notif.state == true}
+                      class:btn-accent={notif.state == false}
+                      class:btn-secondary={notif.state == true}
                       on:click={() => updateNotification(notif.name)}
                     >
                       {notif.state ? "Disable" : "Enable"}
@@ -130,7 +133,6 @@
           logout
         </button>
       </center>
-      <hr />
     </div>
   {:else if currentTab === 1}
     <div class="w-full">
@@ -148,11 +150,11 @@
             <tr>
               <td
                 class="text-primary fond-bold"
-                class:text-success={site.accepted || false}
-                class:text-error={!site.accepted || false}
+                class:text-accent={site.accepted || false}
+                class:text-secondary={!site.accepted || false}
                 >{site.accepted || false ? "Yes" : "No"}</td
               >
-              <td class="text-secondary fond-bold">{site.type}</td>
+              <td class="text-neutral-content fond-bold">{site.type}</td>
               <td>{timeAgo(new Date(site.created_at))}</td>
             </tr>
           {/each}
@@ -199,7 +201,77 @@
           class="btn w-2/12 p-2"
           on:click={() => {
             navigator.clipboard.writeText(nip19.nsecEncode($keyStore));
-            showNotification("copied to clipboard");
+            showNotification("nsec copied to clipboard");
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            ><g
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="1.5"
+              ><path
+                d="M20.998 10c-.012-2.175-.108-3.353-.877-4.121C19.243 5 17.828 5 15 5h-3c-2.828 0-4.243 0-5.121.879C6 6.757 6 8.172 6 11v5c0 2.828 0 4.243.879 5.121C7.757 22 9.172 22 12 22h3c2.828 0 4.243 0 5.121-.879C21 20.243 21 18.828 21 16v-1"
+              /><path
+                d="M3 10v6a3 3 0 0 0 3 3M18 5a3 3 0 0 0-3-3h-4C7.229 2 5.343 2 4.172 3.172C3.518 3.825 3.229 4.7 3.102 6"
+              /></g
+            ></svg
+          >
+        </button>
+      </div>
+      <div class="p-4 w-full flex flex-row flex-wrap space-x-2">
+        <span class="w-full pb-1 pl-2 font-sans font-bold"
+          >Public Key (Hex)</span
+        >
+        <input
+          type={"text"}
+          value={hexPubKey}
+          class="input input-bordered w-9/12"
+        />
+        <button
+          class="btn w-2/12 p-2"
+          on:click={() => {
+            navigator.clipboard.writeText(hexPubKey);
+            showNotification("hex public key copied to clipboard");
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            ><g
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="1.5"
+              ><path
+                d="M20.998 10c-.012-2.175-.108-3.353-.877-4.121C19.243 5 17.828 5 15 5h-3c-2.828 0-4.243 0-5.121.879C6 6.757 6 8.172 6 11v5c0 2.828 0 4.243.879 5.121C7.757 22 9.172 22 12 22h3c2.828 0 4.243 0 5.121-.879C21 20.243 21 18.828 21 16v-1"
+              /><path
+                d="M3 10v6a3 3 0 0 0 3 3M18 5a3 3 0 0 0-3-3h-4C7.229 2 5.343 2 4.172 3.172C3.518 3.825 3.229 4.7 3.102 6"
+              /></g
+            ></svg
+          >
+        </button>
+      </div>
+      <div class="p-4 w-full flex flex-row flex-wrap space-x-2">
+        <span class="w-full pb-1 pl-2 font-sans font-bold"
+          >Public Key (npub)</span
+        >
+        <input
+          type={"text"}
+          value={nPubKey}
+          class="input input-bordered w-9/12"
+        />
+        <button
+          class="btn w-2/12 p-2"
+          on:click={() => {
+            navigator.clipboard.writeText(nPubKey);
+            showNotification("npub copied to clipboard");
           }}
         >
           <svg

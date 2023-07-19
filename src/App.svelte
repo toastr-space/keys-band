@@ -181,23 +181,7 @@
   </div>
 {/if}
 
-<div
-  class="absolute bottom-0 left-0 w-full text-center text-gray-500 font-sans pb-1"
->
-  Built with ❤️ by the <a
-    href="https://toastr.space"
-    class="link link-hover text-secondary">toastr.space</a
-  > team
-</div>
-
 <style>
-  /* .center-btn {
-    position: absolute;
-    top: 50%;
-    left: 30%;
-    right: 30%;
-    transform: translate(0%, -50%);
-  } */
   .fixed-width {
     width: 400px;
     max-width: 400px;

@@ -3,7 +3,8 @@
   import QRCode from "qrcode";
   import { keyStore, loadWebSites, webSites } from "src/stores/key-store";
   import Authorization from "./Authorization.svelte";
-  import { getPublicKey } from "nostr-tools";
+  import { getPublicKey, nip19 } from "nostr-tools";
+  import AuthAlert from "./AuthAlert.svelte";
 
   let currentTab = { url: "" };
   web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -30,15 +31,15 @@
     if (Object.keys(_webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
       webSite = _webSites[domainToUrl(currentTab.url)];
   });
-  let qrcodeUrl: string = "";
-  QRCode.toDataURL(getPublicKey($keyStore))
-    .then((url) => {
-      console.log(url);
-      qrcodeUrl = url;
-    })
-    .catch((err) => {
-      console.error(err);
-    });
+  // let qrcodeUrl: string = "";
+  // QRCode.toDataURL(getPublicKey($keyStore))
+  //   .then((url) => {
+  //     console.log(url);
+  //     qrcodeUrl = url;
+  //   })
+  //   .catch((err) => {
+  //     console.error(err);
+  //   });
 </script>
 
 {#if showAuthorization}
@@ -56,111 +57,81 @@
   />
 {:else}
   <div class="w-full h-full flex flex-row flex-col p-10 pt-5 space-y-6">
-    <h1 class="text-center text-2xl text-primary font-bold font-sans">
+    <h1 class="text-center text-2xl font-bold font-sans">
       {domainToUrl(currentTab.url)}
     </h1>
-    <div class="w-full">
+    <!-- <div class="w-full">
       <center><img src={qrcodeUrl} alt="qrcode" width="132" /></center>
-    </div>
+    </div> -->
     {#if webSite.auth === true}
       <div class="stats shadow">
         <div class="stat">
-          <div class="stat-title">Total Request</div>
+          <div class="stat-title">Total Requests</div>
           <div class="stat-value">
             {webSite.history.length.toLocaleString()}
           </div>
         </div>
       </div>
       {#if webSite.permission.always === true && webSite.permission.accept === true}
-        <div class="alert alert-success shadow-xl">
-          <span class="text-lg text-white font-sans">Always authorized. </span>
-          <div>
-            <button
-              class="btn btn-sm px-4"
-              on:click={() => {
-                showAuthorization = true;
-              }}>Update</button
-            >
-          </div>
-        </div>
+        <AuthAlert
+          alertColor="accent"
+          message="Always authorized"
+          onButtonClick={() => {
+            showAuthorization = true;
+          }}
+        />
       {:else if webSite.permission.always === true && webSite.permission.reject === true}
-        <div class="alert alert-error shadow-xl">
-          <span class="text-lg text-white font-sans">Always rejected. </span>
-          <div>
-            <button
-              class="btn btn-sm px-4"
-              on:click={() => {
-                showAuthorization = true;
-              }}>Update</button
-            >
-          </div>
-        </div>
+        <AuthAlert
+          alertColor="secondary"
+          message="Always rejected"
+          onButtonClick={() => {
+            showAuthorization = true;
+          }}
+        />
       {:else if new Date(webSite.permission.authorizationStop) < new Date()}
-        <div class="alert alert-error">
-          <span>Authorization expired.</span>
-          <div>
-            <button
-              class="btn btn-sm"
-              on:click={() => {
-                showAuthorization = true;
-              }}>Update</button
-            >
-          </div>
-        </div>
+        <AuthAlert
+          alertColor="secondary"
+          message="Authorization expired"
+          onButtonClick={() => {
+            showAuthorization = true;
+          }}
+        />
       {:else if new Date(webSite.permission.authorizationStop) > new Date() && webSite.permission.accept === true}
-        <div class="alert alert-warning">
-          <span
-            >Authorization expire in {remainingTime(
-              new Date(webSite.permission.authorizationStop)
-            )}</span
-          >
-          <div>
-            <button
-              class="btn btn-sm"
-              on:click={() => {
-                showAuthorization = true;
-              }}>Update</button
-            >
-          </div>
-        </div>
+        <AuthAlert
+          alertColor="accent"
+          message={`Authorization expires in ${remainingTime(
+            new Date(webSite.permission.authorizationStop)
+          )}`}
+          onButtonClick={() => {
+            showAuthorization = true;
+          }}
+        />
       {:else if new Date(webSite.permission.authorizationStop) > new Date() && webSite.permission.reject === true}
-        <div class="alert alert-error">
-          <span
-            >Authorization rejected (time remaining {remainingTime(
-              new Date(webSite.permission.authorizationStop)
-            )}).</span
-          >
-          <div>
-            <button
-              class="btn btn-sm"
-              on:click={() => {
-                showAuthorization = true;
-              }}>Update</button
-            >
-          </div>
-        </div>
+        <AuthAlert
+          alertColor="secondary"
+          message={`Authorization rejected (time remaining ${remainingTime(
+            new Date(webSite.permission.authorizationStop)
+          )})`}
+          onButtonClick={() => {
+            showAuthorization = true;
+          }}
+        />
       {:else if new Date(webSite.permission.authorizationStop) < new Date() && webSite.permission.accept === true}
-        <div class="alert alert-warning">
-          <span>Authorization expired.</span>
-          <div>
-            <button
-              class="btn btn-sm"
-              on:click={() => {
-                showAuthorization = true;
-              }}>Update</button
-            >
-          </div>
-        </div>
+        <AuthAlert
+          alertColor="secondary"
+          message="Authorization expired"
+          onButtonClick={() => {
+            showAuthorization = true;
+          }}
+        />
       {:else}
-        <div class="alert alert-error">
-          <span>No authorization</span>
-          <div>
-            <button
-              class="btn btn-sm"
-              on:click={() => (showAuthorization = true)}>Authorize now</button
-            >
-          </div>
-        </div>
+        <AuthAlert
+          alertColor="secondary"
+          message="Not authorized"
+          onButtonClick={() => {
+            showAuthorization = true;
+          }}
+        />
       {/if}
     {:else}
       <button
@@ -172,6 +143,15 @@
         Authorize now
       </button>
     {/if}
-    <!-- {JSON.stringify($webSites)} -->
   </div>
 {/if}
+
+<div
+  class="absolute bottom-0 left-0 w-full text-center text-gray-500 font-sans pb-1"
+>
+  Built with ❤️ by the <a
+    href="https://toastr.space"
+    target="_blank"
+    class="link link-hover text-secondary">toastr.space</a
+  > team
+</div>
