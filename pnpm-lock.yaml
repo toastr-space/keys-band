@@ -17,6 +17,9 @@ dependencies:
   daisyui:
     specifier: ^3.1.6
     version: 3.1.6(postcss@8.4.24)(ts-node@10.9.1)
+  dotenv:
+    specifier: ^16.3.1
+    version: 16.3.1
   postcss:
     specifier: ^8.4.24
     version: 8.4.24
@@ -763,6 +766,11 @@ packages:
       dom-serializer: 1.4.1
       domelementtype: 2.3.0
       domhandler: 4.3.1
+    dev: false
+
+  /dotenv@16.3.1:
+    resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
+    engines: {node: '>=12'}
     dev: false
 
   /electron-to-chromium@1.4.440:

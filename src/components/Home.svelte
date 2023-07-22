@@ -1,10 +1,9 @@
 <script lang="ts">
   import { web, domainToUrl, remainingTime } from "src/stores/utils";
-  import QRCode from "qrcode";
-  import { keyStore, loadWebSites, webSites } from "src/stores/key-store";
+  import { loadWebSites, webSites } from "src/stores/key-store";
   import Authorization from "./Authorization.svelte";
-  import { getPublicKey, nip19 } from "nostr-tools";
   import AuthAlert from "./AuthAlert.svelte";
+  import Footer from "./Footer.svelte";
 
   let currentTab = { url: "" };
   web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -31,15 +30,6 @@
     if (Object.keys(_webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
       webSite = _webSites[domainToUrl(currentTab.url)];
   });
-  // let qrcodeUrl: string = "";
-  // QRCode.toDataURL(getPublicKey($keyStore))
-  //   .then((url) => {
-  //     console.log(url);
-  //     qrcodeUrl = url;
-  //   })
-  //   .catch((err) => {
-  //     console.error(err);
-  //   });
 </script>
 
 {#if showAuthorization}
@@ -60,18 +50,22 @@
     <h1 class="text-center text-2xl font-bold font-sans">
       {domainToUrl(currentTab.url)}
     </h1>
-    <!-- <div class="w-full">
-      <center><img src={qrcodeUrl} alt="qrcode" width="132" /></center>
-    </div> -->
     {#if webSite.auth === true}
-      <div class="stats shadow">
+      <div class="stats shadow-sm bg-base-200">
         <div class="stat">
-          <div class="stat-title">Total Requests</div>
+          <div class="stat-title text-center">Total Requests</div>
           <div class="stat-value">
-            {webSite.history.length.toLocaleString()}
+            <center>
+              <span class="countdown font-mono text-6xl">
+                <span
+                  style="--value: {webSite.history.length.toLocaleString()};"
+                />
+              </span>
+            </center>
           </div>
         </div>
       </div>
+
       {#if webSite.permission.always === true && webSite.permission.accept === true}
         <AuthAlert
           alertColor="accent"
@@ -146,12 +140,4 @@
   </div>
 {/if}
 
-<div
-  class="absolute bottom-0 left-0 w-full text-center text-gray-500 font-sans pb-1"
->
-  Built with ❤️ by the <a
-    href="https://toastr.space"
-    target="_blank"
-    class="link link-hover text-secondary">toastr.space</a
-  > team
-</div>
+<Footer />

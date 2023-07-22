@@ -121,3 +121,20 @@ export const defaultWebNotificationSettings = [
     state: false,
   },
 ];
+
+export function tr(name: string) {
+  switch (name) {
+    case "signEvent":
+      return "Sign Event";
+    case "permission":
+      return "Get Permission";
+    case "nip04":
+      return "Message Encryption/Decription";
+    case "getPublicKey":
+      return "Get Public Key";
+    case "getRelays":
+      return "Get Relays";
+    default:
+      return name;
+  }
+}

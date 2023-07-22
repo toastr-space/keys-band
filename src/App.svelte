@@ -7,15 +7,20 @@
     addKey,
     theme,
     switchTheme,
+    logout,
   } from "./stores/key-store";
 
   import Settings from "./components/Settings.svelte";
   import Home from "./components/Home.svelte";
   import { getPublicKey } from "nostr-tools";
+  import QrCode from "./components/QrCode.svelte";
+  import About from "./components/About.svelte";
 
   enum Page {
     Home,
     Settings,
+    QrCode,
+    About,
   }
   let currentPage: Page = Page.Home;
   let _keyStore = "";
@@ -82,8 +87,8 @@
           {#if $theme !== "dark"}
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
+              width="21"
+              height="21"
               viewBox="0 0 256 256"
               ><path
                 fill="currentColor"
@@ -103,30 +108,13 @@
             >
           {/if}
         </button>
-        <button
-          class="btn btn-ghost btn-circle"
-          on:click={() => {
-            if (currentPage === Page.Home) {
-              currentPage = Page.Settings;
-            } else {
+        {#if currentPage !== Page.Home}
+          <button
+            class="btn btn-ghost btn-circle"
+            on:click={() => {
               currentPage = Page.Home;
-            }
-          }}
-        >
-          {#if currentPage === Page.Home}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              ><g fill="none" stroke="currentColor" stroke-width="1.5"
-                ><circle cx="12" cy="12" r="3" /><path
-                  stroke-linecap="round"
-                  d="M3.661 10.64c.473.296.777.802.777 1.36s-.304 1.064-.777 1.36c-.321.203-.529.364-.676.556a2 2 0 0 0-.396 1.479c.052.394.285.798.75 1.605c.467.807.7 1.21 1.015 1.453a2 2 0 0 0 1.479.396c.24-.032.483-.13.819-.308a1.617 1.617 0 0 1 1.567.008c.483.28.77.795.79 1.353c.014.38.05.64.143.863a2 2 0 0 0 1.083 1.083C10.602 22 11.068 22 12 22c.932 0 1.398 0 1.765-.152a2 2 0 0 0 1.083-1.083c.092-.223.129-.483.143-.863c.02-.558.307-1.074.79-1.353a1.617 1.617 0 0 1 1.567-.008c.336.178.58.276.82.308a2 2 0 0 0 1.478-.396c.315-.242.548-.646 1.014-1.453c.208-.36.369-.639.489-.873m-.81-2.766a1.617 1.617 0 0 1-.777-1.36c0-.559.304-1.065.777-1.362c.321-.202.528-.363.676-.555a2 2 0 0 0 .396-1.479c-.052-.394-.285-.798-.75-1.605c-.467-.807-.7-1.21-1.015-1.453a2 2 0 0 0-1.479-.396c-.24.032-.483.13-.82.308a1.617 1.617 0 0 1-1.566-.008a1.617 1.617 0 0 1-.79-1.353c-.014-.38-.05-.64-.143-.863a2 2 0 0 0-1.083-1.083C13.398 2 12.932 2 12 2c-.932 0-1.398 0-1.765.152a2 2 0 0 0-1.083 1.083c-.092.223-.129.483-.143.863a1.617 1.617 0 0 1-.79 1.353a1.617 1.617 0 0 1-1.567.008c-.336-.178-.58-.276-.82-.308a2 2 0 0 0-1.478.396C4.04 5.79 3.806 6.193 3.34 7c-.208.36-.369.639-.489.873"
-                /></g
-              ></svg
-            >
-          {:else}
+            }}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -141,15 +129,67 @@
                 d="M12 12L7 7m5 5l5 5m-5-5l5-5m-5 5l-5 5"
               /></svg
             >
-          {/if}
-        </button>
+          </button>
+        {:else if currentPage === Page.Home}
+          <div class="dropdown dropdown-end">
+            <button tabindex="-1" class="btn btn-ghost btn-circle">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                ><path
+                  fill="currentColor"
+                  d="M12 20q-.825 0-1.413-.588T10 18q0-.825.588-1.413T12 16q.825 0 1.413.588T14 18q0 .825-.588 1.413T12 20Zm0-6q-.825 0-1.413-.588T10 12q0-.825.588-1.413T12 10q.825 0 1.413.588T14 12q0 .825-.588 1.413T12 14Zm0-6q-.825 0-1.413-.588T10 6q0-.825.588-1.413T12 4q.825 0 1.413.588T14 6q0 .825-.588 1.413T12 8Z"
+                /></svg
+              >
+            </button>
+            <ul
+              tabindex="-1"
+              class="dropdown-content shadow-xl bg-base-200 z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+            >
+              <li>
+                <button
+                  on:click={() => {
+                    currentPage = Page.Settings;
+                  }}>Settings</button
+                >
+              </li>
+              <li>
+                <button
+                  on:click={() => {
+                    currentPage = Page.QrCode;
+                  }}>QrCode</button
+                >
+              </li>
+              <li>
+                <button
+                  on:click={() => {
+                    currentPage = Page.About;
+                  }}>About</button
+                >
+              </li>
+              <li>
+                <button
+                  on:click={async () => {
+                    await logout();
+                  }}>Logout</button
+                >
+              </li>
+            </ul>
+          </div>
+        {/if}
       </div>
     </div>
     <div class="w-full h-full pt-2">
       {#if currentPage === Page.Home}
         <Home />
-      {:else}
+      {:else if currentPage === Page.Settings}
         <Settings />
+      {:else if currentPage === Page.QrCode}
+        <QrCode />
+      {:else if currentPage === Page.About}
+        <About />
       {/if}
     </div>
   </div>
