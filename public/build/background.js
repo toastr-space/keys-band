@@ -8895,7 +8895,6 @@ zoo`.split('\n');
     let webSites = writable();
     let relays = writable([]);
     let webNotifications = writable([]);
-    // html theme change <html data-theme="cupcake"></html>
     async function loadNotifications() {
         return new Promise((resolve) => {
             web.storage.local.get("notificationsSettings", (value) => {

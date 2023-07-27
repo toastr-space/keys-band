@@ -72,7 +72,7 @@
           st["history"] = array;
           site[domain] = st;
           _webSites[domain] = st;
-          await web.storage.local.set({ webSites: site });
+          await web.storage.local.set({ webSites: _webSites });
           await loadWebSites();
         } else {
           let site = $webSites;

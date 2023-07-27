@@ -230,10 +230,8 @@
           >Public Key (Hex)</span
         >
         <input
-          type={secretHexEchoMode === EchoMode.Password ? "password" : "text"}
+          type={"text"}
           value={hexPubKey}
-          on:focus={() => (secretHexEchoMode = EchoMode.Normal)}
-          on:blur={() => (secretHexEchoMode = EchoMode.Password)}
           class="input input-bordered w-9/12"
         />
         <button

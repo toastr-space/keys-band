@@ -38,18 +38,57 @@ export interface NotificationSetting {
   state: boolean;
 }
 
+export interface Profile {
+  name?: string;
+  data?: {
+    privateKey?: string;
+    webSites?: {};
+    relays?: Relay[];
+  };
+}
+
 const _relays = ["wss://relay.damus.io"];
 
 const pool = new SimplePool();
 
 export const keyStore: Writable<string> = writable("");
 export const userProfile: Writable<UserProfile> = writable({});
+export let profiles: Writable<Profile[]> = writable([]);
 export let webSites: Writable<{}> = writable();
 export let relays: Writable<Relay[]> = writable([]);
 export let theme: Writable<string> = writable("light");
 export let webNotifications: Writable<NotificationSetting[]> = writable([]);
 
-// html theme change <html data-theme="cupcake"></html>
+export async function loadProfiles(): Promise<void> {
+  return new Promise((resolve) => {
+    web.storage.local.get("profiles", (value) => {
+      if (value.profiles) {
+        profiles.set(value.profiles);
+      } else {
+        web.storage.local.set({ profiles: [] });
+        profiles.set([]);
+      }
+      resolve();
+    });
+  });
+}
+
+export async function saveProfiles(): Promise<void> {
+  return new Promise((resolve) => {
+    web.storage.local.set({ profiles: get(profiles) });
+    resolve();
+  });
+}
+
+export async function settingProfile(profile: Profile): Promise<void> {
+  return new Promise((resolve) => {
+    web.storage.local.set({ privateKey: profile.data.privateKey });
+    web.storage.local.set({ profileName: profile.name });
+    web.storage.local.set({ webSites: profile.data.webSites });
+    web.storage.local.set({ relays: profile.data.relays });
+    resolve();
+  });
+}
 
 export async function loadNotifications(): Promise<void> {
   return new Promise((resolve) => {
@@ -89,11 +128,11 @@ export async function switchTheme(): Promise<void> {
       if (value.theme === "light") {
         web.storage.local.set({ theme: "dark" });
         theme.set("dark");
-        document.documentElement.setAttribute("data-theme", "dark");
+        document.documentElement.setAttribute("data-theme", "black");
       } else {
         web.storage.local.set({ theme: "light" });
         theme.set("light");
-        document.documentElement.setAttribute("data-theme", "light");
+        document.documentElement.setAttribute("data-theme", "lofi");
       }
       resolve();
     });
@@ -105,11 +144,13 @@ export async function loadTheme(): Promise<void> {
     web.storage.local.get("theme", (value) => {
       if (value.theme) {
         theme.set(value.theme);
-        document.documentElement.setAttribute("data-theme", value.theme);
+        if (value.theme === "light") {
+          document.documentElement.setAttribute("data-theme", "lofi");
+        } else document.documentElement.setAttribute("data-theme", "black");
       } else {
         web.storage.local.set({ theme: "light" });
         theme.set("light");
-        document.documentElement.setAttribute("data-theme", "light");
+        document.documentElement.setAttribute("data-theme", "lofi");
       }
       resolve();
     });
@@ -186,9 +227,7 @@ export async function getProfile(): Promise<void> {
   });
 }
 
-export async function addKey(value: string): Promise<void> {
-  if (!value) return;
-
+export async function verifyKey(value: string): Promise<string> {
   return new Promise(async (resolve, reject) => {
     if (value.length < 63) {
       reject("Invalid key");
@@ -211,19 +250,62 @@ export async function addKey(value: string): Promise<void> {
       return;
     }
 
-    await registerPrivateKey(decodedValue);
-    resolve();
+    resolve(decodedValue);
+  });
+}
+
+export async function addKey(value: string): Promise<void> {
+  if (!value) return;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      let decodedValue = await verifyKey(value);
+
+      await registerPrivateKey(decodedValue);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 
 export async function logout(): Promise<void> {
-  relays.set([]);
-  keyStore.set("");
-  userProfile.set({});
-  webSites.set({});
-  return new Promise((resolve) => {
-    web.storage.local.clear(() => {
-      resolve();
+  return new Promise(async (resolve) => {
+    console.log("fethcing profileName");
+    let value = await web.storage.local.get("profileName");
+    await loadPrivateKey();
+    await loadKeyInfo();
+
+    let _webSites = await web.storage.local.get("webSites");
+    let _relays = await web.storage.local.get("relays");
+
+    console.log(get(webSites), get(relays), _webSites, _relays);
+    const _profiles = get(profiles);
+    const profile = {
+      name: value.profileName,
+      data: {
+        privateKey: get(keyStore),
+        webSites: get(webSites),
+        relays: get(relays),
+      },
+    };
+
+    console.log(profile);
+    // replace profile in profiles
+    const index = _profiles.findIndex((p) => p.name === value.profileName);
+    _profiles[index] = profile;
+    await web.storage.local.set({ profiles: _profiles });
+
+    console.log("not finding profileName");
+
+    relays.set([]);
+    keyStore.set("");
+    userProfile.set({});
+    webSites.set({});
+    return new Promise(async (resolve) => {
+      await web.storage.local.set({ privateKey: "" }, () => {
+        resolve();
+      });
     });
   });
 }

@@ -4,6 +4,7 @@
   import Authorization from "./Authorization.svelte";
   import AuthAlert from "./AuthAlert.svelte";
   import Footer from "./Footer.svelte";
+  import { tweened } from "svelte/motion";
 
   let currentTab = { url: "" };
   web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -21,6 +22,29 @@
     },
   };
 
+  let timerExpire = remainingTime(
+    new Date(webSite.permission.authorizationStop)
+  );
+  let splitedTimerExpire = timerExpire.split(":");
+
+  let hour = 0;
+  let minute = 0;
+  let second = 0;
+
+  $: authAlertMessage = `Authorization expires in`;
+
+  if (new Date(webSite.permission.authorizationStop) > new Date()) {
+    const i = setInterval(() => {
+      if (new Date(webSite.permission.authorizationStop) < new Date()) {
+        clearInterval(i);
+      } else {
+        timerExpire = remainingTime(
+          new Date(webSite.permission.authorizationStop)
+        );
+      }
+    }, 1000);
+  }
+
   let showAuthorization = false;
 
   loadWebSites().then((_webSites) => {
@@ -29,6 +53,13 @@
     }
     if (Object.keys(_webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
       webSite = _webSites[domainToUrl(currentTab.url)];
+
+    timerExpire = remainingTime(new Date(webSite.permission.authorizationStop));
+    const splitedTimerExpire = timerExpire.split(":");
+
+    hour = parseInt(splitedTimerExpire[0]);
+    minute = parseInt(splitedTimerExpire[1]);
+    second = parseInt(splitedTimerExpire[2]);
   });
 </script>
 
@@ -93,9 +124,11 @@
       {:else if new Date(webSite.permission.authorizationStop) > new Date() && webSite.permission.accept === true}
         <AuthAlert
           alertColor="accent"
-          message={`Authorization expires in ${remainingTime(
-            new Date(webSite.permission.authorizationStop)
-          )}`}
+          countdown={true}
+          {hour}
+          {minute}
+          {second}
+          message={authAlertMessage}
           onButtonClick={() => {
             showAuthorization = true;
           }}
@@ -103,9 +136,11 @@
       {:else if new Date(webSite.permission.authorizationStop) > new Date() && webSite.permission.reject === true}
         <AuthAlert
           alertColor="secondary"
-          message={`Authorization rejected (time remaining ${remainingTime(
-            new Date(webSite.permission.authorizationStop)
-          )})`}
+          countdown={true}
+          {hour}
+          {minute}
+          {second}
+          message={authAlertMessage}
           onButtonClick={() => {
             showAuthorization = true;
           }}

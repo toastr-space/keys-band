@@ -4,6 +4,13 @@ var app = (function () {
     'use strict';
 
     function noop() { }
+    const identity = x => x;
+    function assign(tar, src) {
+        // @ts-ignore
+        for (const k in src)
+            tar[k] = src[k];
+        return tar;
+    }
     function add_location(element, file, line, column, char) {
         element.__svelte_meta = {
             loc: { file, line, column, char }
@@ -54,6 +61,41 @@ var app = (function () {
     }
     function component_subscribe(component, store, callback) {
         component.$$.on_destroy.push(subscribe(store, callback));
+    }
+
+    const is_client = typeof window !== 'undefined';
+    let now = is_client
+        ? () => window.performance.now()
+        : () => Date.now();
+    let raf = is_client ? cb => requestAnimationFrame(cb) : noop;
+
+    const tasks = new Set();
+    function run_tasks(now) {
+        tasks.forEach(task => {
+            if (!task.c(now)) {
+                tasks.delete(task);
+                task.f();
+            }
+        });
+        if (tasks.size !== 0)
+            raf(run_tasks);
+    }
+    /**
+     * Creates a new task that runs on each raf frame
+     * until it returns a falsy value or is aborted
+     */
+    function loop(callback) {
+        let task;
+        if (tasks.size === 0)
+            raf(run_tasks);
+        return {
+            promise: new Promise(fulfill => {
+                tasks.add(task = { c: callback, f: fulfill });
+            }),
+            abort() {
+                tasks.delete(task);
+            }
+        };
     }
 
     const globals = (typeof window !== 'undefined'
@@ -9479,11 +9521,40 @@ zoo`.split('\n');
     const pool = new SimplePool();
     const keyStore = writable("");
     const userProfile = writable({});
+    let profiles = writable([]);
     let webSites = writable();
     let relays = writable([]);
     let theme = writable("light");
     let webNotifications = writable([]);
-    // html theme change <html data-theme="cupcake"></html>
+    async function loadProfiles() {
+        return new Promise((resolve) => {
+            web.storage.local.get("profiles", (value) => {
+                if (value.profiles) {
+                    profiles.set(value.profiles);
+                }
+                else {
+                    web.storage.local.set({ profiles: [] });
+                    profiles.set([]);
+                }
+                resolve();
+            });
+        });
+    }
+    async function saveProfiles() {
+        return new Promise((resolve) => {
+            web.storage.local.set({ profiles: get_store_value(profiles) });
+            resolve();
+        });
+    }
+    async function settingProfile(profile) {
+        return new Promise((resolve) => {
+            web.storage.local.set({ privateKey: profile.data.privateKey });
+            web.storage.local.set({ profileName: profile.name });
+            web.storage.local.set({ webSites: profile.data.webSites });
+            web.storage.local.set({ relays: profile.data.relays });
+            resolve();
+        });
+    }
     async function loadNotifications() {
         return new Promise((resolve) => {
             web.storage.local.get("notificationsSettings", (value) => {
@@ -9521,12 +9592,12 @@ zoo`.split('\n');
                 if (value.theme === "light") {
                     web.storage.local.set({ theme: "dark" });
                     theme.set("dark");
-                    document.documentElement.setAttribute("data-theme", "dark");
+                    document.documentElement.setAttribute("data-theme", "black");
                 }
                 else {
                     web.storage.local.set({ theme: "light" });
                     theme.set("light");
-                    document.documentElement.setAttribute("data-theme", "light");
+                    document.documentElement.setAttribute("data-theme", "lofi");
                 }
                 resolve();
             });
@@ -9537,12 +9608,16 @@ zoo`.split('\n');
             web.storage.local.get("theme", (value) => {
                 if (value.theme) {
                     theme.set(value.theme);
-                    document.documentElement.setAttribute("data-theme", value.theme);
+                    if (value.theme === "light") {
+                        document.documentElement.setAttribute("data-theme", "lofi");
+                    }
+                    else
+                        document.documentElement.setAttribute("data-theme", "black");
                 }
                 else {
                     web.storage.local.set({ theme: "light" });
                     theme.set("light");
-                    document.documentElement.setAttribute("data-theme", "light");
+                    document.documentElement.setAttribute("data-theme", "lofi");
                 }
                 resolve();
             });
@@ -9611,9 +9686,7 @@ zoo`.split('\n');
             });
         });
     }
-    async function addKey(value) {
-        if (!value)
-            return;
+    async function verifyKey(value) {
         return new Promise(async (resolve, reject) => {
             if (value.length < 63) {
                 reject("Invalid key");
@@ -9636,18 +9709,55 @@ zoo`.split('\n');
                 reject("Invalid key");
                 return;
             }
-            await registerPrivateKey(decodedValue);
-            resolve();
+            resolve(decodedValue);
+        });
+    }
+    async function addKey(value) {
+        if (!value)
+            return;
+        return new Promise(async (resolve, reject) => {
+            try {
+                let decodedValue = await verifyKey(value);
+                await registerPrivateKey(decodedValue);
+                resolve();
+            }
+            catch (e) {
+                reject(e);
+            }
         });
     }
     async function logout() {
-        relays.set([]);
-        keyStore.set("");
-        userProfile.set({});
-        webSites.set({});
-        return new Promise((resolve) => {
-            web.storage.local.clear(() => {
-                resolve();
+        return new Promise(async (resolve) => {
+            console.log("fethcing profileName");
+            let value = await web.storage.local.get("profileName");
+            await loadPrivateKey();
+            await loadKeyInfo();
+            let _webSites = await web.storage.local.get("webSites");
+            let _relays = await web.storage.local.get("relays");
+            console.log(get_store_value(webSites), get_store_value(relays), _webSites, _relays);
+            const _profiles = get_store_value(profiles);
+            const profile = {
+                name: value.profileName,
+                data: {
+                    privateKey: get_store_value(keyStore),
+                    webSites: get_store_value(webSites),
+                    relays: get_store_value(relays),
+                },
+            };
+            console.log(profile);
+            // replace profile in profiles
+            const index = _profiles.findIndex((p) => p.name === value.profileName);
+            _profiles[index] = profile;
+            await web.storage.local.set({ profiles: _profiles });
+            console.log("not finding profileName");
+            relays.set([]);
+            keyStore.set("");
+            userProfile.set({});
+            webSites.set({});
+            return new Promise(async (resolve) => {
+                await web.storage.local.set({ privateKey: "" }, () => {
+                    resolve();
+                });
             });
         });
     }
@@ -9655,28 +9765,28 @@ zoo`.split('\n');
     /* src/components/Settings.svelte generated by Svelte v3.59.2 */
     const file$7 = "src/components/Settings.svelte";
 
-    function get_each_context(ctx, list, i) {
+    function get_each_context$1(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[31] = list[i];
+    	child_ctx[29] = list[i];
     	return child_ctx;
     }
 
     function get_each_context_3(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[40] = list[i];
+    	child_ctx[38] = list[i];
     	return child_ctx;
     }
 
     function get_each_context_2(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[37] = list[i];
-    	child_ctx[39] = i;
+    	child_ctx[35] = list[i];
+    	child_ctx[37] = i;
     	return child_ctx;
     }
 
     function get_each_context_1(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[34] = list[i];
+    	child_ctx[32] = list[i];
     	return child_ctx;
     }
 
@@ -9708,7 +9818,6 @@ zoo`.split('\n');
     	let span1;
     	let t8;
     	let input1;
-    	let input1_type_value;
     	let t9;
     	let button2;
     	let svg2;
@@ -9748,7 +9857,7 @@ zoo`.split('\n');
     	let button4;
     	let mounted;
     	let dispose;
-    	let each_value_3 = /*$relays*/ ctx[9];
+    	let each_value_3 = /*$relays*/ ctx[8];
     	validate_each_argument(each_value_3);
     	let each_blocks = [];
 
@@ -9852,7 +9961,7 @@ zoo`.split('\n');
     			? "password"
     			: "text");
 
-    			input0.value = input0_value_value = nip19_exports.nsecEncode(/*$keyStore*/ ctx[7]);
+    			input0.value = input0_value_value = nip19_exports.nsecEncode(/*$keyStore*/ ctx[6]);
     			attr_dev(input0, "placeholder", "nsec");
     			attr_dev(input0, "class", "input input-bordered w-9/12");
     			add_location(input0, file$7, 168, 8, 5725);
@@ -9876,80 +9985,76 @@ zoo`.split('\n');
     			add_location(div0, file$7, 166, 6, 5580);
     			attr_dev(span1, "class", "w-full pb-1 pl-2 font-sans font-bold");
     			add_location(span1, file$7, 203, 8, 7153);
-
-    			attr_dev(input1, "type", input1_type_value = /*secretHexEchoMode*/ ctx[4] === /*EchoMode*/ ctx[1].Password
-    			? "password"
-    			: "text");
-
-    			input1.value = /*hexPubKey*/ ctx[10];
+    			attr_dev(input1, "type", "text");
+    			input1.value = /*hexPubKey*/ ctx[9];
     			attr_dev(input1, "class", "input input-bordered w-9/12");
     			add_location(input1, file$7, 206, 8, 7256);
     			attr_dev(path4, "d", "M20.998 10c-.012-2.175-.108-3.353-.877-4.121C19.243 5 17.828 5 15 5h-3c-2.828 0-4.243 0-5.121.879C6 6.757 6 8.172 6 11v5c0 2.828 0 4.243.879 5.121C7.757 22 9.172 22 12 22h3c2.828 0 4.243 0 5.121-.879C21 20.243 21 18.828 21 16v-1");
-    			add_location(path4, file$7, 230, 15, 8084);
+    			add_location(path4, file$7, 228, 15, 7898);
     			attr_dev(path5, "d", "M3 10v6a3 3 0 0 0 3 3M18 5a3 3 0 0 0-3-3h-4C7.229 2 5.343 2 4.172 3.172C3.518 3.825 3.229 4.7 3.102 6");
-    			add_location(path5, file$7, 232, 16, 8355);
+    			add_location(path5, file$7, 230, 16, 8169);
     			attr_dev(g1, "fill", "none");
     			attr_dev(g1, "stroke", "currentColor");
     			attr_dev(g1, "stroke-linecap", "round");
     			attr_dev(g1, "stroke-width", "1.5");
-    			add_location(g1, file$7, 225, 13, 7934);
+    			add_location(g1, file$7, 223, 13, 7748);
     			attr_dev(svg2, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg2, "width", "24");
     			attr_dev(svg2, "height", "24");
     			attr_dev(svg2, "viewBox", "0 0 24 24");
-    			add_location(svg2, file$7, 220, 10, 7790);
+    			add_location(svg2, file$7, 218, 10, 7604);
     			attr_dev(button2, "class", "btn w-2/12 p-2");
-    			add_location(button2, file$7, 213, 8, 7566);
+    			add_location(button2, file$7, 211, 8, 7380);
     			attr_dev(div1, "class", "p-4 w-full flex flex-row flex-wrap space-x-2");
     			add_location(div1, file$7, 202, 6, 7086);
     			attr_dev(span2, "class", "w-full pb-1 pl-2 font-sans font-bold");
-    			add_location(span2, file$7, 240, 8, 8638);
+    			add_location(span2, file$7, 238, 8, 8452);
     			attr_dev(input2, "type", "text");
-    			input2.value = /*nPubKey*/ ctx[11];
+    			input2.value = /*nPubKey*/ ctx[10];
     			attr_dev(input2, "class", "input input-bordered w-9/12");
-    			add_location(input2, file$7, 243, 8, 8742);
+    			add_location(input2, file$7, 241, 8, 8556);
     			attr_dev(path6, "d", "M20.998 10c-.012-2.175-.108-3.353-.877-4.121C19.243 5 17.828 5 15 5h-3c-2.828 0-4.243 0-5.121.879C6 6.757 6 8.172 6 11v5c0 2.828 0 4.243.879 5.121C7.757 22 9.172 22 12 22h3c2.828 0 4.243 0 5.121-.879C21 20.243 21 18.828 21 16v-1");
-    			add_location(path6, file$7, 265, 15, 9370);
+    			add_location(path6, file$7, 263, 15, 9184);
     			attr_dev(path7, "d", "M3 10v6a3 3 0 0 0 3 3M18 5a3 3 0 0 0-3-3h-4C7.229 2 5.343 2 4.172 3.172C3.518 3.825 3.229 4.7 3.102 6");
-    			add_location(path7, file$7, 267, 16, 9641);
+    			add_location(path7, file$7, 265, 16, 9455);
     			attr_dev(g2, "fill", "none");
     			attr_dev(g2, "stroke", "currentColor");
     			attr_dev(g2, "stroke-linecap", "round");
     			attr_dev(g2, "stroke-width", "1.5");
-    			add_location(g2, file$7, 260, 13, 9220);
+    			add_location(g2, file$7, 258, 13, 9034);
     			attr_dev(svg3, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg3, "width", "24");
     			attr_dev(svg3, "height", "24");
     			attr_dev(svg3, "viewBox", "0 0 24 24");
-    			add_location(svg3, file$7, 255, 10, 9076);
+    			add_location(svg3, file$7, 253, 10, 8890);
     			attr_dev(button3, "class", "btn w-2/12 p-2");
-    			add_location(button3, file$7, 248, 8, 8864);
+    			add_location(button3, file$7, 246, 8, 8678);
     			attr_dev(div2, "class", "p-4 w-full flex flex-row flex-wrap space-x-2");
-    			add_location(div2, file$7, 239, 6, 8571);
-    			add_location(hr1, file$7, 274, 6, 9857);
+    			add_location(div2, file$7, 237, 6, 8385);
+    			add_location(hr1, file$7, 272, 6, 9671);
     			attr_dev(span3, "class", "w-full pb-1 pl-2 font-sans font-bold");
-    			add_location(span3, file$7, 276, 8, 9937);
-    			add_location(th0, file$7, 282, 16, 10172);
+    			add_location(span3, file$7, 274, 8, 9751);
+    			add_location(th0, file$7, 280, 16, 9986);
     			attr_dev(th1, "class", "text-center w-16");
-    			add_location(th1, file$7, 283, 16, 10203);
-    			add_location(tr_1, file$7, 281, 14, 10151);
-    			add_location(thead, file$7, 280, 12, 10129);
-    			add_location(tbody, file$7, 286, 12, 10298);
+    			add_location(th1, file$7, 281, 16, 10017);
+    			add_location(tr_1, file$7, 279, 14, 9965);
+    			add_location(thead, file$7, 278, 12, 9943);
+    			add_location(tbody, file$7, 284, 12, 10112);
     			attr_dev(table, "class", "table table-zebra");
-    			add_location(table, file$7, 278, 10, 10057);
+    			add_location(table, file$7, 276, 10, 9871);
     			attr_dev(div3, "class", "overflow-x-auto w-full");
-    			add_location(div3, file$7, 277, 8, 10010);
+    			add_location(div3, file$7, 275, 8, 9824);
     			attr_dev(input3, "type", "text");
     			attr_dev(input3, "class", "input input-bordered w-9/12 h-10");
     			attr_dev(input3, "id", "value");
     			attr_dev(input3, "placeholder", "Enter relay url");
-    			add_location(input3, file$7, 347, 10, 13043);
+    			add_location(input3, file$7, 345, 10, 12857);
     			attr_dev(button4, "class", "btn btn-sm w-2/12 h-10");
-    			add_location(button4, file$7, 354, 10, 13251);
+    			add_location(button4, file$7, 352, 10, 13065);
     			attr_dev(div4, "class", "w-full flex flex-row flex-wrap space-x-2 mt-4");
-    			add_location(div4, file$7, 346, 8, 12973);
+    			add_location(div4, file$7, 344, 8, 12787);
     			attr_dev(div5, "class", "p-4 w-full flex flex-row flex-wrap space-x-2");
-    			add_location(div5, file$7, 275, 6, 9870);
+    			add_location(div5, file$7, 273, 6, 9684);
     			attr_dev(div6, "class", "w-full");
     			add_location(div6, file$7, 141, 4, 4516);
     		},
@@ -10026,16 +10131,14 @@ zoo`.split('\n');
 
     			if (!mounted) {
     				dispose = [
-    					listen_dev(button0, "click", /*click_handler_4*/ ctx[17], false, false, false, false),
-    					listen_dev(input0, "focus", /*focus_handler*/ ctx[18], false, false, false, false),
-    					listen_dev(input0, "blur", /*blur_handler*/ ctx[19], false, false, false, false),
-    					listen_dev(button1, "click", /*click_handler_5*/ ctx[20], false, false, false, false),
-    					listen_dev(input1, "focus", /*focus_handler_1*/ ctx[21], false, false, false, false),
-    					listen_dev(input1, "blur", /*blur_handler_1*/ ctx[22], false, false, false, false),
-    					listen_dev(button2, "click", /*click_handler_6*/ ctx[23], false, false, false, false),
-    					listen_dev(button3, "click", /*click_handler_7*/ ctx[24], false, false, false, false),
-    					listen_dev(input3, "input", /*input3_input_handler*/ ctx[27]),
-    					listen_dev(button4, "click", /*click_handler_10*/ ctx[28], false, false, false, false)
+    					listen_dev(button0, "click", /*click_handler_4*/ ctx[16], false, false, false, false),
+    					listen_dev(input0, "focus", /*focus_handler*/ ctx[17], false, false, false, false),
+    					listen_dev(input0, "blur", /*blur_handler*/ ctx[18], false, false, false, false),
+    					listen_dev(button1, "click", /*click_handler_5*/ ctx[19], false, false, false, false),
+    					listen_dev(button2, "click", /*click_handler_6*/ ctx[20], false, false, false, false),
+    					listen_dev(button3, "click", /*click_handler_7*/ ctx[21], false, false, false, false),
+    					listen_dev(input3, "input", /*input3_input_handler*/ ctx[24]),
+    					listen_dev(button4, "click", /*click_handler_10*/ ctx[25], false, false, false, false)
     				];
 
     				mounted = true;
@@ -10048,18 +10151,12 @@ zoo`.split('\n');
     				attr_dev(input0, "type", input0_type_value);
     			}
 
-    			if (dirty[0] & /*$keyStore*/ 128 && input0_value_value !== (input0_value_value = nip19_exports.nsecEncode(/*$keyStore*/ ctx[7])) && input0.value !== input0_value_value) {
+    			if (dirty[0] & /*$keyStore*/ 64 && input0_value_value !== (input0_value_value = nip19_exports.nsecEncode(/*$keyStore*/ ctx[6])) && input0.value !== input0_value_value) {
     				prop_dev(input0, "value", input0_value_value);
     			}
 
-    			if (dirty[0] & /*secretHexEchoMode, EchoMode*/ 18 && input1_type_value !== (input1_type_value = /*secretHexEchoMode*/ ctx[4] === /*EchoMode*/ ctx[1].Password
-    			? "password"
-    			: "text")) {
-    				attr_dev(input1, "type", input1_type_value);
-    			}
-
-    			if (dirty[0] & /*$relays, showNotification*/ 4608) {
-    				each_value_3 = /*$relays*/ ctx[9];
+    			if (dirty[0] & /*$relays, showNotification*/ 2304) {
+    				each_value_3 = /*$relays*/ ctx[8];
     				validate_each_argument(each_value_3);
     				let i;
 
@@ -10118,7 +10215,7 @@ zoo`.split('\n');
     	let th2;
     	let t5;
     	let tbody;
-    	let each_value_2 = reverseArray(/*currentSite*/ ctx[6].history);
+    	let each_value_2 = reverseArray(/*currentSite*/ ctx[5].history);
     	validate_each_argument(each_value_2);
     	let each_blocks = [];
 
@@ -10179,8 +10276,8 @@ zoo`.split('\n');
     			}
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty[0] & /*currentSite*/ 64) {
-    				each_value_2 = reverseArray(/*currentSite*/ ctx[6].history);
+    			if (dirty[0] & /*currentSite*/ 32) {
+    				each_value_2 = reverseArray(/*currentSite*/ ctx[5].history);
     				validate_each_argument(each_value_2);
     				let i;
 
@@ -10221,7 +10318,7 @@ zoo`.split('\n');
     }
 
     // (63:2) {#if currentTab === 0}
-    function create_if_block$3(ctx) {
+    function create_if_block$4(ctx) {
     	let div2;
     	let div1;
     	let span0;
@@ -10244,7 +10341,7 @@ zoo`.split('\n');
     	let p;
     	let t10;
     	let span1;
-    	let each_value_1 = /*$webNotifications*/ ctx[8];
+    	let each_value_1 = /*$webNotifications*/ ctx[7];
     	validate_each_argument(each_value_1);
     	let each_blocks = [];
 
@@ -10342,8 +10439,8 @@ zoo`.split('\n');
     			append_dev(p, span1);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty[0] & /*$webNotifications*/ 256) {
-    				each_value_1 = /*$webNotifications*/ ctx[8];
+    			if (dirty[0] & /*$webNotifications*/ 128) {
+    				each_value_1 = /*$webNotifications*/ ctx[7];
     				validate_each_argument(each_value_1);
     				let i;
 
@@ -10374,7 +10471,7 @@ zoo`.split('\n');
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_if_block$3.name,
+    		id: create_if_block$4.name,
     		type: "if",
     		source: "(63:2) {#if currentTab === 0}",
     		ctx
@@ -10383,11 +10480,11 @@ zoo`.split('\n');
     	return block;
     }
 
-    // (289:14) {#each $relays as relay}
+    // (287:14) {#each $relays as relay}
     function create_each_block_3(ctx) {
     	let tr_1;
     	let td0;
-    	let t0_value = /*relay*/ ctx[40].url + "";
+    	let t0_value = /*relay*/ ctx[38].url + "";
     	let t0;
     	let t1;
     	let td1;
@@ -10405,11 +10502,11 @@ zoo`.split('\n');
     	let dispose;
 
     	function click_handler_8() {
-    		return /*click_handler_8*/ ctx[25](/*relay*/ ctx[40]);
+    		return /*click_handler_8*/ ctx[22](/*relay*/ ctx[38]);
     	}
 
     	function click_handler_9() {
-    		return /*click_handler_9*/ ctx[26](/*relay*/ ctx[40]);
+    		return /*click_handler_9*/ ctx[23](/*relay*/ ctx[38]);
     	}
 
     	const block = {
@@ -10429,36 +10526,36 @@ zoo`.split('\n');
     			svg1 = svg_element("svg");
     			path2 = svg_element("path");
     			t3 = space();
-    			add_location(td0, file$7, 290, 18, 10413);
+    			add_location(td0, file$7, 288, 18, 10227);
     			attr_dev(path0, "d", "M20.998 10c-.012-2.175-.108-3.353-.877-4.121C19.243 5 17.828 5 15 5h-3c-2.828 0-4.243 0-5.121.879C6 6.757 6 8.172 6 11v5c0 2.828 0 4.243.879 5.121C7.757 22 9.172 22 12 22h3c2.828 0 4.243 0 5.121-.879C21 20.243 21 18.828 21 16v-1");
-    			add_location(path0, file$7, 310, 27, 11239);
+    			add_location(path0, file$7, 308, 27, 11053);
     			attr_dev(path1, "d", "M3 10v6a3 3 0 0 0 3 3M18 5a3 3 0 0 0-3-3h-4C7.229 2 5.343 2 4.172 3.172C3.518 3.825 3.229 4.7 3.102 6");
-    			add_location(path1, file$7, 312, 28, 11534);
+    			add_location(path1, file$7, 310, 28, 11348);
     			attr_dev(g, "fill", "none");
     			attr_dev(g, "stroke", "currentColor");
     			attr_dev(g, "stroke-linecap", "round");
     			attr_dev(g, "stroke-width", "1.5");
-    			add_location(g, file$7, 305, 25, 11029);
+    			add_location(g, file$7, 303, 25, 10843);
     			attr_dev(svg0, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg0, "width", "24");
     			attr_dev(svg0, "height", "24");
     			attr_dev(svg0, "viewBox", "0 0 24 24");
-    			add_location(svg0, file$7, 300, 22, 10825);
+    			add_location(svg0, file$7, 298, 22, 10639);
     			attr_dev(button0, "class", "btn btn-xs h-8");
-    			add_location(button0, file$7, 292, 20, 10500);
+    			add_location(button0, file$7, 290, 20, 10314);
     			attr_dev(path2, "fill", "currentColor");
     			attr_dev(path2, "d", "M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59L7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12L5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z");
-    			add_location(path2, file$7, 334, 25, 12469);
+    			add_location(path2, file$7, 332, 25, 12283);
     			attr_dev(svg1, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg1, "width", "24");
     			attr_dev(svg1, "height", "24");
     			attr_dev(svg1, "viewBox", "0 0 24 24");
-    			add_location(svg1, file$7, 329, 22, 12265);
+    			add_location(svg1, file$7, 327, 22, 12079);
     			attr_dev(button1, "class", "btn btn-xs h-8");
-    			add_location(button1, file$7, 318, 20, 11811);
+    			add_location(button1, file$7, 316, 20, 11625);
     			attr_dev(td1, "class", "flex space-x-2");
-    			add_location(td1, file$7, 291, 18, 10452);
-    			add_location(tr_1, file$7, 289, 16, 10390);
+    			add_location(td1, file$7, 289, 18, 10266);
+    			add_location(tr_1, file$7, 287, 16, 10204);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, tr_1, anchor);
@@ -10488,7 +10585,7 @@ zoo`.split('\n');
     		},
     		p: function update(new_ctx, dirty) {
     			ctx = new_ctx;
-    			if (dirty[0] & /*$relays*/ 512 && t0_value !== (t0_value = /*relay*/ ctx[40].url + "")) set_data_dev(t0, t0_value);
+    			if (dirty[0] & /*$relays*/ 256 && t0_value !== (t0_value = /*relay*/ ctx[38].url + "")) set_data_dev(t0, t0_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(tr_1);
@@ -10501,7 +10598,7 @@ zoo`.split('\n');
     		block,
     		id: create_each_block_3.name,
     		type: "each",
-    		source: "(289:14) {#each $relays as relay}",
+    		source: "(287:14) {#each $relays as relay}",
     		ctx
     	});
 
@@ -10512,15 +10609,15 @@ zoo`.split('\n');
     function create_each_block_2(ctx) {
     	let tr_1;
     	let td0;
-    	let t0_value = (/*site*/ ctx[37].accepted || false ? "Yes" : "No") + "";
+    	let t0_value = (/*site*/ ctx[35].accepted || false ? "Yes" : "No") + "";
     	let t0;
     	let t1;
     	let td1;
-    	let t2_value = /*site*/ ctx[37].type + "";
+    	let t2_value = /*site*/ ctx[35].type + "";
     	let t2;
     	let t3;
     	let td2;
-    	let t4_value = timeAgo(new Date(/*site*/ ctx[37].created_at)) + "";
+    	let t4_value = timeAgo(new Date(/*site*/ ctx[35].created_at)) + "";
     	let t4;
     	let t5;
 
@@ -10537,8 +10634,8 @@ zoo`.split('\n');
     			t4 = text(t4_value);
     			t5 = space();
     			attr_dev(td0, "class", "text fond-bold");
-    			toggle_class(td0, "text-accent", /*site*/ ctx[37].accepted || false);
-    			toggle_class(td0, "text-secondary", !/*site*/ ctx[37].accepted || false);
+    			toggle_class(td0, "text-accent", /*site*/ ctx[35].accepted || false);
+    			toggle_class(td0, "text-secondary", !/*site*/ ctx[35].accepted || false);
     			add_location(td0, file$7, 127, 14, 4043);
     			attr_dev(td1, "class", "text fond-bold");
     			add_location(td1, file$7, 133, 14, 4299);
@@ -10558,18 +10655,18 @@ zoo`.split('\n');
     			append_dev(tr_1, t5);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty[0] & /*currentSite*/ 64 && t0_value !== (t0_value = (/*site*/ ctx[37].accepted || false ? "Yes" : "No") + "")) set_data_dev(t0, t0_value);
+    			if (dirty[0] & /*currentSite*/ 32 && t0_value !== (t0_value = (/*site*/ ctx[35].accepted || false ? "Yes" : "No") + "")) set_data_dev(t0, t0_value);
 
-    			if (dirty[0] & /*currentSite*/ 64) {
-    				toggle_class(td0, "text-accent", /*site*/ ctx[37].accepted || false);
+    			if (dirty[0] & /*currentSite*/ 32) {
+    				toggle_class(td0, "text-accent", /*site*/ ctx[35].accepted || false);
     			}
 
-    			if (dirty[0] & /*currentSite*/ 64) {
-    				toggle_class(td0, "text-secondary", !/*site*/ ctx[37].accepted || false);
+    			if (dirty[0] & /*currentSite*/ 32) {
+    				toggle_class(td0, "text-secondary", !/*site*/ ctx[35].accepted || false);
     			}
 
-    			if (dirty[0] & /*currentSite*/ 64 && t2_value !== (t2_value = /*site*/ ctx[37].type + "")) set_data_dev(t2, t2_value);
-    			if (dirty[0] & /*currentSite*/ 64 && t4_value !== (t4_value = timeAgo(new Date(/*site*/ ctx[37].created_at)) + "")) set_data_dev(t4, t4_value);
+    			if (dirty[0] & /*currentSite*/ 32 && t2_value !== (t2_value = /*site*/ ctx[35].type + "")) set_data_dev(t2, t2_value);
+    			if (dirty[0] & /*currentSite*/ 32 && t4_value !== (t4_value = timeAgo(new Date(/*site*/ ctx[35].created_at)) + "")) set_data_dev(t4, t4_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(tr_1);
@@ -10591,24 +10688,24 @@ zoo`.split('\n');
     function create_each_block_1(ctx) {
     	let tr_1;
     	let td0;
-    	let t0_value = tr(/*notif*/ ctx[34].name || "") + "";
+    	let t0_value = tr(/*notif*/ ctx[32].name || "") + "";
     	let t0;
     	let t1;
     	let td1;
     	let span;
-    	let t2_value = (/*notif*/ ctx[34] ? "enabled" : "disabled") + "";
+    	let t2_value = (/*notif*/ ctx[32] ? "enabled" : "disabled") + "";
     	let t2;
     	let t3;
     	let td2;
     	let button;
-    	let t4_value = (/*notif*/ ctx[34].state ? "Disable" : "Enable") + "";
+    	let t4_value = (/*notif*/ ctx[32].state ? "Disable" : "Enable") + "";
     	let t4;
     	let t5;
     	let mounted;
     	let dispose;
 
     	function click_handler_3() {
-    		return /*click_handler_3*/ ctx[16](/*notif*/ ctx[34]);
+    		return /*click_handler_3*/ ctx[15](/*notif*/ ctx[32]);
     	}
 
     	const block = {
@@ -10627,13 +10724,13 @@ zoo`.split('\n');
     			t5 = space();
     			add_location(td0, file$7, 81, 18, 2530);
     			attr_dev(span, "class", "badge badge-sm");
-    			toggle_class(span, "badge-secondary", /*notif*/ ctx[34].state == false);
-    			toggle_class(span, "badge-accent", /*notif*/ ctx[34].state == true);
+    			toggle_class(span, "badge-secondary", /*notif*/ ctx[32].state == false);
+    			toggle_class(span, "badge-accent", /*notif*/ ctx[32].state == true);
     			add_location(span, file$7, 83, 20, 2606);
     			add_location(td1, file$7, 82, 18, 2581);
     			attr_dev(button, "class", "btn btn-xs h-8 rounded-2");
-    			toggle_class(button, "btn-accent", /*notif*/ ctx[34].state == false);
-    			toggle_class(button, "btn-secondary", /*notif*/ ctx[34].state == true);
+    			toggle_class(button, "btn-accent", /*notif*/ ctx[32].state == false);
+    			toggle_class(button, "btn-secondary", /*notif*/ ctx[32].state == true);
     			add_location(button, file$7, 91, 20, 2961);
     			attr_dev(td2, "class", "flex space-x-2");
     			add_location(td2, file$7, 90, 18, 2913);
@@ -10660,25 +10757,25 @@ zoo`.split('\n');
     		},
     		p: function update(new_ctx, dirty) {
     			ctx = new_ctx;
-    			if (dirty[0] & /*$webNotifications*/ 256 && t0_value !== (t0_value = tr(/*notif*/ ctx[34].name || "") + "")) set_data_dev(t0, t0_value);
-    			if (dirty[0] & /*$webNotifications*/ 256 && t2_value !== (t2_value = (/*notif*/ ctx[34] ? "enabled" : "disabled") + "")) set_data_dev(t2, t2_value);
+    			if (dirty[0] & /*$webNotifications*/ 128 && t0_value !== (t0_value = tr(/*notif*/ ctx[32].name || "") + "")) set_data_dev(t0, t0_value);
+    			if (dirty[0] & /*$webNotifications*/ 128 && t2_value !== (t2_value = (/*notif*/ ctx[32] ? "enabled" : "disabled") + "")) set_data_dev(t2, t2_value);
 
-    			if (dirty[0] & /*$webNotifications*/ 256) {
-    				toggle_class(span, "badge-secondary", /*notif*/ ctx[34].state == false);
+    			if (dirty[0] & /*$webNotifications*/ 128) {
+    				toggle_class(span, "badge-secondary", /*notif*/ ctx[32].state == false);
     			}
 
-    			if (dirty[0] & /*$webNotifications*/ 256) {
-    				toggle_class(span, "badge-accent", /*notif*/ ctx[34].state == true);
+    			if (dirty[0] & /*$webNotifications*/ 128) {
+    				toggle_class(span, "badge-accent", /*notif*/ ctx[32].state == true);
     			}
 
-    			if (dirty[0] & /*$webNotifications*/ 256 && t4_value !== (t4_value = (/*notif*/ ctx[34].state ? "Disable" : "Enable") + "")) set_data_dev(t4, t4_value);
+    			if (dirty[0] & /*$webNotifications*/ 128 && t4_value !== (t4_value = (/*notif*/ ctx[32].state ? "Disable" : "Enable") + "")) set_data_dev(t4, t4_value);
 
-    			if (dirty[0] & /*$webNotifications*/ 256) {
-    				toggle_class(button, "btn-accent", /*notif*/ ctx[34].state == false);
+    			if (dirty[0] & /*$webNotifications*/ 128) {
+    				toggle_class(button, "btn-accent", /*notif*/ ctx[32].state == false);
     			}
 
-    			if (dirty[0] & /*$webNotifications*/ 256) {
-    				toggle_class(button, "btn-secondary", /*notif*/ ctx[34].state == true);
+    			if (dirty[0] & /*$webNotifications*/ 128) {
+    				toggle_class(button, "btn-secondary", /*notif*/ ctx[32].state == true);
     			}
     		},
     		d: function destroy(detaching) {
@@ -10699,11 +10796,11 @@ zoo`.split('\n');
     	return block;
     }
 
-    // (383:2) {#each notifications as toast}
-    function create_each_block(ctx) {
+    // (381:2) {#each notifications as toast}
+    function create_each_block$1(ctx) {
     	let div;
     	let span;
-    	let t0_value = /*toast*/ ctx[31].message + "";
+    	let t0_value = /*toast*/ ctx[29].message + "";
     	let t0;
     	let t1;
 
@@ -10714,9 +10811,9 @@ zoo`.split('\n');
     			t0 = text(t0_value);
     			t1 = space();
     			attr_dev(span, "class", "flex flex-row space-x-4");
-    			add_location(span, file$7, 384, 6, 13991);
+    			add_location(span, file$7, 382, 6, 13805);
     			attr_dev(div, "class", "alert alert-white bordered border-1 border-gray-300");
-    			add_location(div, file$7, 383, 4, 13919);
+    			add_location(div, file$7, 381, 4, 13733);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -10725,7 +10822,7 @@ zoo`.split('\n');
     			append_dev(div, t1);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty[0] & /*notifications*/ 1 && t0_value !== (t0_value = /*toast*/ ctx[31].message + "")) set_data_dev(t0, t0_value);
+    			if (dirty[0] & /*notifications*/ 1 && t0_value !== (t0_value = /*toast*/ ctx[29].message + "")) set_data_dev(t0, t0_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div);
@@ -10734,9 +10831,9 @@ zoo`.split('\n');
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_each_block.name,
+    		id: create_each_block$1.name,
     		type: "each",
-    		source: "(383:2) {#each notifications as toast}",
+    		source: "(381:2) {#each notifications as toast}",
     		ctx
     	});
 
@@ -10758,9 +10855,9 @@ zoo`.split('\n');
     	let dispose;
 
     	function select_block_type(ctx, dirty) {
-    		if (/*currentTab*/ ctx[5] === 0) return create_if_block$3;
-    		if (/*currentTab*/ ctx[5] === 1) return create_if_block_1$3;
-    		if (/*currentTab*/ ctx[5] === 2) return create_if_block_2$3;
+    		if (/*currentTab*/ ctx[4] === 0) return create_if_block$4;
+    		if (/*currentTab*/ ctx[4] === 1) return create_if_block_1$3;
+    		if (/*currentTab*/ ctx[4] === 2) return create_if_block_2$3;
     	}
 
     	let current_block_type = select_block_type(ctx);
@@ -10770,7 +10867,7 @@ zoo`.split('\n');
     	let each_blocks = [];
 
     	for (let i = 0; i < each_value.length; i += 1) {
-    		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+    		each_blocks[i] = create_each_block$1(get_each_context$1(ctx, each_value, i));
     	}
 
     	const block = {
@@ -10795,20 +10892,20 @@ zoo`.split('\n');
     			}
 
     			attr_dev(button0, "class", "tab tab-bordered w-1/3");
-    			toggle_class(button0, "tab-active", /*currentTab*/ ctx[5] === 0);
+    			toggle_class(button0, "tab-active", /*currentTab*/ ctx[4] === 0);
     			add_location(button0, file$7, 44, 2, 1399);
     			attr_dev(button1, "class", "tab tab-bordered w-1/3");
-    			toggle_class(button1, "tab-active", /*currentTab*/ ctx[5] === 1);
+    			toggle_class(button1, "tab-active", /*currentTab*/ ctx[4] === 1);
     			add_location(button1, file$7, 49, 2, 1542);
     			attr_dev(button2, "class", "tab tab-bordered w-1/3");
-    			toggle_class(button2, "tab-active", /*currentTab*/ ctx[5] === 2);
+    			toggle_class(button2, "tab-active", /*currentTab*/ ctx[4] === 2);
     			add_location(button2, file$7, 54, 2, 1685);
     			attr_dev(div0, "class", "tabs w-full");
     			add_location(div0, file$7, 43, 0, 1371);
     			attr_dev(div1, "class", "w-full");
     			add_location(div1, file$7, 61, 0, 1834);
     			attr_dev(div2, "class", "toast toast-center opacity-50");
-    			add_location(div2, file$7, 381, 0, 13838);
+    			add_location(div2, file$7, 379, 0, 13652);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -10834,25 +10931,25 @@ zoo`.split('\n');
 
     			if (!mounted) {
     				dispose = [
-    					listen_dev(button0, "click", /*click_handler*/ ctx[13], false, false, false, false),
-    					listen_dev(button1, "click", /*click_handler_1*/ ctx[14], false, false, false, false),
-    					listen_dev(button2, "click", /*click_handler_2*/ ctx[15], false, false, false, false)
+    					listen_dev(button0, "click", /*click_handler*/ ctx[12], false, false, false, false),
+    					listen_dev(button1, "click", /*click_handler_1*/ ctx[13], false, false, false, false),
+    					listen_dev(button2, "click", /*click_handler_2*/ ctx[14], false, false, false, false)
     				];
 
     				mounted = true;
     			}
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty[0] & /*currentTab*/ 32) {
-    				toggle_class(button0, "tab-active", /*currentTab*/ ctx[5] === 0);
+    			if (dirty[0] & /*currentTab*/ 16) {
+    				toggle_class(button0, "tab-active", /*currentTab*/ ctx[4] === 0);
     			}
 
-    			if (dirty[0] & /*currentTab*/ 32) {
-    				toggle_class(button1, "tab-active", /*currentTab*/ ctx[5] === 1);
+    			if (dirty[0] & /*currentTab*/ 16) {
+    				toggle_class(button1, "tab-active", /*currentTab*/ ctx[4] === 1);
     			}
 
-    			if (dirty[0] & /*currentTab*/ 32) {
-    				toggle_class(button2, "tab-active", /*currentTab*/ ctx[5] === 2);
+    			if (dirty[0] & /*currentTab*/ 16) {
+    				toggle_class(button2, "tab-active", /*currentTab*/ ctx[4] === 2);
     			}
 
     			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block) {
@@ -10873,12 +10970,12 @@ zoo`.split('\n');
     				let i;
 
     				for (i = 0; i < each_value.length; i += 1) {
-    					const child_ctx = get_each_context(ctx, each_value, i);
+    					const child_ctx = get_each_context$1(ctx, each_value, i);
 
     					if (each_blocks[i]) {
     						each_blocks[i].p(child_ctx, dirty);
     					} else {
-    						each_blocks[i] = create_each_block(child_ctx);
+    						each_blocks[i] = create_each_block$1(child_ctx);
     						each_blocks[i].c();
     						each_blocks[i].m(div2, null);
     					}
@@ -10927,13 +11024,13 @@ zoo`.split('\n');
     	let $webNotifications;
     	let $relays;
     	validate_store(webSites, 'webSites');
-    	component_subscribe($$self, webSites, $$value => $$invalidate(30, $webSites = $$value));
+    	component_subscribe($$self, webSites, $$value => $$invalidate(27, $webSites = $$value));
     	validate_store(keyStore, 'keyStore');
-    	component_subscribe($$self, keyStore, $$value => $$invalidate(7, $keyStore = $$value));
+    	component_subscribe($$self, keyStore, $$value => $$invalidate(6, $keyStore = $$value));
     	validate_store(webNotifications, 'webNotifications');
-    	component_subscribe($$self, webNotifications, $$value => $$invalidate(8, $webNotifications = $$value));
+    	component_subscribe($$self, webNotifications, $$value => $$invalidate(7, $webNotifications = $$value));
     	validate_store(relays, 'relays');
-    	component_subscribe($$self, relays, $$value => $$invalidate(9, $relays = $$value));
+    	component_subscribe($$self, relays, $$value => $$invalidate(8, $relays = $$value));
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('Settings', slots, []);
     	const hexPubKey = getPublicKey($keyStore);
@@ -10972,10 +11069,10 @@ zoo`.split('\n');
     	let currentSite = { history: [] };
 
     	loadWebSites().then(() => {
-    		$$invalidate(6, currentSite = $webSites[domainToUrl(_currentTab.url)]);
+    		$$invalidate(5, currentSite = $webSites[domainToUrl(_currentTab.url)]);
 
     		if (currentSite === undefined) {
-    			$$invalidate(6, currentSite = { history: [] });
+    			$$invalidate(5, currentSite = { history: [] });
     		}
     	});
 
@@ -10986,9 +11083,9 @@ zoo`.split('\n');
     		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<Settings> was created with unknown prop '${key}'`);
     	});
 
-    	const click_handler = () => $$invalidate(5, currentTab = 0);
-    	const click_handler_1 = () => $$invalidate(5, currentTab = 1);
-    	const click_handler_2 = () => $$invalidate(5, currentTab = 2);
+    	const click_handler = () => $$invalidate(4, currentTab = 0);
+    	const click_handler_1 = () => $$invalidate(4, currentTab = 1);
+    	const click_handler_2 = () => $$invalidate(4, currentTab = 2);
     	const click_handler_3 = notif => updateNotification(notif.name);
 
     	const click_handler_4 = () => {
@@ -11004,9 +11101,6 @@ zoo`.split('\n');
     		navigator.clipboard.writeText(nip19_exports.nsecEncode($keyStore));
     		showNotification("nsec copied to clipboard");
     	};
-
-    	const focus_handler_1 = () => $$invalidate(4, secretHexEchoMode = EchoMode.Normal);
-    	const blur_handler_1 = () => $$invalidate(4, secretHexEchoMode = EchoMode.Password);
 
     	const click_handler_6 = () => {
     		navigator.clipboard.writeText(hexPubKey);
@@ -11094,9 +11188,9 @@ zoo`.split('\n');
     		if ('_currentTab' in $$props) _currentTab = $$props._currentTab;
     		if ('relayInput' in $$props) $$invalidate(2, relayInput = $$props.relayInput);
     		if ('secretEchoMode' in $$props) $$invalidate(3, secretEchoMode = $$props.secretEchoMode);
-    		if ('secretHexEchoMode' in $$props) $$invalidate(4, secretHexEchoMode = $$props.secretHexEchoMode);
-    		if ('currentTab' in $$props) $$invalidate(5, currentTab = $$props.currentTab);
-    		if ('currentSite' in $$props) $$invalidate(6, currentSite = $$props.currentSite);
+    		if ('secretHexEchoMode' in $$props) secretHexEchoMode = $$props.secretHexEchoMode;
+    		if ('currentTab' in $$props) $$invalidate(4, currentTab = $$props.currentTab);
+    		if ('currentSite' in $$props) $$invalidate(5, currentSite = $$props.currentSite);
     	};
 
     	if ($$props && "$$inject" in $$props) {
@@ -11108,7 +11202,6 @@ zoo`.split('\n');
     		EchoMode,
     		relayInput,
     		secretEchoMode,
-    		secretHexEchoMode,
     		currentTab,
     		currentSite,
     		$keyStore,
@@ -11125,8 +11218,6 @@ zoo`.split('\n');
     		focus_handler,
     		blur_handler,
     		click_handler_5,
-    		focus_handler_1,
-    		blur_handler_1,
     		click_handler_6,
     		click_handler_7,
     		click_handler_8,
@@ -11156,7 +11247,7 @@ zoo`.split('\n');
     const file$6 = "src/components/Authorization.svelte";
 
     // (110:2) {#if login}
-    function create_if_block$2(ctx) {
+    function create_if_block$3(ctx) {
     	let p;
     	let span2;
     	let span0;
@@ -11290,88 +11381,88 @@ zoo`.split('\n');
     			t26 = space();
     			if (if_block2) if_block2.c();
     			attr_dev(span0, "class", "text-primary-content font-sans font-italic italic");
-    			add_location(span0, file$6, 112, 8, 3745);
-    			add_location(br, file$6, 115, 8, 3853);
+    			add_location(span0, file$6, 112, 8, 3750);
+    			add_location(br, file$6, 115, 8, 3858);
     			attr_dev(span1, "class", "badge p-4 mt-2 badge-secondary");
-    			add_location(span1, file$6, 116, 8, 3868);
+    			add_location(span1, file$6, 116, 8, 3873);
     			attr_dev(span2, "class", "text-center text-xl prose prose-lg");
-    			add_location(span2, file$6, 111, 6, 3687);
+    			add_location(span2, file$6, 111, 6, 3692);
     			attr_dev(p, "class", "w-full text-center p-10 pt-4 pb-6");
-    			add_location(p, file$6, 110, 4, 3635);
+    			add_location(p, file$6, 110, 4, 3640);
     			attr_dev(span3, "class", "label-text mr-2");
-    			add_location(span3, file$6, 130, 10, 4255);
+    			add_location(span3, file$6, 130, 10, 4260);
     			attr_dev(input0, "type", "radio");
     			attr_dev(input0, "class", "radio");
     			input0.__value = 0;
     			input0.value = input0.__value;
-    			add_location(input0, file$6, 131, 10, 4311);
+    			add_location(input0, file$6, 131, 10, 4316);
     			attr_dev(label0, "class", "cursor-pointer label");
-    			add_location(label0, file$6, 129, 8, 4208);
+    			add_location(label0, file$6, 129, 8, 4213);
     			attr_dev(div0, "class", "form-control");
-    			add_location(div0, file$6, 128, 6, 4173);
+    			add_location(div0, file$6, 128, 6, 4178);
     			attr_dev(span4, "class", "label-text mr-2");
-    			add_location(span4, file$6, 136, 10, 4496);
+    			add_location(span4, file$6, 136, 10, 4501);
     			attr_dev(input1, "type", "radio");
     			attr_dev(input1, "class", "radio");
     			input1.__value = 1;
     			input1.value = input1.__value;
-    			add_location(input1, file$6, 137, 10, 4550);
+    			add_location(input1, file$6, 137, 10, 4555);
     			attr_dev(label1, "class", "cursor-pointer label");
-    			add_location(label1, file$6, 135, 8, 4449);
+    			add_location(label1, file$6, 135, 8, 4454);
     			attr_dev(div1, "class", "form-control");
-    			add_location(div1, file$6, 134, 6, 4414);
+    			add_location(div1, file$6, 134, 6, 4419);
     			attr_dev(span5, "class", "label-text mr-2");
-    			add_location(span5, file$6, 142, 10, 4735);
+    			add_location(span5, file$6, 142, 10, 4740);
     			attr_dev(input2, "type", "radio");
     			attr_dev(input2, "class", "radio");
     			input2.__value = 2;
     			input2.value = input2.__value;
-    			add_location(input2, file$6, 143, 10, 4797);
+    			add_location(input2, file$6, 143, 10, 4802);
     			attr_dev(label2, "class", "cursor-pointer label");
-    			add_location(label2, file$6, 141, 8, 4688);
+    			add_location(label2, file$6, 141, 8, 4693);
     			attr_dev(div2, "class", "form-control");
-    			add_location(div2, file$6, 140, 6, 4653);
+    			add_location(div2, file$6, 140, 6, 4658);
     			attr_dev(span6, "class", "label-text mr-2");
-    			add_location(span6, file$6, 148, 10, 4982);
+    			add_location(span6, file$6, 148, 10, 4987);
     			attr_dev(input3, "type", "radio");
     			attr_dev(input3, "class", "radio");
     			input3.__value = 3;
     			input3.value = input3.__value;
-    			add_location(input3, file$6, 149, 10, 5039);
+    			add_location(input3, file$6, 149, 10, 5044);
     			attr_dev(label3, "class", "cursor-pointer label");
-    			add_location(label3, file$6, 147, 8, 4935);
+    			add_location(label3, file$6, 147, 8, 4940);
     			attr_dev(div3, "class", "form-control");
-    			add_location(div3, file$6, 146, 6, 4900);
+    			add_location(div3, file$6, 146, 6, 4905);
     			attr_dev(span7, "class", "label-text mr-2");
-    			add_location(span7, file$6, 155, 10, 5225);
+    			add_location(span7, file$6, 155, 10, 5230);
     			attr_dev(input4, "type", "radio");
     			attr_dev(input4, "class", "radio");
     			input4.__value = 4;
     			input4.value = input4.__value;
-    			add_location(input4, file$6, 156, 10, 5285);
+    			add_location(input4, file$6, 156, 10, 5290);
     			attr_dev(label4, "class", "cursor-pointer label");
-    			add_location(label4, file$6, 154, 8, 5178);
+    			add_location(label4, file$6, 154, 8, 5183);
     			attr_dev(div4, "class", "form-control");
-    			add_location(div4, file$6, 153, 6, 5143);
+    			add_location(div4, file$6, 153, 6, 5148);
     			attr_dev(span8, "class", "label-text mr-2");
-    			add_location(span8, file$6, 162, 10, 5471);
+    			add_location(span8, file$6, 162, 10, 5476);
     			attr_dev(input5, "type", "radio");
     			attr_dev(input5, "class", "radio");
     			input5.__value = 5;
     			input5.value = input5.__value;
-    			add_location(input5, file$6, 163, 10, 5530);
+    			add_location(input5, file$6, 163, 10, 5535);
     			attr_dev(label5, "class", "cursor-pointer label");
-    			add_location(label5, file$6, 161, 8, 5424);
+    			add_location(label5, file$6, 161, 8, 5429);
     			attr_dev(div5, "class", "form-control");
-    			add_location(div5, file$6, 160, 6, 5389);
+    			add_location(div5, file$6, 160, 6, 5394);
     			attr_dev(div6, "class", "w-full p-4 pt-2 flex flex-row flex-wrap justify-center space-x-2");
-    			add_location(div6, file$6, 125, 4, 4077);
+    			add_location(div6, file$6, 125, 4, 4082);
     			attr_dev(button0, "class", "w-full btn btn-accent mb-2");
-    			add_location(button0, file$6, 168, 6, 5721);
+    			add_location(button0, file$6, 168, 6, 5726);
     			attr_dev(button1, "class", "w-full btn btn-secondary mb-2");
-    			add_location(button1, file$6, 174, 6, 5867);
+    			add_location(button1, file$6, 174, 6, 5872);
     			attr_dev(div7, "class", "w-full flex flex-col justify-center items-center p-10 pt-0");
-    			add_location(div7, file$6, 167, 4, 5642);
+    			add_location(div7, file$6, 167, 4, 5647);
     			binding_group.p(input0, input1, input2, input3, input4, input5);
     		},
     		m: function mount(target, anchor) {
@@ -11534,7 +11625,7 @@ zoo`.split('\n');
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_if_block$2.name,
+    		id: create_if_block$3.name,
     		type: "if",
     		source: "(110:2) {#if login}",
     		ctx
@@ -11613,7 +11704,7 @@ zoo`.split('\n');
     			button = element("button");
     			button.textContent = "Cancel";
     			attr_dev(button, "class", "w-full btn btn-neutral");
-    			add_location(button, file$6, 182, 8, 6041);
+    			add_location(button, file$6, 182, 8, 6046);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -11655,9 +11746,9 @@ zoo`.split('\n');
     			code = element("code");
     			t = text(t_value);
     			attr_dev(code, "class", "prose break-words p-4");
-    			add_location(code, file$6, 189, 10, 6252);
+    			add_location(code, file$6, 189, 10, 6257);
     			attr_dev(div, "class", "mockup-code justify-center mt-4 w-11/12 mx-2");
-    			add_location(div, file$6, 188, 8, 6183);
+    			add_location(div, file$6, 188, 8, 6188);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -11685,14 +11776,14 @@ zoo`.split('\n');
 
     function create_fragment$6(ctx) {
     	let div;
-    	let if_block = /*login*/ ctx[3] && create_if_block$2(ctx);
+    	let if_block = /*login*/ ctx[3] && create_if_block$3(ctx);
 
     	const block = {
     		c: function create() {
     			div = element("div");
     			if (if_block) if_block.c();
     			attr_dev(div, "class", "w-full h-full flex flex-wrap fixed-width");
-    			add_location(div, file$6, 108, 0, 3562);
+    			add_location(div, file$6, 108, 0, 3567);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -11706,7 +11797,7 @@ zoo`.split('\n');
     				if (if_block) {
     					if_block.p(ctx, dirty);
     				} else {
-    					if_block = create_if_block$2(ctx);
+    					if_block = create_if_block$3(ctx);
     					if_block.c();
     					if_block.m(div, null);
     				}
@@ -11821,7 +11912,7 @@ zoo`.split('\n');
     					st["history"] = array;
     					site[domain] = st;
     					_webSites[domain] = st;
-    					await web.storage.local.set({ webSites: site });
+    					await web.storage.local.set({ webSites: _webSites });
     					await loadWebSites();
     				} else {
     					let site = $webSites;
@@ -12010,6 +12101,69 @@ zoo`.split('\n');
 
     const file$5 = "src/components/AuthAlert.svelte";
 
+    // (39:2) {#if countdown && (hour > 0 || minute > 0 || second > 0)}
+    function create_if_block$2(ctx) {
+    	let span3;
+    	let span0;
+    	let t0;
+    	let span1;
+    	let t1;
+    	let span2;
+
+    	const block = {
+    		c: function create() {
+    			span3 = element("span");
+    			span0 = element("span");
+    			t0 = text(":\n      ");
+    			span1 = element("span");
+    			t1 = text(":\n      ");
+    			span2 = element("span");
+    			set_style(span0, "--value", /*hour*/ ctx[0]);
+    			add_location(span0, file$5, 40, 6, 944);
+    			set_style(span1, "--value", /*minute*/ ctx[1]);
+    			add_location(span1, file$5, 41, 6, 984);
+    			set_style(span2, "--value", /*second*/ ctx[2]);
+    			add_location(span2, file$5, 42, 6, 1026);
+    			attr_dev(span3, "class", "countdown font-mono text-2xl");
+    			add_location(span3, file$5, 39, 4, 894);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, span3, anchor);
+    			append_dev(span3, span0);
+    			append_dev(span3, t0);
+    			append_dev(span3, span1);
+    			append_dev(span3, t1);
+    			append_dev(span3, span2);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*hour*/ 1) {
+    				set_style(span0, "--value", /*hour*/ ctx[0]);
+    			}
+
+    			if (dirty & /*minute*/ 2) {
+    				set_style(span1, "--value", /*minute*/ ctx[1]);
+    			}
+
+    			if (dirty & /*second*/ 4) {
+    				set_style(span2, "--value", /*second*/ ctx[2]);
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(span3);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$2.name,
+    		type: "if",
+    		source: "(39:2) {#if countdown && (hour > 0 || minute > 0 || second > 0)}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
     function create_fragment$5(ctx) {
     	let div1;
     	let svg;
@@ -12019,10 +12173,12 @@ zoo`.split('\n');
     	let span;
     	let t1;
     	let t2;
+    	let t3;
     	let div0;
     	let button;
     	let mounted;
     	let dispose;
+    	let if_block = /*countdown*/ ctx[5] && (/*hour*/ ctx[0] > 0 || /*minute*/ ctx[1] > 0 || /*second*/ ctx[2] > 0) && create_if_block$2(ctx);
 
     	const block = {
     		c: function create() {
@@ -12031,8 +12187,10 @@ zoo`.split('\n');
     			path = svg_element("path");
     			t0 = space();
     			span = element("span");
-    			t1 = text(/*message*/ ctx[1]);
+    			t1 = text(/*message*/ ctx[4]);
     			t2 = space();
+    			if (if_block) if_block.c();
+    			t3 = space();
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "Update";
@@ -12040,19 +12198,19 @@ zoo`.split('\n');
     			attr_dev(path, "stroke-linejoin", "round");
     			attr_dev(path, "stroke-width", "2");
     			attr_dev(path, "d", "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z");
-    			add_location(path, file$5, 12, 5, 279);
+    			add_location(path, file$5, 30, 5, 607);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "fill", "none");
     			attr_dev(svg, "viewBox", "0 0 24 24");
-    			attr_dev(svg, "class", svg_class_value = `stroke-${/*alertColor*/ ctx[0]} shrink-0 w-6 h-6`);
-    			add_location(svg, file$5, 7, 2, 138);
+    			attr_dev(svg, "class", svg_class_value = `stroke-${/*alertColor*/ ctx[3]} shrink-0 w-6 h-6`);
+    			add_location(svg, file$5, 25, 2, 466);
     			attr_dev(span, "class", "text-lg font-sans");
-    			add_location(span, file$5, 19, 2, 453);
-    			attr_dev(button, "class", "btn btn-sm px-4");
-    			add_location(button, file$5, 21, 4, 514);
-    			add_location(div0, file$5, 20, 2, 504);
+    			add_location(span, file$5, 37, 2, 781);
+    			attr_dev(button, "class", "btn btn-outline btn-sm px-4");
+    			add_location(button, file$5, 46, 4, 1093);
+    			add_location(div0, file$5, 45, 2, 1083);
     			attr_dev(div1, "class", "alert");
-    			add_location(div1, file$5, 6, 0, 116);
+    			add_location(div1, file$5, 24, 0, 444);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -12065,6 +12223,8 @@ zoo`.split('\n');
     			append_dev(div1, span);
     			append_dev(span, t1);
     			append_dev(div1, t2);
+    			if (if_block) if_block.m(div1, null);
+    			append_dev(div1, t3);
     			append_dev(div1, div0);
     			append_dev(div0, button);
 
@@ -12073,7 +12233,7 @@ zoo`.split('\n');
     					button,
     					"click",
     					function () {
-    						if (is_function(/*onButtonClick*/ ctx[2])) /*onButtonClick*/ ctx[2].apply(this, arguments);
+    						if (is_function(/*onButtonClick*/ ctx[6])) /*onButtonClick*/ ctx[6].apply(this, arguments);
     					},
     					false,
     					false,
@@ -12087,16 +12247,30 @@ zoo`.split('\n');
     		p: function update(new_ctx, [dirty]) {
     			ctx = new_ctx;
 
-    			if (dirty & /*alertColor*/ 1 && svg_class_value !== (svg_class_value = `stroke-${/*alertColor*/ ctx[0]} shrink-0 w-6 h-6`)) {
+    			if (dirty & /*alertColor*/ 8 && svg_class_value !== (svg_class_value = `stroke-${/*alertColor*/ ctx[3]} shrink-0 w-6 h-6`)) {
     				attr_dev(svg, "class", svg_class_value);
     			}
 
-    			if (dirty & /*message*/ 2) set_data_dev(t1, /*message*/ ctx[1]);
+    			if (dirty & /*message*/ 16) set_data_dev(t1, /*message*/ ctx[4]);
+
+    			if (/*countdown*/ ctx[5] && (/*hour*/ ctx[0] > 0 || /*minute*/ ctx[1] > 0 || /*second*/ ctx[2] > 0)) {
+    				if (if_block) {
+    					if_block.p(ctx, dirty);
+    				} else {
+    					if_block = create_if_block$2(ctx);
+    					if_block.c();
+    					if_block.m(div1, t3);
+    				}
+    			} else if (if_block) {
+    				if_block.d(1);
+    				if_block = null;
+    			}
     		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div1);
+    			if (if_block) if_block.d();
     			mounted = false;
     			dispose();
     		}
@@ -12118,36 +12292,80 @@ zoo`.split('\n');
     	validate_slots('AuthAlert', slots, []);
     	let { alertColor = "" } = $$props;
     	let { message = "" } = $$props;
+    	let { countdown = false } = $$props;
+    	let { hour = 0 } = $$props;
+    	let { minute = 0 } = $$props;
+    	let { second = 0 } = $$props;
+
+    	setInterval(
+    		() => {
+    			if (second > 0) {
+    				$$invalidate(2, second--, second);
+    			} else if (minute > 0) {
+    				$$invalidate(1, minute--, minute);
+    				$$invalidate(2, second = 59);
+    			} else if (hour > 0) {
+    				$$invalidate(0, hour--, hour);
+    				$$invalidate(1, minute = 59);
+    				$$invalidate(2, second = 59);
+    			}
+    		},
+    		1000
+    	);
 
     	let { onButtonClick = () => {
     		
     	} } = $$props;
 
-    	const writable_props = ['alertColor', 'message', 'onButtonClick'];
+    	const writable_props = [
+    		'alertColor',
+    		'message',
+    		'countdown',
+    		'hour',
+    		'minute',
+    		'second',
+    		'onButtonClick'
+    	];
 
     	Object.keys($$props).forEach(key => {
     		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<AuthAlert> was created with unknown prop '${key}'`);
     	});
 
     	$$self.$$set = $$props => {
-    		if ('alertColor' in $$props) $$invalidate(0, alertColor = $$props.alertColor);
-    		if ('message' in $$props) $$invalidate(1, message = $$props.message);
-    		if ('onButtonClick' in $$props) $$invalidate(2, onButtonClick = $$props.onButtonClick);
+    		if ('alertColor' in $$props) $$invalidate(3, alertColor = $$props.alertColor);
+    		if ('message' in $$props) $$invalidate(4, message = $$props.message);
+    		if ('countdown' in $$props) $$invalidate(5, countdown = $$props.countdown);
+    		if ('hour' in $$props) $$invalidate(0, hour = $$props.hour);
+    		if ('minute' in $$props) $$invalidate(1, minute = $$props.minute);
+    		if ('second' in $$props) $$invalidate(2, second = $$props.second);
+    		if ('onButtonClick' in $$props) $$invalidate(6, onButtonClick = $$props.onButtonClick);
     	};
 
-    	$$self.$capture_state = () => ({ alertColor, message, onButtonClick });
+    	$$self.$capture_state = () => ({
+    		alertColor,
+    		message,
+    		countdown,
+    		hour,
+    		minute,
+    		second,
+    		onButtonClick
+    	});
 
     	$$self.$inject_state = $$props => {
-    		if ('alertColor' in $$props) $$invalidate(0, alertColor = $$props.alertColor);
-    		if ('message' in $$props) $$invalidate(1, message = $$props.message);
-    		if ('onButtonClick' in $$props) $$invalidate(2, onButtonClick = $$props.onButtonClick);
+    		if ('alertColor' in $$props) $$invalidate(3, alertColor = $$props.alertColor);
+    		if ('message' in $$props) $$invalidate(4, message = $$props.message);
+    		if ('countdown' in $$props) $$invalidate(5, countdown = $$props.countdown);
+    		if ('hour' in $$props) $$invalidate(0, hour = $$props.hour);
+    		if ('minute' in $$props) $$invalidate(1, minute = $$props.minute);
+    		if ('second' in $$props) $$invalidate(2, second = $$props.second);
+    		if ('onButtonClick' in $$props) $$invalidate(6, onButtonClick = $$props.onButtonClick);
     	};
 
     	if ($$props && "$$inject" in $$props) {
     		$$self.$inject_state($$props.$$inject);
     	}
 
-    	return [alertColor, message, onButtonClick];
+    	return [hour, minute, second, alertColor, message, countdown, onButtonClick];
     }
 
     class AuthAlert extends SvelteComponentDev {
@@ -12155,9 +12373,13 @@ zoo`.split('\n');
     		super(options);
 
     		init(this, options, instance$5, create_fragment$5, safe_not_equal, {
-    			alertColor: 0,
-    			message: 1,
-    			onButtonClick: 2
+    			alertColor: 3,
+    			message: 4,
+    			countdown: 5,
+    			hour: 0,
+    			minute: 1,
+    			second: 2,
+    			onButtonClick: 6
     		});
 
     		dispatch_dev("SvelteRegisterComponent", {
@@ -12181,6 +12403,38 @@ zoo`.split('\n');
     	}
 
     	set message(value) {
+    		throw new Error("<AuthAlert>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get countdown() {
+    		throw new Error("<AuthAlert>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set countdown(value) {
+    		throw new Error("<AuthAlert>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get hour() {
+    		throw new Error("<AuthAlert>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set hour(value) {
+    		throw new Error("<AuthAlert>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get minute() {
+    		throw new Error("<AuthAlert>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set minute(value) {
+    		throw new Error("<AuthAlert>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get second() {
+    		throw new Error("<AuthAlert>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set second(value) {
     		throw new Error("<AuthAlert>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
 
@@ -12271,12 +12525,111 @@ zoo`.split('\n');
     	}
     }
 
+    function is_date(obj) {
+        return Object.prototype.toString.call(obj) === '[object Date]';
+    }
+
+    function get_interpolator(a, b) {
+        if (a === b || a !== a)
+            return () => a;
+        const type = typeof a;
+        if (type !== typeof b || Array.isArray(a) !== Array.isArray(b)) {
+            throw new Error('Cannot interpolate values of different type');
+        }
+        if (Array.isArray(a)) {
+            const arr = b.map((bi, i) => {
+                return get_interpolator(a[i], bi);
+            });
+            return t => arr.map(fn => fn(t));
+        }
+        if (type === 'object') {
+            if (!a || !b)
+                throw new Error('Object cannot be null');
+            if (is_date(a) && is_date(b)) {
+                a = a.getTime();
+                b = b.getTime();
+                const delta = b - a;
+                return t => new Date(a + t * delta);
+            }
+            const keys = Object.keys(b);
+            const interpolators = {};
+            keys.forEach(key => {
+                interpolators[key] = get_interpolator(a[key], b[key]);
+            });
+            return t => {
+                const result = {};
+                keys.forEach(key => {
+                    result[key] = interpolators[key](t);
+                });
+                return result;
+            };
+        }
+        if (type === 'number') {
+            const delta = b - a;
+            return t => a + t * delta;
+        }
+        throw new Error(`Cannot interpolate ${type} values`);
+    }
+    function tweened(value, defaults = {}) {
+        const store = writable(value);
+        let task;
+        let target_value = value;
+        function set(new_value, opts) {
+            if (value == null) {
+                store.set(value = new_value);
+                return Promise.resolve();
+            }
+            target_value = new_value;
+            let previous_task = task;
+            let started = false;
+            let { delay = 0, duration = 400, easing = identity, interpolate = get_interpolator } = assign(assign({}, defaults), opts);
+            if (duration === 0) {
+                if (previous_task) {
+                    previous_task.abort();
+                    previous_task = null;
+                }
+                store.set(value = target_value);
+                return Promise.resolve();
+            }
+            const start = now() + delay;
+            let fn;
+            task = loop(now => {
+                if (now < start)
+                    return true;
+                if (!started) {
+                    fn = interpolate(value, new_value);
+                    if (typeof duration === 'function')
+                        duration = duration(value, new_value);
+                    started = true;
+                }
+                if (previous_task) {
+                    previous_task.abort();
+                    previous_task = null;
+                }
+                const elapsed = now - start;
+                if (elapsed > duration) {
+                    store.set(value = new_value);
+                    return false;
+                }
+                // @ts-ignore
+                store.set(value = fn(easing(elapsed / duration)));
+                return true;
+            });
+            return task.promise;
+        }
+        return {
+            set,
+            update: (fn, opts) => set(fn(target_value, value), opts),
+            subscribe: store.subscribe
+        };
+    }
+
     /* src/components/Home.svelte generated by Svelte v3.59.2 */
 
     const { Object: Object_1 } = globals;
     const file$3 = "src/components/Home.svelte";
 
-    // (44:0) {:else}
+    // (66:0) {:else}
     function create_else_block$1(ctx) {
     	let div;
     	let h1;
@@ -12286,7 +12639,7 @@ zoo`.split('\n');
     	let current_block_type_index;
     	let if_block;
     	let current;
-    	const if_block_creators = [create_if_block_1$1, create_else_block_2];
+    	const if_block_creators = [create_if_block_1$1, create_else_block_2$1];
     	const if_blocks = [];
 
     	function select_block_type_1(ctx, dirty) {
@@ -12305,9 +12658,9 @@ zoo`.split('\n');
     			t1 = space();
     			if_block.c();
     			attr_dev(h1, "class", "text-center text-2xl font-bold font-sans");
-    			add_location(h1, file$3, 45, 4, 1395);
+    			add_location(h1, file$3, 67, 4, 2280);
     			attr_dev(div, "class", "w-full h-full flex flex-row flex-col p-10 pt-5 space-y-6");
-    			add_location(div, file$3, 44, 2, 1320);
+    			add_location(div, file$3, 66, 2, 2205);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -12364,14 +12717,14 @@ zoo`.split('\n');
     		block,
     		id: create_else_block$1.name,
     		type: "else",
-    		source: "(44:0) {:else}",
+    		source: "(66:0) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (31:0) {#if showAuthorization}
+    // (53:0) {#if showAuthorization}
     function create_if_block$1(ctx) {
     	let authorization;
     	let current;
@@ -12385,7 +12738,7 @@ zoo`.split('\n');
     			$$inline: true
     		});
 
-    	authorization.$on("cancel", /*cancel_handler*/ ctx[4]);
+    	authorization.$on("cancel", /*cancel_handler*/ ctx[8]);
 
     	const block = {
     		c: function create() {
@@ -12418,15 +12771,15 @@ zoo`.split('\n');
     		block,
     		id: create_if_block$1.name,
     		type: "if",
-    		source: "(31:0) {#if showAuthorization}",
+    		source: "(53:0) {#if showAuthorization}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (126:4) {:else}
-    function create_else_block_2(ctx) {
+    // (152:4) {:else}
+    function create_else_block_2$1(ctx) {
     	let button;
     	let mounted;
     	let dispose;
@@ -12436,13 +12789,13 @@ zoo`.split('\n');
     			button = element("button");
     			button.textContent = "Authorize now";
     			attr_dev(button, "class", "btn rounded-full ml-20 text-center align-center justify-center item-center badge border-1 border-gray-300 px-5 py-3");
-    			add_location(button, file$3, 126, 6, 4136);
+    			add_location(button, file$3, 152, 6, 4972);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
 
     			if (!mounted) {
-    				dispose = listen_dev(button, "click", /*click_handler*/ ctx[12], false, false, false, false);
+    				dispose = listen_dev(button, "click", /*click_handler*/ ctx[16], false, false, false, false);
     				mounted = true;
     			}
     		},
@@ -12458,16 +12811,16 @@ zoo`.split('\n');
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_else_block_2.name,
+    		id: create_else_block_2$1.name,
     		type: "else",
-    		source: "(126:4) {:else}",
+    		source: "(152:4) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (49:4) {#if webSite.auth === true}
+    // (71:4) {#if webSite.auth === true}
     function create_if_block_1$1(ctx) {
     	let div3;
     	let div2;
@@ -12535,18 +12888,18 @@ zoo`.split('\n');
     			if_block.c();
     			if_block_anchor = empty();
     			attr_dev(div0, "class", "stat-title text-center");
-    			add_location(div0, file$3, 51, 10, 1612);
+    			add_location(div0, file$3, 73, 10, 2497);
     			set_style(span0, "--value", /*webSite*/ ctx[1].history.length.toLocaleString());
-    			add_location(span0, file$3, 55, 16, 1799);
+    			add_location(span0, file$3, 77, 16, 2684);
     			attr_dev(span1, "class", "countdown font-mono text-6xl");
-    			add_location(span1, file$3, 54, 14, 1739);
-    			add_location(center, file$3, 53, 12, 1716);
+    			add_location(span1, file$3, 76, 14, 2624);
+    			add_location(center, file$3, 75, 12, 2601);
     			attr_dev(div1, "class", "stat-value");
-    			add_location(div1, file$3, 52, 10, 1679);
+    			add_location(div1, file$3, 74, 10, 2564);
     			attr_dev(div2, "class", "stat");
-    			add_location(div2, file$3, 50, 8, 1583);
+    			add_location(div2, file$3, 72, 8, 2468);
     			attr_dev(div3, "class", "stats shadow-sm bg-base-200");
-    			add_location(div3, file$3, 49, 6, 1533);
+    			add_location(div3, file$3, 71, 6, 2418);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div3, anchor);
@@ -12614,14 +12967,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_1$1.name,
     		type: "if",
-    		source: "(49:4) {#if webSite.auth === true}",
+    		source: "(71:4) {#if webSite.auth === true}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (117:6) {:else}
+    // (143:6) {:else}
     function create_else_block_1$1(ctx) {
     	let authalert;
     	let current;
@@ -12630,7 +12983,7 @@ zoo`.split('\n');
     			props: {
     				alertColor: "secondary",
     				message: "Not authorized",
-    				onButtonClick: /*func_6*/ ctx[11]
+    				onButtonClick: /*func_6*/ ctx[15]
     			},
     			$$inline: true
     		});
@@ -12645,7 +12998,7 @@ zoo`.split('\n');
     		},
     		p: function update(ctx, dirty) {
     			const authalert_changes = {};
-    			if (dirty & /*showAuthorization*/ 4) authalert_changes.onButtonClick = /*func_6*/ ctx[11];
+    			if (dirty & /*showAuthorization*/ 32) authalert_changes.onButtonClick = /*func_6*/ ctx[15];
     			authalert.$set(authalert_changes);
     		},
     		i: function intro(local) {
@@ -12666,14 +13019,14 @@ zoo`.split('\n');
     		block,
     		id: create_else_block_1$1.name,
     		type: "else",
-    		source: "(117:6) {:else}",
+    		source: "(143:6) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (109:114) 
+    // (135:114) 
     function create_if_block_7$1(ctx) {
     	let authalert;
     	let current;
@@ -12682,7 +13035,7 @@ zoo`.split('\n');
     			props: {
     				alertColor: "secondary",
     				message: "Authorization expired",
-    				onButtonClick: /*func_5*/ ctx[10]
+    				onButtonClick: /*func_5*/ ctx[14]
     			},
     			$$inline: true
     		});
@@ -12697,7 +13050,7 @@ zoo`.split('\n');
     		},
     		p: function update(ctx, dirty) {
     			const authalert_changes = {};
-    			if (dirty & /*showAuthorization*/ 4) authalert_changes.onButtonClick = /*func_5*/ ctx[10];
+    			if (dirty & /*showAuthorization*/ 32) authalert_changes.onButtonClick = /*func_5*/ ctx[14];
     			authalert.$set(authalert_changes);
     		},
     		i: function intro(local) {
@@ -12718,14 +13071,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_7$1.name,
     		type: "if",
-    		source: "(109:114) ",
+    		source: "(135:114) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (99:114) 
+    // (123:114) 
     function create_if_block_6$1(ctx) {
     	let authalert;
     	let current;
@@ -12733,8 +13086,12 @@ zoo`.split('\n');
     	authalert = new AuthAlert({
     			props: {
     				alertColor: "secondary",
-    				message: `Authorization rejected (time remaining ${remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop))})`,
-    				onButtonClick: /*func_4*/ ctx[9]
+    				countdown: true,
+    				hour: /*hour*/ ctx[2],
+    				minute: /*minute*/ ctx[3],
+    				second: /*second*/ ctx[4],
+    				message: /*authAlertMessage*/ ctx[6],
+    				onButtonClick: /*func_4*/ ctx[13]
     			},
     			$$inline: true
     		});
@@ -12749,8 +13106,11 @@ zoo`.split('\n');
     		},
     		p: function update(ctx, dirty) {
     			const authalert_changes = {};
-    			if (dirty & /*webSite*/ 2) authalert_changes.message = `Authorization rejected (time remaining ${remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop))})`;
-    			if (dirty & /*showAuthorization*/ 4) authalert_changes.onButtonClick = /*func_4*/ ctx[9];
+    			if (dirty & /*hour*/ 4) authalert_changes.hour = /*hour*/ ctx[2];
+    			if (dirty & /*minute*/ 8) authalert_changes.minute = /*minute*/ ctx[3];
+    			if (dirty & /*second*/ 16) authalert_changes.second = /*second*/ ctx[4];
+    			if (dirty & /*authAlertMessage*/ 64) authalert_changes.message = /*authAlertMessage*/ ctx[6];
+    			if (dirty & /*showAuthorization*/ 32) authalert_changes.onButtonClick = /*func_4*/ ctx[13];
     			authalert.$set(authalert_changes);
     		},
     		i: function intro(local) {
@@ -12771,14 +13131,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_6$1.name,
     		type: "if",
-    		source: "(99:114) ",
+    		source: "(123:114) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (89:114) 
+    // (111:114) 
     function create_if_block_5$1(ctx) {
     	let authalert;
     	let current;
@@ -12786,8 +13146,12 @@ zoo`.split('\n');
     	authalert = new AuthAlert({
     			props: {
     				alertColor: "accent",
-    				message: `Authorization expires in ${remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop))}`,
-    				onButtonClick: /*func_3*/ ctx[8]
+    				countdown: true,
+    				hour: /*hour*/ ctx[2],
+    				minute: /*minute*/ ctx[3],
+    				second: /*second*/ ctx[4],
+    				message: /*authAlertMessage*/ ctx[6],
+    				onButtonClick: /*func_3*/ ctx[12]
     			},
     			$$inline: true
     		});
@@ -12802,8 +13166,11 @@ zoo`.split('\n');
     		},
     		p: function update(ctx, dirty) {
     			const authalert_changes = {};
-    			if (dirty & /*webSite*/ 2) authalert_changes.message = `Authorization expires in ${remainingTime(new Date(/*webSite*/ ctx[1].permission.authorizationStop))}`;
-    			if (dirty & /*showAuthorization*/ 4) authalert_changes.onButtonClick = /*func_3*/ ctx[8];
+    			if (dirty & /*hour*/ 4) authalert_changes.hour = /*hour*/ ctx[2];
+    			if (dirty & /*minute*/ 8) authalert_changes.minute = /*minute*/ ctx[3];
+    			if (dirty & /*second*/ 16) authalert_changes.second = /*second*/ ctx[4];
+    			if (dirty & /*authAlertMessage*/ 64) authalert_changes.message = /*authAlertMessage*/ ctx[6];
+    			if (dirty & /*showAuthorization*/ 32) authalert_changes.onButtonClick = /*func_3*/ ctx[12];
     			authalert.$set(authalert_changes);
     		},
     		i: function intro(local) {
@@ -12824,14 +13191,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_5$1.name,
     		type: "if",
-    		source: "(89:114) ",
+    		source: "(111:114) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (81:76) 
+    // (103:76) 
     function create_if_block_4$1(ctx) {
     	let authalert;
     	let current;
@@ -12840,7 +13207,7 @@ zoo`.split('\n');
     			props: {
     				alertColor: "secondary",
     				message: "Authorization expired",
-    				onButtonClick: /*func_2*/ ctx[7]
+    				onButtonClick: /*func_2*/ ctx[11]
     			},
     			$$inline: true
     		});
@@ -12855,7 +13222,7 @@ zoo`.split('\n');
     		},
     		p: function update(ctx, dirty) {
     			const authalert_changes = {};
-    			if (dirty & /*showAuthorization*/ 4) authalert_changes.onButtonClick = /*func_2*/ ctx[7];
+    			if (dirty & /*showAuthorization*/ 32) authalert_changes.onButtonClick = /*func_2*/ ctx[11];
     			authalert.$set(authalert_changes);
     		},
     		i: function intro(local) {
@@ -12876,14 +13243,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_4$1.name,
     		type: "if",
-    		source: "(81:76) ",
+    		source: "(103:76) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (73:89) 
+    // (95:89) 
     function create_if_block_3$1(ctx) {
     	let authalert;
     	let current;
@@ -12892,7 +13259,7 @@ zoo`.split('\n');
     			props: {
     				alertColor: "secondary",
     				message: "Always rejected",
-    				onButtonClick: /*func_1*/ ctx[6]
+    				onButtonClick: /*func_1*/ ctx[10]
     			},
     			$$inline: true
     		});
@@ -12907,7 +13274,7 @@ zoo`.split('\n');
     		},
     		p: function update(ctx, dirty) {
     			const authalert_changes = {};
-    			if (dirty & /*showAuthorization*/ 4) authalert_changes.onButtonClick = /*func_1*/ ctx[6];
+    			if (dirty & /*showAuthorization*/ 32) authalert_changes.onButtonClick = /*func_1*/ ctx[10];
     			authalert.$set(authalert_changes);
     		},
     		i: function intro(local) {
@@ -12928,14 +13295,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_3$1.name,
     		type: "if",
-    		source: "(73:89) ",
+    		source: "(95:89) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (65:6) {#if webSite.permission.always === true && webSite.permission.accept === true}
+    // (87:6) {#if webSite.permission.always === true && webSite.permission.accept === true}
     function create_if_block_2$1(ctx) {
     	let authalert;
     	let current;
@@ -12944,7 +13311,7 @@ zoo`.split('\n');
     			props: {
     				alertColor: "accent",
     				message: "Always authorized",
-    				onButtonClick: /*func*/ ctx[5]
+    				onButtonClick: /*func*/ ctx[9]
     			},
     			$$inline: true
     		});
@@ -12959,7 +13326,7 @@ zoo`.split('\n');
     		},
     		p: function update(ctx, dirty) {
     			const authalert_changes = {};
-    			if (dirty & /*showAuthorization*/ 4) authalert_changes.onButtonClick = /*func*/ ctx[5];
+    			if (dirty & /*showAuthorization*/ 32) authalert_changes.onButtonClick = /*func*/ ctx[9];
     			authalert.$set(authalert_changes);
     		},
     		i: function intro(local) {
@@ -12980,7 +13347,7 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_2$1.name,
     		type: "if",
-    		source: "(65:6) {#if webSite.permission.always === true && webSite.permission.accept === true}",
+    		source: "(87:6) {#if webSite.permission.always === true && webSite.permission.accept === true}",
     		ctx
     	});
 
@@ -12997,7 +13364,7 @@ zoo`.split('\n');
     	const if_blocks = [];
 
     	function select_block_type(ctx, dirty) {
-    		if (/*showAuthorization*/ ctx[2]) return 0;
+    		if (/*showAuthorization*/ ctx[5]) return 0;
     		return 1;
     	}
 
@@ -13077,9 +13444,10 @@ zoo`.split('\n');
     }
 
     function instance$3($$self, $$props, $$invalidate) {
+    	let authAlertMessage;
     	let $webSites;
     	validate_store(webSites, 'webSites');
-    	component_subscribe($$self, webSites, $$value => $$invalidate(3, $webSites = $$value));
+    	component_subscribe($$self, webSites, $$value => $$invalidate(7, $webSites = $$value));
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('Home', slots, []);
     	let currentTab = { url: "" };
@@ -13100,6 +13468,25 @@ zoo`.split('\n');
     		}
     	};
 
+    	let timerExpire = remainingTime(new Date(webSite.permission.authorizationStop));
+    	let splitedTimerExpire = timerExpire.split(":");
+    	let hour = 0;
+    	let minute = 0;
+    	let second = 0;
+
+    	if (new Date(webSite.permission.authorizationStop) > new Date()) {
+    		const i = setInterval(
+    			() => {
+    				if (new Date(webSite.permission.authorizationStop) < new Date()) {
+    					clearInterval(i);
+    				} else {
+    					timerExpire = remainingTime(new Date(webSite.permission.authorizationStop));
+    				}
+    			},
+    			1000
+    		);
+    	}
+
     	let showAuthorization = false;
 
     	loadWebSites().then(_webSites => {
@@ -13108,6 +13495,11 @@ zoo`.split('\n');
     		}
 
     		if (Object.keys(_webSites).indexOf(domainToUrl(currentTab.url)) !== -1) $$invalidate(1, webSite = _webSites[domainToUrl(currentTab.url)]);
+    		timerExpire = remainingTime(new Date(webSite.permission.authorizationStop));
+    		const splitedTimerExpire = timerExpire.split(":");
+    		$$invalidate(2, hour = parseInt(splitedTimerExpire[0]));
+    		$$invalidate(3, minute = parseInt(splitedTimerExpire[1]));
+    		$$invalidate(4, second = parseInt(splitedTimerExpire[2]));
     	});
 
     	const writable_props = [];
@@ -13121,39 +13513,39 @@ zoo`.split('\n');
     			if (Object.keys($webSites).indexOf(domainToUrl(currentTab.url)) !== -1) $$invalidate(1, webSite = $webSites[domainToUrl(currentTab.url)]);
     		});
 
-    		$$invalidate(2, showAuthorization = false);
+    		$$invalidate(5, showAuthorization = false);
     	};
 
     	const func = () => {
-    		$$invalidate(2, showAuthorization = true);
+    		$$invalidate(5, showAuthorization = true);
     	};
 
     	const func_1 = () => {
-    		$$invalidate(2, showAuthorization = true);
+    		$$invalidate(5, showAuthorization = true);
     	};
 
     	const func_2 = () => {
-    		$$invalidate(2, showAuthorization = true);
+    		$$invalidate(5, showAuthorization = true);
     	};
 
     	const func_3 = () => {
-    		$$invalidate(2, showAuthorization = true);
+    		$$invalidate(5, showAuthorization = true);
     	};
 
     	const func_4 = () => {
-    		$$invalidate(2, showAuthorization = true);
+    		$$invalidate(5, showAuthorization = true);
     	};
 
     	const func_5 = () => {
-    		$$invalidate(2, showAuthorization = true);
+    		$$invalidate(5, showAuthorization = true);
     	};
 
     	const func_6 = () => {
-    		$$invalidate(2, showAuthorization = true);
+    		$$invalidate(5, showAuthorization = true);
     	};
 
     	const click_handler = () => {
-    		$$invalidate(2, showAuthorization = true);
+    		$$invalidate(5, showAuthorization = true);
     	};
 
     	$$self.$capture_state = () => ({
@@ -13165,26 +13557,45 @@ zoo`.split('\n');
     		Authorization,
     		AuthAlert,
     		Footer,
+    		tweened,
     		currentTab,
     		webSite,
+    		timerExpire,
+    		splitedTimerExpire,
+    		hour,
+    		minute,
+    		second,
     		showAuthorization,
+    		authAlertMessage,
     		$webSites
     	});
 
     	$$self.$inject_state = $$props => {
     		if ('currentTab' in $$props) $$invalidate(0, currentTab = $$props.currentTab);
     		if ('webSite' in $$props) $$invalidate(1, webSite = $$props.webSite);
-    		if ('showAuthorization' in $$props) $$invalidate(2, showAuthorization = $$props.showAuthorization);
+    		if ('timerExpire' in $$props) timerExpire = $$props.timerExpire;
+    		if ('splitedTimerExpire' in $$props) splitedTimerExpire = $$props.splitedTimerExpire;
+    		if ('hour' in $$props) $$invalidate(2, hour = $$props.hour);
+    		if ('minute' in $$props) $$invalidate(3, minute = $$props.minute);
+    		if ('second' in $$props) $$invalidate(4, second = $$props.second);
+    		if ('showAuthorization' in $$props) $$invalidate(5, showAuthorization = $$props.showAuthorization);
+    		if ('authAlertMessage' in $$props) $$invalidate(6, authAlertMessage = $$props.authAlertMessage);
     	};
 
     	if ($$props && "$$inject" in $$props) {
     		$$self.$inject_state($$props.$$inject);
     	}
 
+    	$$invalidate(6, authAlertMessage = `Authorization expires in`);
+
     	return [
     		currentTab,
     		webSite,
+    		hour,
+    		minute,
+    		second,
     		showAuthorization,
+    		authAlertMessage,
     		$webSites,
     		cancel_handler,
     		func,
@@ -16405,82 +16816,117 @@ zoo`.split('\n');
     /* src/App.svelte generated by Svelte v3.59.2 */
     const file = "src/App.svelte";
 
-    // (184:0) {:else}
+    function get_each_context(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[27] = list[i];
+    	return child_ctx;
+    }
+
+    // (221:0) {:else}
     function create_else_block_1(ctx) {
     	let div1;
-    	let span0;
-    	let t1;
-    	let div0;
-    	let span1;
-    	let t3;
-    	let input;
-    	let t4;
     	let button;
+    	let t0;
+    	let div0;
+    	let img;
+    	let img_src_value;
+    	let t1;
+    	let span;
+    	let t3;
     	let mounted;
     	let dispose;
+
+    	function select_block_type_4(ctx, dirty) {
+    		if (/*$theme*/ ctx[7] !== "dark") return create_if_block_9;
+    		return create_else_block_3;
+    	}
+
+    	let current_block_type = select_block_type_4(ctx);
+    	let if_block0 = current_block_type(ctx);
+
+    	function select_block_type_5(ctx, dirty) {
+    		if (/*creationMode*/ ctx[4] == false) return create_if_block_8;
+    		return create_else_block_2;
+    	}
+
+    	let current_block_type_1 = select_block_type_5(ctx);
+    	let if_block1 = current_block_type_1(ctx);
 
     	const block = {
     		c: function create() {
     			div1 = element("div");
-    			span0 = element("span");
-    			span0.textContent = "Login";
-    			t1 = space();
-    			div0 = element("div");
-    			span1 = element("span");
-    			span1.textContent = "Private Key";
-    			t3 = space();
-    			input = element("input");
-    			t4 = space();
     			button = element("button");
-    			button.textContent = "Login";
-    			attr_dev(span0, "class", "text-xl text-center w-full");
-    			add_location(span0, file, 187, 4, 6721);
-    			attr_dev(span1, "class", "label-text");
-    			add_location(span1, file, 190, 6, 6821);
-    			attr_dev(input, "type", "password");
-    			attr_dev(input, "class", "input input-bordered mt-2");
-    			attr_dev(input, "placeholder", "nsec");
-    			add_location(input, file, 192, 6, 6872);
-    			attr_dev(button, "class", "btn btn-primary w-full mt-4");
-    			add_location(button, file, 199, 6, 7049);
-    			attr_dev(div0, "class", "form-control w-11/12");
-    			add_location(div0, file, 189, 4, 6780);
-    			attr_dev(div1, "class", "w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2");
-    			add_location(div1, file, 186, 2, 6643);
+    			if_block0.c();
+    			t0 = space();
+    			div0 = element("div");
+    			img = element("img");
+    			t1 = space();
+    			span = element("span");
+    			span.textContent = "Your profiles";
+    			t3 = space();
+    			if_block1.c();
+    			attr_dev(button, "class", "btn btn-ghost btn-circle absolute top-3 right-3");
+    			add_location(button, file, 224, 4, 7751);
+    			if (!src_url_equal(img.src, img_src_value = "/assets/logo.png")) attr_dev(img, "src", img_src_value);
+    			attr_dev(img, "width", "80");
+    			attr_dev(img, "class", "mx-auto");
+    			attr_dev(img, "alt", "");
+    			add_location(img, file, 255, 6, 9201);
+    			attr_dev(div0, "class", "w-full");
+    			add_location(div0, file, 254, 4, 9174);
+    			attr_dev(span, "class", "text-lg text-center w-full");
+    			add_location(span, file, 258, 4, 9282);
+    			attr_dev(div1, "class", "w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2 overflow-y-auto");
+    			add_location(div1, file, 221, 2, 7650);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
-    			append_dev(div1, span0);
-    			append_dev(div1, t1);
+    			append_dev(div1, button);
+    			if_block0.m(button, null);
+    			append_dev(div1, t0);
     			append_dev(div1, div0);
-    			append_dev(div0, span1);
-    			append_dev(div0, t3);
-    			append_dev(div0, input);
-    			set_input_value(input, /*_keyStore*/ ctx[2]);
-    			append_dev(div0, t4);
-    			append_dev(div0, button);
+    			append_dev(div0, img);
+    			append_dev(div1, t1);
+    			append_dev(div1, span);
+    			append_dev(div1, t3);
+    			if_block1.m(div1, null);
 
     			if (!mounted) {
-    				dispose = [
-    					listen_dev(input, "input", /*input_input_handler*/ ctx[13]),
-    					listen_dev(input, "keydown", keydown_handler, false, false, false, false),
-    					listen_dev(button, "click", /*click_handler_6*/ ctx[14], false, false, false, false)
-    				];
-
+    				dispose = listen_dev(button, "click", /*click_handler_6*/ ctx[18], false, false, false, false);
     				mounted = true;
     			}
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*_keyStore*/ 4 && input.value !== /*_keyStore*/ ctx[2]) {
-    				set_input_value(input, /*_keyStore*/ ctx[2]);
+    			if (current_block_type !== (current_block_type = select_block_type_4(ctx))) {
+    				if_block0.d(1);
+    				if_block0 = current_block_type(ctx);
+
+    				if (if_block0) {
+    					if_block0.c();
+    					if_block0.m(button, null);
+    				}
+    			}
+
+    			if (current_block_type_1 === (current_block_type_1 = select_block_type_5(ctx)) && if_block1) {
+    				if_block1.p(ctx, dirty);
+    			} else {
+    				if_block1.d(1);
+    				if_block1 = current_block_type_1(ctx);
+
+    				if (if_block1) {
+    					if_block1.c();
+    					if_block1.m(div1, null);
+    				}
     			}
     		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div1);
+    			if_block0.d();
+    			if_block1.d();
     			mounted = false;
-    			run_all(dispose);
+    			dispose();
     		}
     	};
 
@@ -16488,14 +16934,14 @@ zoo`.split('\n');
     		block,
     		id: create_else_block_1.name,
     		type: "else",
-    		source: "(184:0) {:else}",
+    		source: "(221:0) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (38:0) {#if $keyStore !== "" && $keyStore !== undefined}
+    // (75:0) {#if $keyStore !== "" && $keyStore !== undefined}
     function create_if_block(ctx) {
     	let div9;
     	let div7;
@@ -16508,14 +16954,14 @@ zoo`.split('\n');
     	let div5;
     	let div3;
 
-    	let t1_value = (/*$userProfile*/ ctx[3]?.name?.length > 12
-    	? /*$userProfile*/ ctx[3]?.name.substr(0, 12) + "..."
-    	: /*$userProfile*/ ctx[3]?.name || getPublicKey(/*$keyStore*/ ctx[4]).substr(0, 16)) + "";
+    	let t1_value = (/*$userProfile*/ ctx[5]?.name?.length > 12
+    	? /*$userProfile*/ ctx[5]?.name.substr(0, 12) + "..."
+    	: /*$userProfile*/ ctx[5]?.name || getPublicKey(/*$keyStore*/ ctx[6]).substr(0, 16)) + "";
 
     	let t1;
     	let t2;
     	let div4;
-    	let t3_value = (/*$userProfile*/ ctx[3]?.nip05 || "") + "";
+    	let t3_value = (/*$userProfile*/ ctx[5]?.nip05 || "") + "";
     	let t3;
     	let t4;
     	let div6;
@@ -16530,7 +16976,7 @@ zoo`.split('\n');
     	let dispose;
 
     	function select_block_type_1(ctx, dirty) {
-    		if (/*$theme*/ ctx[5] !== "dark") return create_if_block_7;
+    		if (/*$theme*/ ctx[7] !== "dark") return create_if_block_7;
     		return create_else_block;
     	}
 
@@ -16584,31 +17030,31 @@ zoo`.split('\n');
     			div8 = element("div");
     			if (if_block2) if_block2.c();
     			attr_dev(img, "loading", "lazy");
-    			if (!src_url_equal(img.src, img_src_value = /*$userProfile*/ ctx[3]?.picture || "https://toastr.space/images/toastr.png")) attr_dev(img, "src", img_src_value);
+    			if (!src_url_equal(img.src, img_src_value = /*$userProfile*/ ctx[5]?.picture || "https://toastr.space/images/toastr.png")) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "");
-    			add_location(img, file, 45, 12, 1514);
+    			add_location(img, file, 82, 12, 2561);
     			attr_dev(div0, "class", "w-12 rounded-full bordered border-2 border-blue-200 shadow-lg");
-    			add_location(div0, file, 42, 10, 1403);
+    			add_location(div0, file, 79, 10, 2450);
     			attr_dev(div1, "class", "avatar");
-    			add_location(div1, file, 41, 8, 1372);
+    			add_location(div1, file, 78, 8, 2419);
     			attr_dev(div2, "class", "w-2/12 p-2");
-    			add_location(div2, file, 40, 6, 1339);
+    			add_location(div2, file, 77, 6, 2386);
     			attr_dev(div3, "class", "text-2xl font-bold");
-    			add_location(div3, file, 56, 8, 1831);
+    			add_location(div3, file, 93, 8, 2878);
     			attr_dev(div4, "class", "text-sm text-secondary text-gray-500");
-    			add_location(div4, file, 62, 8, 2096);
+    			add_location(div4, file, 99, 8, 3143);
     			attr_dev(div5, "class", "w-6/12 p-4 pl-2 pt-2");
-    			add_location(div5, file, 54, 6, 1737);
+    			add_location(div5, file, 91, 6, 2784);
     			attr_dev(button, "class", "btn btn-ghost btn-circle");
-    			add_location(button, file, 68, 8, 2296);
+    			add_location(button, file, 105, 8, 3343);
     			attr_dev(div6, "class", "w-4/12 py-4 pt-2 pl-7");
-    			add_location(div6, file, 66, 6, 2219);
+    			add_location(div6, file, 103, 6, 3266);
     			attr_dev(div7, "class", "w-full h-16 bg-base-100 flex shadow-sm");
-    			add_location(div7, file, 39, 4, 1280);
+    			add_location(div7, file, 76, 4, 2327);
     			attr_dev(div8, "class", "w-full h-full pt-2");
-    			add_location(div8, file, 171, 4, 6279);
+    			add_location(div8, file, 208, 4, 7326);
     			attr_dev(div9, "class", "w-full h-full flex flex-wrap fixed-width svelte-2ra2nn");
-    			add_location(div9, file, 38, 2, 1221);
+    			add_location(div9, file, 75, 2, 2268);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div9, anchor);
@@ -16640,20 +17086,20 @@ zoo`.split('\n');
     			current = true;
 
     			if (!mounted) {
-    				dispose = listen_dev(button, "click", /*click_handler*/ ctx[7], false, false, false, false);
+    				dispose = listen_dev(button, "click", /*click_handler*/ ctx[12], false, false, false, false);
     				mounted = true;
     			}
     		},
     		p: function update(ctx, dirty) {
-    			if (!current || dirty & /*$userProfile*/ 8 && !src_url_equal(img.src, img_src_value = /*$userProfile*/ ctx[3]?.picture || "https://toastr.space/images/toastr.png")) {
+    			if (!current || dirty & /*$userProfile*/ 32 && !src_url_equal(img.src, img_src_value = /*$userProfile*/ ctx[5]?.picture || "https://toastr.space/images/toastr.png")) {
     				attr_dev(img, "src", img_src_value);
     			}
 
-    			if ((!current || dirty & /*$userProfile, $keyStore*/ 24) && t1_value !== (t1_value = (/*$userProfile*/ ctx[3]?.name?.length > 12
-    			? /*$userProfile*/ ctx[3]?.name.substr(0, 12) + "..."
-    			: /*$userProfile*/ ctx[3]?.name || getPublicKey(/*$keyStore*/ ctx[4]).substr(0, 16)) + "")) set_data_dev(t1, t1_value);
+    			if ((!current || dirty & /*$userProfile, $keyStore*/ 96) && t1_value !== (t1_value = (/*$userProfile*/ ctx[5]?.name?.length > 12
+    			? /*$userProfile*/ ctx[5]?.name.substr(0, 12) + "..."
+    			: /*$userProfile*/ ctx[5]?.name || getPublicKey(/*$keyStore*/ ctx[6]).substr(0, 16)) + "")) set_data_dev(t1, t1_value);
 
-    			if ((!current || dirty & /*$userProfile*/ 8) && t3_value !== (t3_value = (/*$userProfile*/ ctx[3]?.nip05 || "") + "")) set_data_dev(t3, t3_value);
+    			if ((!current || dirty & /*$userProfile*/ 32) && t3_value !== (t3_value = (/*$userProfile*/ ctx[5]?.nip05 || "") + "")) set_data_dev(t3, t3_value);
 
     			if (current_block_type !== (current_block_type = select_block_type_1(ctx))) {
     				if_block0.d(1);
@@ -16736,14 +17182,511 @@ zoo`.split('\n');
     		block,
     		id: create_if_block.name,
     		type: "if",
-    		source: "(38:0) {#if $keyStore !== \\\"\\\" && $keyStore !== undefined}",
+    		source: "(75:0) {#if $keyStore !== \\\"\\\" && $keyStore !== undefined}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (86:10) {:else}
+    // (242:6) {:else}
+    function create_else_block_3(ctx) {
+    	let svg;
+    	let path;
+
+    	const block = {
+    		c: function create() {
+    			svg = svg_element("svg");
+    			path = svg_element("path");
+    			attr_dev(path, "fill", "currentColor");
+    			attr_dev(path, "d", "M120 40V16a8 8 0 0 1 16 0v24a8 8 0 0 1-16 0Zm72 88a64 64 0 1 1-64-64a64.07 64.07 0 0 1 64 64Zm-16 0a48 48 0 1 0-48 48a48.05 48.05 0 0 0 48-48ZM58.34 69.66a8 8 0 0 0 11.32-11.32l-16-16a8 8 0 0 0-11.32 11.32Zm0 116.68l-16 16a8 8 0 0 0 11.32 11.32l16-16a8 8 0 0 0-11.32-11.32ZM192 72a8 8 0 0 0 5.66-2.34l16-16a8 8 0 0 0-11.32-11.32l-16 16A8 8 0 0 0 192 72Zm5.66 114.34a8 8 0 0 0-11.32 11.32l16 16a8 8 0 0 0 11.32-11.32ZM48 128a8 8 0 0 0-8-8H16a8 8 0 0 0 0 16h24a8 8 0 0 0 8-8Zm80 80a8 8 0 0 0-8 8v24a8 8 0 0 0 16 0v-24a8 8 0 0 0-8-8Zm112-88h-24a8 8 0 0 0 0 16h24a8 8 0 0 0 0-16Z");
+    			add_location(path, file, 247, 11, 8486);
+    			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
+    			attr_dev(svg, "width", "24");
+    			attr_dev(svg, "height", "24");
+    			attr_dev(svg, "viewBox", "0 0 256 256");
+    			add_location(svg, file, 242, 8, 8350);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, svg, anchor);
+    			append_dev(svg, path);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(svg);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block_3.name,
+    		type: "else",
+    		source: "(242:6) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (231:6) {#if $theme !== "dark"}
+    function create_if_block_9(ctx) {
+    	let svg;
+    	let path;
+
+    	const block = {
+    		c: function create() {
+    			svg = svg_element("svg");
+    			path = svg_element("path");
+    			attr_dev(path, "fill", "currentColor");
+    			attr_dev(path, "d", "M235.54 150.21a104.84 104.84 0 0 1-37 52.91A104 104 0 0 1 32 120a103.09 103.09 0 0 1 20.88-62.52a104.84 104.84 0 0 1 52.91-37a8 8 0 0 1 10 10a88.08 88.08 0 0 0 109.8 109.8a8 8 0 0 1 10 10Z");
+    			add_location(path, file, 236, 11, 8057);
+    			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
+    			attr_dev(svg, "width", "21");
+    			attr_dev(svg, "height", "21");
+    			attr_dev(svg, "viewBox", "0 0 256 256");
+    			add_location(svg, file, 231, 8, 7921);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, svg, anchor);
+    			append_dev(svg, path);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(svg);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_9.name,
+    		type: "if",
+    		source: "(231:6) {#if $theme !== \\\"dark\\\"}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (320:4) {:else}
+    function create_else_block_2(ctx) {
+    	let hr;
+    	let t0;
+    	let div1;
+    	let div0;
+    	let button0;
+    	let svg;
+    	let path0;
+    	let path1;
+    	let t1;
+    	let t2;
+    	let span0;
+    	let t4;
+    	let div5;
+    	let div4;
+    	let div2;
+    	let span1;
+    	let t6;
+    	let input0;
+    	let t7;
+    	let div3;
+    	let span2;
+    	let t9;
+    	let input1;
+    	let t10;
+    	let button1;
+    	let mounted;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			hr = element("hr");
+    			t0 = space();
+    			div1 = element("div");
+    			div0 = element("div");
+    			button0 = element("button");
+    			svg = svg_element("svg");
+    			path0 = svg_element("path");
+    			path1 = svg_element("path");
+    			t1 = text("\n                Back");
+    			t2 = space();
+    			span0 = element("span");
+    			span0.textContent = "Create new profile";
+    			t4 = space();
+    			div5 = element("div");
+    			div4 = element("div");
+    			div2 = element("div");
+    			span1 = element("span");
+    			span1.textContent = "Name";
+    			t6 = space();
+    			input0 = element("input");
+    			t7 = space();
+    			div3 = element("div");
+    			span2 = element("span");
+    			span2.textContent = "Private Key";
+    			t9 = space();
+    			input1 = element("input");
+    			t10 = space();
+    			button1 = element("button");
+    			button1.textContent = "Create";
+    			add_location(hr, file, 320, 6, 11362);
+    			attr_dev(path0, "fill", "currentColor");
+    			attr_dev(path0, "d", "M224 480h640a32 32 0 1 1 0 64H224a32 32 0 0 1 0-64z");
+    			add_location(path0, file, 335, 15, 11850);
+    			attr_dev(path1, "fill", "currentColor");
+    			attr_dev(path1, "d", "m237.248 512l265.408 265.344a32 32 0 0 1-45.312 45.312l-288-288a32 32 0 0 1 0-45.312l288-288a32 32 0 1 1 45.312 45.312L237.248 512z");
+    			add_location(path1, file, 338, 16, 11980);
+    			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
+    			attr_dev(svg, "width", "19");
+    			attr_dev(svg, "height", "19");
+    			attr_dev(svg, "class", "mt-1");
+    			attr_dev(svg, "viewBox", "0 0 1024 1024");
+    			add_location(svg, file, 329, 12, 11665);
+    			attr_dev(button0, "class", "link link-hover mx-auto text-lg flex flex-row space-x-8");
+    			add_location(button0, file, 323, 10, 11476);
+    			attr_dev(div0, "class", "flex flex-row space-x-8");
+    			add_location(div0, file, 322, 8, 11428);
+    			attr_dev(div1, "class", "w-full flex justify-start pr-8");
+    			add_location(div1, file, 321, 6, 11375);
+    			attr_dev(span0, "class", "font-semibold w-full");
+    			add_location(span0, file, 347, 6, 12295);
+    			attr_dev(span1, "class", "label-text");
+    			add_location(span1, file, 352, 12, 12520);
+    			attr_dev(input0, "type", "text");
+    			attr_dev(input0, "class", "input input-bordered mt-2");
+    			attr_dev(input0, "placeholder", "name");
+    			add_location(input0, file, 354, 12, 12570);
+    			attr_dev(div2, "class", "w-5/12 flex flex-col");
+    			add_location(div2, file, 351, 10, 12473);
+    			attr_dev(span2, "class", "label-text");
+    			add_location(span2, file, 363, 12, 12846);
+    			attr_dev(input1, "type", "password");
+    			attr_dev(input1, "class", "input input-bordered mt-2");
+    			attr_dev(input1, "placeholder", "nsec");
+    			add_location(input1, file, 365, 12, 12903);
+    			attr_dev(div3, "class", "flex-grow flex flex-col");
+    			add_location(div3, file, 362, 10, 12796);
+    			attr_dev(div4, "class", "flex w-11/12 flex-row pr-16 space-x-4");
+    			add_location(div4, file, 350, 8, 12411);
+    			attr_dev(button1, "class", "btn btn-primary w-full mt-4");
+    			add_location(button1, file, 374, 8, 13150);
+    			attr_dev(div5, "class", "form-control w-11/12 flex");
+    			add_location(div5, file, 349, 6, 12363);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, hr, anchor);
+    			insert_dev(target, t0, anchor);
+    			insert_dev(target, div1, anchor);
+    			append_dev(div1, div0);
+    			append_dev(div0, button0);
+    			append_dev(button0, svg);
+    			append_dev(svg, path0);
+    			append_dev(svg, path1);
+    			append_dev(button0, t1);
+    			insert_dev(target, t2, anchor);
+    			insert_dev(target, span0, anchor);
+    			insert_dev(target, t4, anchor);
+    			insert_dev(target, div5, anchor);
+    			append_dev(div5, div4);
+    			append_dev(div4, div2);
+    			append_dev(div2, span1);
+    			append_dev(div2, t6);
+    			append_dev(div2, input0);
+    			set_input_value(input0, /*_name*/ ctx[3]);
+    			append_dev(div4, t7);
+    			append_dev(div4, div3);
+    			append_dev(div3, span2);
+    			append_dev(div3, t9);
+    			append_dev(div3, input1);
+    			set_input_value(input1, /*_keyStore*/ ctx[2]);
+    			append_dev(div5, t10);
+    			append_dev(div5, button1);
+
+    			if (!mounted) {
+    				dispose = [
+    					listen_dev(button0, "click", /*click_handler_10*/ ctx[22], false, false, false, false),
+    					listen_dev(input0, "input", /*input0_input_handler*/ ctx[23]),
+    					listen_dev(input0, "keydown", keydown_handler, false, false, false, false),
+    					listen_dev(input1, "input", /*input1_input_handler*/ ctx[24]),
+    					listen_dev(input1, "keydown", keydown_handler_1, false, false, false, false),
+    					listen_dev(button1, "click", /*click_handler_11*/ ctx[25], false, false, false, false)
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*_name*/ 8 && input0.value !== /*_name*/ ctx[3]) {
+    				set_input_value(input0, /*_name*/ ctx[3]);
+    			}
+
+    			if (dirty & /*_keyStore*/ 4 && input1.value !== /*_keyStore*/ ctx[2]) {
+    				set_input_value(input1, /*_keyStore*/ ctx[2]);
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(hr);
+    			if (detaching) detach_dev(t0);
+    			if (detaching) detach_dev(div1);
+    			if (detaching) detach_dev(t2);
+    			if (detaching) detach_dev(span0);
+    			if (detaching) detach_dev(t4);
+    			if (detaching) detach_dev(div5);
+    			mounted = false;
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block_2.name,
+    		type: "else",
+    		source: "(320:4) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (261:4) {#if creationMode == false}
+    function create_if_block_8(ctx) {
+    	let div0;
+    	let table;
+    	let thead;
+    	let tr;
+    	let th0;
+    	let t0;
+    	let th1;
+    	let t1;
+    	let tbody;
+    	let t2;
+    	let div1;
+    	let center;
+    	let button;
+    	let mounted;
+    	let dispose;
+    	let each_value = /*$profiles*/ ctx[8];
+    	validate_each_argument(each_value);
+    	let each_blocks = [];
+
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+    	}
+
+    	const block = {
+    		c: function create() {
+    			div0 = element("div");
+    			table = element("table");
+    			thead = element("thead");
+    			tr = element("tr");
+    			th0 = element("th");
+    			t0 = space();
+    			th1 = element("th");
+    			t1 = space();
+    			tbody = element("tbody");
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			t2 = space();
+    			div1 = element("div");
+    			center = element("center");
+    			button = element("button");
+    			button.textContent = "+ add profile";
+    			add_location(th0, file, 266, 14, 9512);
+    			set_style(th1, "max-width", "60px");
+    			add_location(th1, file, 267, 14, 9533);
+    			add_location(tr, file, 265, 12, 9493);
+    			add_location(thead, file, 264, 10, 9473);
+    			add_location(tbody, file, 270, 10, 9612);
+    			attr_dev(table, "class", "table");
+    			add_location(table, file, 262, 8, 9417);
+    			attr_dev(div0, "class", "w-full pr-4");
+    			add_location(div0, file, 261, 6, 9383);
+    			attr_dev(button, "class", "link link-hover mx-auto text-lg");
+    			add_location(button, file, 309, 10, 11115);
+    			add_location(center, file, 308, 8, 11096);
+    			attr_dev(div1, "class", "w-full flex justify-end pr-8");
+    			add_location(div1, file, 307, 6, 11045);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div0, anchor);
+    			append_dev(div0, table);
+    			append_dev(table, thead);
+    			append_dev(thead, tr);
+    			append_dev(tr, th0);
+    			append_dev(tr, t0);
+    			append_dev(tr, th1);
+    			append_dev(table, t1);
+    			append_dev(table, tbody);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				if (each_blocks[i]) {
+    					each_blocks[i].m(tbody, null);
+    				}
+    			}
+
+    			insert_dev(target, t2, anchor);
+    			insert_dev(target, div1, anchor);
+    			append_dev(div1, center);
+    			append_dev(center, button);
+
+    			if (!mounted) {
+    				dispose = listen_dev(button, "click", /*click_handler_9*/ ctx[21], false, false, false, false);
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*removeProfileByName, $profiles, openProfile*/ 3328) {
+    				each_value = /*$profiles*/ ctx[8];
+    				validate_each_argument(each_value);
+    				let i;
+
+    				for (i = 0; i < each_value.length; i += 1) {
+    					const child_ctx = get_each_context(ctx, each_value, i);
+
+    					if (each_blocks[i]) {
+    						each_blocks[i].p(child_ctx, dirty);
+    					} else {
+    						each_blocks[i] = create_each_block(child_ctx);
+    						each_blocks[i].c();
+    						each_blocks[i].m(tbody, null);
+    					}
+    				}
+
+    				for (; i < each_blocks.length; i += 1) {
+    					each_blocks[i].d(1);
+    				}
+
+    				each_blocks.length = each_value.length;
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div0);
+    			destroy_each(each_blocks, detaching);
+    			if (detaching) detach_dev(t2);
+    			if (detaching) detach_dev(div1);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_8.name,
+    		type: "if",
+    		source: "(261:4) {#if creationMode == false}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (272:12) {#each $profiles as profile}
+    function create_each_block(ctx) {
+    	let tr;
+    	let td0;
+    	let t0_value = /*profile*/ ctx[27].name + "";
+    	let t0;
+    	let t1;
+    	let td1;
+    	let div;
+    	let button0;
+    	let t3;
+    	let button1;
+    	let svg;
+    	let path;
+    	let t4;
+    	let mounted;
+    	let dispose;
+
+    	function click_handler_7() {
+    		return /*click_handler_7*/ ctx[19](/*profile*/ ctx[27]);
+    	}
+
+    	function click_handler_8() {
+    		return /*click_handler_8*/ ctx[20](/*profile*/ ctx[27]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			tr = element("tr");
+    			td0 = element("td");
+    			t0 = text(t0_value);
+    			t1 = space();
+    			td1 = element("td");
+    			div = element("div");
+    			button0 = element("button");
+    			button0.textContent = "OPEN";
+    			t3 = space();
+    			button1 = element("button");
+    			svg = svg_element("svg");
+    			path = svg_element("path");
+    			t4 = space();
+    			attr_dev(td0, "class", "flex-grow text-lg");
+    			add_location(td0, file, 273, 16, 9696);
+    			attr_dev(button0, "class", "btn btn-outline btn-sm btn-info mb-2");
+    			add_location(button0, file, 277, 20, 9905);
+    			attr_dev(path, "fill", "currentColor");
+    			attr_dev(path, "d", "M7 21q-.825 0-1.413-.588T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.588 1.413T17 21H7ZM17 6H7v13h10V6ZM9 17h2V8H9v9Zm4 0h2V8h-2v9ZM7 6v13V6Z");
+    			add_location(path, file, 294, 25, 10600);
+    			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
+    			attr_dev(svg, "width", "24");
+    			attr_dev(svg, "height", "24");
+    			attr_dev(svg, "viewBox", "0 0 24 24");
+    			add_location(svg, file, 289, 22, 10396);
+    			attr_dev(button1, "class", "btn btn-outline btn-square btn-sm btn-error");
+    			add_location(button1, file, 283, 20, 10146);
+    			attr_dev(div, "class", "flex space-x-2 pr-8");
+    			add_location(div, file, 275, 18, 9810);
+    			set_style(td1, "max-width", "60px");
+    			add_location(td1, file, 274, 16, 9762);
+    			add_location(tr, file, 272, 14, 9675);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, tr, anchor);
+    			append_dev(tr, td0);
+    			append_dev(td0, t0);
+    			append_dev(tr, t1);
+    			append_dev(tr, td1);
+    			append_dev(td1, div);
+    			append_dev(div, button0);
+    			append_dev(div, t3);
+    			append_dev(div, button1);
+    			append_dev(button1, svg);
+    			append_dev(svg, path);
+    			append_dev(tr, t4);
+
+    			if (!mounted) {
+    				dispose = [
+    					listen_dev(button0, "click", click_handler_7, false, false, false, false),
+    					listen_dev(button1, "click", click_handler_8, false, false, false, false)
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			if (dirty & /*$profiles*/ 256 && t0_value !== (t0_value = /*profile*/ ctx[27].name + "")) set_data_dev(t0, t0_value);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(tr);
+    			mounted = false;
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block.name,
+    		type: "each",
+    		source: "(272:12) {#each $profiles as profile}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (123:10) {:else}
     function create_else_block(ctx) {
     	let svg;
     	let path;
@@ -16754,12 +17697,12 @@ zoo`.split('\n');
     			path = svg_element("path");
     			attr_dev(path, "fill", "currentColor");
     			attr_dev(path, "d", "M120 40V16a8 8 0 0 1 16 0v24a8 8 0 0 1-16 0Zm72 88a64 64 0 1 1-64-64a64.07 64.07 0 0 1 64 64Zm-16 0a48 48 0 1 0-48 48a48.05 48.05 0 0 0 48-48ZM58.34 69.66a8 8 0 0 0 11.32-11.32l-16-16a8 8 0 0 0-11.32 11.32Zm0 116.68l-16 16a8 8 0 0 0 11.32 11.32l16-16a8 8 0 0 0-11.32-11.32ZM192 72a8 8 0 0 0 5.66-2.34l16-16a8 8 0 0 0-11.32-11.32l-16 16A8 8 0 0 0 192 72Zm5.66 114.34a8 8 0 0 0-11.32 11.32l16 16a8 8 0 0 0 11.32-11.32ZM48 128a8 8 0 0 0-8-8H16a8 8 0 0 0 0 16h24a8 8 0 0 0 8-8Zm80 80a8 8 0 0 0-8 8v24a8 8 0 0 0 16 0v-24a8 8 0 0 0-8-8Zm112-88h-24a8 8 0 0 0 0 16h24a8 8 0 0 0 0-16Z");
-    			add_location(path, file, 91, 15, 3100);
+    			add_location(path, file, 128, 15, 4147);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "24");
     			attr_dev(svg, "height", "24");
     			attr_dev(svg, "viewBox", "0 0 256 256");
-    			add_location(svg, file, 86, 12, 2944);
+    			add_location(svg, file, 123, 12, 3991);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, svg, anchor);
@@ -16774,14 +17717,14 @@ zoo`.split('\n');
     		block,
     		id: create_else_block.name,
     		type: "else",
-    		source: "(86:10) {:else}",
+    		source: "(123:10) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (75:10) {#if $theme !== "dark"}
+    // (112:10) {#if $theme !== "dark"}
     function create_if_block_7(ctx) {
     	let svg;
     	let path;
@@ -16792,12 +17735,12 @@ zoo`.split('\n');
     			path = svg_element("path");
     			attr_dev(path, "fill", "currentColor");
     			attr_dev(path, "d", "M235.54 150.21a104.84 104.84 0 0 1-37 52.91A104 104 0 0 1 32 120a103.09 103.09 0 0 1 20.88-62.52a104.84 104.84 0 0 1 52.91-37a8 8 0 0 1 10 10a88.08 88.08 0 0 0 109.8 109.8a8 8 0 0 1 10 10Z");
-    			add_location(path, file, 80, 15, 2627);
+    			add_location(path, file, 117, 15, 3674);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "21");
     			attr_dev(svg, "height", "21");
     			attr_dev(svg, "viewBox", "0 0 256 256");
-    			add_location(svg, file, 75, 12, 2471);
+    			add_location(svg, file, 112, 12, 3518);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, svg, anchor);
@@ -16812,14 +17755,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_7.name,
     		type: "if",
-    		source: "(75:10) {#if $theme !== \\\"dark\\\"}",
+    		source: "(112:10) {#if $theme !== \\\"dark\\\"}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (121:44) 
+    // (158:44) 
     function create_if_block_6(ctx) {
     	let div;
     	let button0;
@@ -16866,28 +17809,28 @@ zoo`.split('\n');
     			button4.textContent = "Logout";
     			attr_dev(path, "fill", "currentColor");
     			attr_dev(path, "d", "M12 20q-.825 0-1.413-.588T10 18q0-.825.588-1.413T12 16q.825 0 1.413.588T14 18q0 .825-.588 1.413T12 20Zm0-6q-.825 0-1.413-.588T10 12q0-.825.588-1.413T12 10q.825 0 1.413.588T14 12q0 .825-.588 1.413T12 14Zm0-6q-.825 0-1.413-.588T10 6q0-.825.588-1.413T12 4q.825 0 1.413.588T14 6q0 .825-.588 1.413T12 8Z");
-    			add_location(path, file, 128, 17, 4808);
+    			add_location(path, file, 165, 17, 5855);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "24");
     			attr_dev(svg, "height", "24");
     			attr_dev(svg, "viewBox", "0 0 24 24");
-    			add_location(svg, file, 123, 14, 4644);
+    			add_location(svg, file, 160, 14, 5691);
     			attr_dev(button0, "tabindex", "-1");
     			attr_dev(button0, "class", "btn btn-ghost btn-circle");
-    			add_location(button0, file, 122, 12, 4574);
-    			add_location(button1, file, 139, 16, 5440);
-    			add_location(li0, file, 138, 14, 5419);
-    			add_location(button2, file, 146, 16, 5644);
-    			add_location(li1, file, 145, 14, 5623);
-    			add_location(button3, file, 153, 16, 5844);
-    			add_location(li2, file, 152, 14, 5823);
-    			add_location(button4, file, 160, 16, 6042);
-    			add_location(li3, file, 159, 14, 6021);
+    			add_location(button0, file, 159, 12, 5621);
+    			add_location(button1, file, 176, 16, 6487);
+    			add_location(li0, file, 175, 14, 6466);
+    			add_location(button2, file, 183, 16, 6691);
+    			add_location(li1, file, 182, 14, 6670);
+    			add_location(button3, file, 190, 16, 6891);
+    			add_location(li2, file, 189, 14, 6870);
+    			add_location(button4, file, 197, 16, 7089);
+    			add_location(li3, file, 196, 14, 7068);
     			attr_dev(ul, "tabindex", "-1");
     			attr_dev(ul, "class", "dropdown-content shadow-xl bg-base-200 z-[1] menu p-2 shadow bg-base-100 rounded-box w-52");
-    			add_location(ul, file, 134, 12, 5247);
+    			add_location(ul, file, 171, 12, 6294);
     			attr_dev(div, "class", "dropdown dropdown-end");
-    			add_location(div, file, 121, 10, 4526);
+    			add_location(div, file, 158, 10, 5573);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -16910,10 +17853,10 @@ zoo`.split('\n');
 
     			if (!mounted) {
     				dispose = [
-    					listen_dev(button1, "click", /*click_handler_2*/ ctx[9], false, false, false, false),
-    					listen_dev(button2, "click", /*click_handler_3*/ ctx[10], false, false, false, false),
-    					listen_dev(button3, "click", /*click_handler_4*/ ctx[11], false, false, false, false),
-    					listen_dev(button4, "click", /*click_handler_5*/ ctx[12], false, false, false, false)
+    					listen_dev(button1, "click", /*click_handler_2*/ ctx[14], false, false, false, false),
+    					listen_dev(button2, "click", /*click_handler_3*/ ctx[15], false, false, false, false),
+    					listen_dev(button3, "click", /*click_handler_4*/ ctx[16], false, false, false, false),
+    					listen_dev(button4, "click", /*click_handler_5*/ ctx[17], false, false, false, false)
     				];
 
     				mounted = true;
@@ -16931,14 +17874,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_6.name,
     		type: "if",
-    		source: "(121:44) ",
+    		source: "(158:44) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (99:8) {#if currentPage !== Page.Home}
+    // (136:8) {#if currentPage !== Page.Home}
     function create_if_block_5(ctx) {
     	let button;
     	let svg;
@@ -16957,14 +17900,14 @@ zoo`.split('\n');
     			attr_dev(path, "stroke-linejoin", "round");
     			attr_dev(path, "stroke-width", "2");
     			attr_dev(path, "d", "M12 12L7 7m5 5l5 5m-5-5l5-5m-5 5l-5 5");
-    			add_location(path, file, 110, 15, 4173);
+    			add_location(path, file, 147, 15, 5220);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "24");
     			attr_dev(svg, "height", "24");
     			attr_dev(svg, "viewBox", "0 0 24 24");
-    			add_location(svg, file, 105, 12, 4019);
+    			add_location(svg, file, 142, 12, 5066);
     			attr_dev(button, "class", "btn btn-ghost btn-circle");
-    			add_location(button, file, 99, 10, 3858);
+    			add_location(button, file, 136, 10, 4905);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -16972,7 +17915,7 @@ zoo`.split('\n');
     			append_dev(svg, path);
 
     			if (!mounted) {
-    				dispose = listen_dev(button, "click", /*click_handler_1*/ ctx[8], false, false, false, false);
+    				dispose = listen_dev(button, "click", /*click_handler_1*/ ctx[13], false, false, false, false);
     				mounted = true;
     			}
     		},
@@ -16988,14 +17931,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_5.name,
     		type: "if",
-    		source: "(99:8) {#if currentPage !== Page.Home}",
+    		source: "(136:8) {#if currentPage !== Page.Home}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (179:43) 
+    // (216:43) 
     function create_if_block_4(ctx) {
     	let about;
     	let current;
@@ -17027,14 +17970,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_4.name,
     		type: "if",
-    		source: "(179:43) ",
+    		source: "(216:43) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (177:44) 
+    // (214:44) 
     function create_if_block_3(ctx) {
     	let qrcode;
     	let current;
@@ -17066,14 +18009,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(177:44) ",
+    		source: "(214:44) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (175:46) 
+    // (212:46) 
     function create_if_block_2(ctx) {
     	let settings;
     	let current;
@@ -17105,14 +18048,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_2.name,
     		type: "if",
-    		source: "(175:46) ",
+    		source: "(212:46) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (173:6) {#if currentPage === Page.Home}
+    // (210:6) {#if currentPage === Page.Home}
     function create_if_block_1(ctx) {
     	let home;
     	let current;
@@ -17144,7 +18087,7 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(173:6) {#if currentPage === Page.Home}",
+    		source: "(210:6) {#if currentPage === Page.Home}",
     		ctx
     	});
 
@@ -17160,7 +18103,7 @@ zoo`.split('\n');
     	const if_blocks = [];
 
     	function select_block_type(ctx, dirty) {
-    		if (/*$keyStore*/ ctx[4] !== "" && /*$keyStore*/ ctx[4] !== undefined) return 0;
+    		if (/*$keyStore*/ ctx[6] !== "" && /*$keyStore*/ ctx[6] !== undefined) return 0;
     		return 1;
     	}
 
@@ -17237,16 +18180,23 @@ zoo`.split('\n');
     	
     };
 
+    const keydown_handler_1 = e => {
+    	
+    };
+
     function instance($$self, $$props, $$invalidate) {
     	let $userProfile;
     	let $keyStore;
     	let $theme;
+    	let $profiles;
     	validate_store(userProfile, 'userProfile');
-    	component_subscribe($$self, userProfile, $$value => $$invalidate(3, $userProfile = $$value));
+    	component_subscribe($$self, userProfile, $$value => $$invalidate(5, $userProfile = $$value));
     	validate_store(keyStore, 'keyStore');
-    	component_subscribe($$self, keyStore, $$value => $$invalidate(4, $keyStore = $$value));
+    	component_subscribe($$self, keyStore, $$value => $$invalidate(6, $keyStore = $$value));
     	validate_store(theme, 'theme');
-    	component_subscribe($$self, theme, $$value => $$invalidate(5, $theme = $$value));
+    	component_subscribe($$self, theme, $$value => $$invalidate(7, $theme = $$value));
+    	validate_store(profiles, 'profiles');
+    	component_subscribe($$self, profiles, $$value => $$invalidate(8, $profiles = $$value));
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('App', slots, []);
     	var Page;
@@ -17255,11 +18205,14 @@ zoo`.split('\n');
     		Page[Page["Home"] = 0] = "Home";
     		Page[Page["Settings"] = 1] = "Settings";
     		Page[Page["QrCode"] = 2] = "QrCode";
-    		Page[Page["About"] = 3] = "About";
+    		Page[Page["Profile"] = 3] = "Profile";
+    		Page[Page["About"] = 4] = "About";
     	})(Page || (Page = {}));
 
     	let currentPage = Page.Home;
     	let _keyStore = "";
+    	let _name = "";
+    	let creationMode = false;
 
     	function registerKeyStore(value) {
     		addKey(value).then(_ => {
@@ -17283,8 +18236,49 @@ zoo`.split('\n');
     		});
     	}
 
+    	async function addProfile(name, key) {
+    		let decodedValue;
+
+    		try {
+    			decodedValue = await verifyKey(key);
+
+    			let profile = {
+    				name,
+    				data: {
+    					privateKey: decodedValue,
+    					webSites: {},
+    					relays: []
+    				}
+    			};
+
+    			profiles.update(profiles => [...profiles, profile]);
+    			saveProfiles();
+    			$$invalidate(3, _name = "");
+    			$$invalidate(2, _keyStore = "");
+    			$$invalidate(4, creationMode = false);
+    		} catch(error) {
+    			alert(error);
+    		}
+    	}
+
+    	async function removeProfileByName(name) {
+    		profiles.update(profiles => profiles.filter(profile => profile.name !== name));
+    		saveProfiles();
+    	}
+
+    	async function openProfile(profile) {
+    		keyStore.set(profile.data.privateKey);
+
+    		// store website and relays
+    		await settingProfile(profile);
+
+    		loadPrivateKey();
+    		$$invalidate(1, currentPage = Page.Home);
+    	}
+
     	loadPrivateKey();
     	loadTheme();
+    	loadProfiles();
     	const writable_props = [];
 
     	Object.keys($$props).forEach(key => {
@@ -17315,13 +18309,38 @@ zoo`.split('\n');
     		await logout();
     	};
 
-    	function input_input_handler() {
+    	const click_handler_6 = () => {
+    		switchTheme();
+    	};
+
+    	const click_handler_7 = profile => {
+    		openProfile(profile);
+    	};
+
+    	const click_handler_8 = profile => {
+    		removeProfileByName(profile.name);
+    	};
+
+    	const click_handler_9 = () => {
+    		$$invalidate(4, creationMode = true);
+    	};
+
+    	const click_handler_10 = () => {
+    		$$invalidate(4, creationMode = false);
+    	};
+
+    	function input0_input_handler() {
+    		_name = this.value;
+    		$$invalidate(3, _name);
+    	}
+
+    	function input1_input_handler() {
     		_keyStore = this.value;
     		$$invalidate(2, _keyStore);
     	}
 
-    	const click_handler_6 = () => {
-    		registerKeyStore(_keyStore);
+    	const click_handler_11 = () => {
+    		addProfile(_name, _keyStore);
     	};
 
     	$$self.$capture_state = () => ({
@@ -17333,6 +18352,11 @@ zoo`.split('\n');
     		theme,
     		switchTheme,
     		logout,
+    		profiles,
+    		verifyKey,
+    		loadProfiles,
+    		saveProfiles,
+    		settingProfile,
     		Settings,
     		Home,
     		getPublicKey,
@@ -17341,16 +18365,24 @@ zoo`.split('\n');
     		Page,
     		currentPage,
     		_keyStore,
+    		_name,
+    		creationMode,
     		registerKeyStore,
+    		addProfile,
+    		removeProfileByName,
+    		openProfile,
     		$userProfile,
     		$keyStore,
-    		$theme
+    		$theme,
+    		$profiles
     	});
 
     	$$self.$inject_state = $$props => {
     		if ('Page' in $$props) $$invalidate(0, Page = $$props.Page);
     		if ('currentPage' in $$props) $$invalidate(1, currentPage = $$props.currentPage);
     		if ('_keyStore' in $$props) $$invalidate(2, _keyStore = $$props._keyStore);
+    		if ('_name' in $$props) $$invalidate(3, _name = $$props._name);
+    		if ('creationMode' in $$props) $$invalidate(4, creationMode = $$props.creationMode);
     	};
 
     	if ($$props && "$$inject" in $$props) {
@@ -17361,18 +18393,29 @@ zoo`.split('\n');
     		Page,
     		currentPage,
     		_keyStore,
+    		_name,
+    		creationMode,
     		$userProfile,
     		$keyStore,
     		$theme,
-    		registerKeyStore,
+    		$profiles,
+    		addProfile,
+    		removeProfileByName,
+    		openProfile,
     		click_handler,
     		click_handler_1,
     		click_handler_2,
     		click_handler_3,
     		click_handler_4,
     		click_handler_5,
-    		input_input_handler,
-    		click_handler_6
+    		click_handler_6,
+    		click_handler_7,
+    		click_handler_8,
+    		click_handler_9,
+    		click_handler_10,
+    		input0_input_handler,
+    		input1_input_handler,
+    		click_handler_11
     	];
     }
 

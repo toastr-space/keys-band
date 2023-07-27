@@ -5,4 +5,18 @@ export default {
     extend: {},
   },
   plugins: [require("daisyui")],
+  daisyui: {
+    themes: [
+      "light",
+      "dark",
+      "cupcake",
+      "lofi",
+      "forest",
+      "synthwave",
+      "halloween",
+      "black",
+      "luxury",
+      "dracula",
+    ],
+  },
 };

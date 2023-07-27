@@ -8,6 +8,12 @@
     theme,
     switchTheme,
     logout,
+    profiles,
+    type Profile,
+    verifyKey,
+    loadProfiles,
+    saveProfiles,
+    settingProfile,
   } from "./stores/key-store";
 
   import Settings from "./components/Settings.svelte";
@@ -20,10 +26,13 @@
     Home,
     Settings,
     QrCode,
+    Profile,
     About,
   }
   let currentPage: Page = Page.Home;
   let _keyStore = "";
+  let _name = "";
+  let creationMode = false;
 
   function registerKeyStore(value: string): void {
     addKey(value)
@@ -43,8 +52,48 @@
       });
   }
 
+  async function addProfile(name, key) {
+    let decodedValue;
+    try {
+      decodedValue = await verifyKey(key);
+      let profile: Profile = {
+        name: name,
+        data: {
+          privateKey: decodedValue,
+          webSites: {},
+          relays: [],
+        },
+      };
+      profiles.update((profiles) => [...profiles, profile]);
+      saveProfiles();
+      _name = "";
+      _keyStore = "";
+      creationMode = false;
+    } catch (error) {
+      alert(error);
+    }
+  }
+
+  async function removeProfileByName(name) {
+    profiles.update((profiles) =>
+      profiles.filter((profile) => profile.name !== name)
+    );
+    saveProfiles();
+  }
+
+  async function openProfile(profile) {
+    keyStore.set(profile.data.privateKey);
+    // store website and relays
+
+    await settingProfile(profile);
+
+    loadPrivateKey();
+    currentPage = Page.Home;
+  }
+
   loadPrivateKey();
   loadTheme();
+  loadProfiles();
 </script>
 
 {#if $keyStore !== "" && $keyStore !== undefined}
@@ -194,30 +243,169 @@
     </div>
   </div>
 {:else}
-  <!-- private key input for login -->
-
-  <div class="w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2">
-    <span class="text-xl text-center w-full">Login</span>
-
-    <div class="form-control w-11/12">
-      <span class="label-text">Private Key</span>
-
-      <input
-        type="password"
-        class="input input-bordered mt-2"
-        bind:value={_keyStore}
-        placeholder="nsec"
-        on:keydown={(e) => {}}
-      />
-      <button
-        class="btn btn-primary w-full mt-4"
-        on:click={() => {
-          registerKeyStore(_keyStore);
-        }}
-      >
-        Login
-      </button>
+  <div
+    class="w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2 overflow-y-auto"
+  >
+    <button
+      class="btn btn-ghost btn-circle absolute top-3 right-3"
+      on:click={() => {
+        switchTheme();
+      }}
+    >
+      {#if $theme !== "dark"}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="21"
+          height="21"
+          viewBox="0 0 256 256"
+          ><path
+            fill="currentColor"
+            d="M235.54 150.21a104.84 104.84 0 0 1-37 52.91A104 104 0 0 1 32 120a103.09 103.09 0 0 1 20.88-62.52a104.84 104.84 0 0 1 52.91-37a8 8 0 0 1 10 10a88.08 88.08 0 0 0 109.8 109.8a8 8 0 0 1 10 10Z"
+          /></svg
+        >
+      {:else}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 256 256"
+          ><path
+            fill="currentColor"
+            d="M120 40V16a8 8 0 0 1 16 0v24a8 8 0 0 1-16 0Zm72 88a64 64 0 1 1-64-64a64.07 64.07 0 0 1 64 64Zm-16 0a48 48 0 1 0-48 48a48.05 48.05 0 0 0 48-48ZM58.34 69.66a8 8 0 0 0 11.32-11.32l-16-16a8 8 0 0 0-11.32 11.32Zm0 116.68l-16 16a8 8 0 0 0 11.32 11.32l16-16a8 8 0 0 0-11.32-11.32ZM192 72a8 8 0 0 0 5.66-2.34l16-16a8 8 0 0 0-11.32-11.32l-16 16A8 8 0 0 0 192 72Zm5.66 114.34a8 8 0 0 0-11.32 11.32l16 16a8 8 0 0 0 11.32-11.32ZM48 128a8 8 0 0 0-8-8H16a8 8 0 0 0 0 16h24a8 8 0 0 0 8-8Zm80 80a8 8 0 0 0-8 8v24a8 8 0 0 0 16 0v-24a8 8 0 0 0-8-8Zm112-88h-24a8 8 0 0 0 0 16h24a8 8 0 0 0 0-16Z"
+          /></svg
+        >
+      {/if}
+    </button>
+    <div class="w-full">
+      <img src="/assets/logo.png" width="80" class="mx-auto" alt="" />
     </div>
+
+    <span class="text-lg text-center w-full">Your profiles</span>
+
+    {#if creationMode == false}
+      <div class="w-full pr-4">
+        <table class="table">
+          <!-- head -->
+          <thead>
+            <tr>
+              <th />
+              <th style="max-width: 60px;" />
+            </tr>
+          </thead>
+          <tbody>
+            {#each $profiles as profile}
+              <tr>
+                <td class="flex-grow text-lg">{profile.name}</td>
+                <td style="max-width: 60px;">
+                  <div class="flex space-x-2 pr-8">
+                    <!-- align right -->
+                    <button
+                      class="btn btn-outline btn-sm btn-info mb-2"
+                      on:click={() => {
+                        openProfile(profile);
+                      }}>OPEN</button
+                    >
+                    <button
+                      class="btn btn-outline btn-square btn-sm btn-error"
+                      on:click={() => {
+                        removeProfileByName(profile.name);
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        ><path
+                          fill="currentColor"
+                          d="M7 21q-.825 0-1.413-.588T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.588 1.413T17 21H7ZM17 6H7v13h10V6ZM9 17h2V8H9v9Zm4 0h2V8h-2v9ZM7 6v13V6Z"
+                        /></svg
+                      >
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+      <div class="w-full flex justify-end pr-8">
+        <center>
+          <button
+            class="link link-hover mx-auto text-lg"
+            on:click={() => {
+              creationMode = true;
+            }}
+          >
+            + add profile
+          </button>
+        </center>
+      </div>
+    {:else}
+      <hr />
+      <div class="w-full flex justify-start pr-8">
+        <div class="flex flex-row space-x-8">
+          <button
+            class="link link-hover mx-auto text-lg flex flex-row space-x-8"
+            on:click={() => {
+              creationMode = false;
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="19"
+              height="19"
+              class="mt-1"
+              viewBox="0 0 1024 1024"
+              ><path
+                fill="currentColor"
+                d="M224 480h640a32 32 0 1 1 0 64H224a32 32 0 0 1 0-64z"
+              /><path
+                fill="currentColor"
+                d="m237.248 512l265.408 265.344a32 32 0 0 1-45.312 45.312l-288-288a32 32 0 0 1 0-45.312l288-288a32 32 0 1 1 45.312 45.312L237.248 512z"
+              /></svg
+            >
+            &nbsp; &nbsp; Back
+          </button>
+        </div>
+      </div>
+      <span class="font-semibold w-full">Create new profile</span>
+
+      <div class="form-control w-11/12 flex">
+        <div class="flex w-11/12 flex-row pr-16 space-x-4">
+          <div class="w-5/12 flex flex-col">
+            <span class="label-text">Name</span>
+
+            <input
+              type="text"
+              class="input input-bordered mt-2"
+              bind:value={_name}
+              placeholder="name"
+              on:keydown={(e) => {}}
+            />
+          </div>
+          <div class="flex-grow flex flex-col">
+            <span class="label-text">Private Key</span>
+
+            <input
+              type="password"
+              class="input input-bordered mt-2"
+              bind:value={_keyStore}
+              placeholder="nsec"
+              on:keydown={(e) => {}}
+            />
+          </div>
+        </div>
+        <button
+          class="btn btn-primary w-full mt-4"
+          on:click={() => {
+            addProfile(_name, _keyStore);
+          }}
+        >
+          Create
+        </button>
+      </div>
+    {/if}
   </div>
 {/if}
 
