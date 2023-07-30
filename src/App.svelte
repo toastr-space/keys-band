@@ -115,7 +115,7 @@
       </div>
       <div class="w-6/12 p-4 pl-2 pt-2">
         <!-- profile name and subtitle (nip05) -->
-        <div class="text-2xl font-bold">
+        <div class="text-xl font-bold">
           <!-- manage long name -->
           {$userProfile?.name?.length > 12
             ? $userProfile?.name.substr(0, 12) + "..."
@@ -134,10 +134,11 @@
           }}
         >
           <option value="light" selected={$theme == "light"}>Light</option>
+          <option value="dark" selected={$theme == "dark"}>Dark</option>
+
           <option value="cupcake" selected={$theme == "cupcake"}>Cupcake</option
           >
           <option value="lofi" selected={$theme == "lofi"}>Lofi</option>
-          <option value="dark" selected={$theme == "dark"}>Dark</option>
           <option value="autumn" selected={$theme == "autumn"}>Autumn</option>
         </select>
 
@@ -237,9 +238,9 @@
       }}
     >
       <option value="light" selected={$theme == "light"}>Light</option>
+      <option value="dark" selected={$theme == "dark"}>Dark</option>
       <option value="cupcake" selected={$theme == "cupcake"}>Cupcake</option>
       <option value="lofi" selected={$theme == "lofi"}>Lofi</option>
-      <option value="dark" selected={$theme == "dark"}>Dark</option>
       <option value="autumn" selected={$theme == "autumn"}>Autumn</option>
     </select>
     <div class="w-full">

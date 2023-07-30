@@ -16847,7 +16847,7 @@ zoo`.split('\n');
     	return child_ctx;
     }
 
-    // (205:0) {:else}
+    // (206:0) {:else}
     function create_else_block(ctx) {
     	let div1;
     	let select;
@@ -16891,11 +16891,11 @@ zoo`.split('\n');
     			option0 = element("option");
     			t0 = text("Light");
     			option1 = element("option");
-    			t1 = text("Cupcake");
+    			t1 = text("Dark");
     			option2 = element("option");
-    			t2 = text("Lofi");
+    			t2 = text("Cupcake");
     			option3 = element("option");
-    			t3 = text("Dark");
+    			t3 = text("Lofi");
     			option4 = element("option");
     			t4 = text("Autumn");
     			t5 = space();
@@ -16909,36 +16909,36 @@ zoo`.split('\n');
     			option0.__value = "light";
     			option0.value = option0.__value;
     			option0.selected = option0_selected_value = /*$theme*/ ctx[7] == "light";
-    			add_location(option0, file, 214, 6, 7053);
-    			option1.__value = "cupcake";
+    			add_location(option0, file, 215, 6, 7053);
+    			option1.__value = "dark";
     			option1.value = option1.__value;
-    			option1.selected = option1_selected_value = /*$theme*/ ctx[7] == "cupcake";
-    			add_location(option1, file, 215, 6, 7125);
-    			option2.__value = "lofi";
+    			option1.selected = option1_selected_value = /*$theme*/ ctx[7] == "dark";
+    			add_location(option1, file, 216, 6, 7125);
+    			option2.__value = "cupcake";
     			option2.value = option2.__value;
-    			option2.selected = option2_selected_value = /*$theme*/ ctx[7] == "lofi";
-    			add_location(option2, file, 216, 6, 7203);
-    			option3.__value = "dark";
+    			option2.selected = option2_selected_value = /*$theme*/ ctx[7] == "cupcake";
+    			add_location(option2, file, 217, 6, 7194);
+    			option3.__value = "lofi";
     			option3.value = option3.__value;
-    			option3.selected = option3_selected_value = /*$theme*/ ctx[7] == "dark";
-    			add_location(option3, file, 217, 6, 7272);
+    			option3.selected = option3_selected_value = /*$theme*/ ctx[7] == "lofi";
+    			add_location(option3, file, 218, 6, 7272);
     			option4.__value = "autumn";
     			option4.value = option4.__value;
     			option4.selected = option4_selected_value = /*$theme*/ ctx[7] == "autumn";
-    			add_location(option4, file, 218, 6, 7341);
+    			add_location(option4, file, 219, 6, 7341);
     			attr_dev(select, "class", "select select-bordered select-xs w-2/12 h-8 mt-2 max-w-xs pl-2 pr-0 absolute top-3 right-3 svelte-iniqp2");
-    			add_location(select, file, 208, 4, 6845);
+    			add_location(select, file, 209, 4, 6845);
     			if (!src_url_equal(img.src, img_src_value = "/assets/logo.png")) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "width", "80");
     			attr_dev(img, "class", "mx-auto");
     			attr_dev(img, "alt", "");
-    			add_location(img, file, 221, 6, 7455);
+    			add_location(img, file, 222, 6, 7455);
     			attr_dev(div0, "class", "w-full");
-    			add_location(div0, file, 220, 4, 7428);
+    			add_location(div0, file, 221, 4, 7428);
     			attr_dev(span, "class", "text-lg text-center w-full");
-    			add_location(span, file, 224, 4, 7536);
+    			add_location(span, file, 225, 4, 7536);
     			attr_dev(div1, "class", "w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2 overflow-y-auto");
-    			add_location(div1, file, 205, 2, 6744);
+    			add_location(div1, file, 206, 2, 6744);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -16971,15 +16971,15 @@ zoo`.split('\n');
     				prop_dev(option0, "selected", option0_selected_value);
     			}
 
-    			if (dirty & /*$theme*/ 128 && option1_selected_value !== (option1_selected_value = /*$theme*/ ctx[7] == "cupcake")) {
+    			if (dirty & /*$theme*/ 128 && option1_selected_value !== (option1_selected_value = /*$theme*/ ctx[7] == "dark")) {
     				prop_dev(option1, "selected", option1_selected_value);
     			}
 
-    			if (dirty & /*$theme*/ 128 && option2_selected_value !== (option2_selected_value = /*$theme*/ ctx[7] == "lofi")) {
+    			if (dirty & /*$theme*/ 128 && option2_selected_value !== (option2_selected_value = /*$theme*/ ctx[7] == "cupcake")) {
     				prop_dev(option2, "selected", option2_selected_value);
     			}
 
-    			if (dirty & /*$theme*/ 128 && option3_selected_value !== (option3_selected_value = /*$theme*/ ctx[7] == "dark")) {
+    			if (dirty & /*$theme*/ 128 && option3_selected_value !== (option3_selected_value = /*$theme*/ ctx[7] == "lofi")) {
     				prop_dev(option3, "selected", option3_selected_value);
     			}
 
@@ -17013,7 +17013,7 @@ zoo`.split('\n');
     		block,
     		id: create_else_block.name,
     		type: "else",
-    		source: "(205:0) {:else}",
+    		source: "(206:0) {:else}",
     		ctx
     	});
 
@@ -17112,11 +17112,11 @@ zoo`.split('\n');
     			option0 = element("option");
     			t5 = text("Light");
     			option1 = element("option");
-    			t6 = text("Cupcake");
+    			t6 = text("Dark");
     			option2 = element("option");
-    			t7 = text("Lofi");
+    			t7 = text("Cupcake");
     			option3 = element("option");
-    			t8 = text("Dark");
+    			t8 = text("Lofi");
     			option4 = element("option");
     			t9 = text("Autumn");
     			t10 = space();
@@ -17134,40 +17134,40 @@ zoo`.split('\n');
     			add_location(div1, file, 78, 8, 2419);
     			attr_dev(div2, "class", "w-2/12 p-2");
     			add_location(div2, file, 77, 6, 2386);
-    			attr_dev(div3, "class", "text-2xl font-bold");
+    			attr_dev(div3, "class", "text-xl font-bold");
     			add_location(div3, file, 93, 8, 2878);
     			attr_dev(div4, "class", "text-sm text-secondary text-gray-500");
-    			add_location(div4, file, 99, 8, 3143);
+    			add_location(div4, file, 99, 8, 3142);
     			attr_dev(div5, "class", "w-6/12 p-4 pl-2 pt-2");
     			add_location(div5, file, 91, 6, 2784);
     			option0.__value = "light";
     			option0.value = option0.__value;
     			option0.selected = option0_selected_value = /*$theme*/ ctx[7] == "light";
-    			add_location(option0, file, 111, 10, 3546);
-    			option1.__value = "cupcake";
+    			add_location(option0, file, 111, 10, 3545);
+    			option1.__value = "dark";
     			option1.value = option1.__value;
-    			option1.selected = option1_selected_value = /*$theme*/ ctx[7] == "cupcake";
-    			add_location(option1, file, 112, 10, 3622);
-    			option2.__value = "lofi";
+    			option1.selected = option1_selected_value = /*$theme*/ ctx[7] == "dark";
+    			add_location(option1, file, 112, 10, 3621);
+    			option2.__value = "cupcake";
     			option2.value = option2.__value;
-    			option2.selected = option2_selected_value = /*$theme*/ ctx[7] == "lofi";
-    			add_location(option2, file, 114, 10, 3715);
-    			option3.__value = "dark";
+    			option2.selected = option2_selected_value = /*$theme*/ ctx[7] == "cupcake";
+    			add_location(option2, file, 114, 10, 3695);
+    			option3.__value = "lofi";
     			option3.value = option3.__value;
-    			option3.selected = option3_selected_value = /*$theme*/ ctx[7] == "dark";
-    			add_location(option3, file, 115, 10, 3788);
+    			option3.selected = option3_selected_value = /*$theme*/ ctx[7] == "lofi";
+    			add_location(option3, file, 116, 10, 3788);
     			option4.__value = "autumn";
     			option4.value = option4.__value;
     			option4.selected = option4_selected_value = /*$theme*/ ctx[7] == "autumn";
-    			add_location(option4, file, 116, 10, 3861);
+    			add_location(option4, file, 117, 10, 3861);
     			attr_dev(select, "class", "select select-bordered select-xs w-7/12 h-8 mt-2 max-w-xs pl-2 pr-0 svelte-iniqp2");
-    			add_location(select, file, 105, 8, 3348);
+    			add_location(select, file, 105, 8, 3347);
     			attr_dev(div6, "class", "w-6/12 py-4 pt-2 pl-7 flex");
-    			add_location(div6, file, 103, 6, 3266);
+    			add_location(div6, file, 103, 6, 3265);
     			attr_dev(div7, "class", "w-full h-16 bg-base-100 flex shadow-sm");
     			add_location(div7, file, 76, 4, 2327);
     			attr_dev(div8, "class", "w-full h-full pt-2");
-    			add_location(div8, file, 192, 4, 6420);
+    			add_location(div8, file, 193, 4, 6420);
     			attr_dev(div9, "class", "w-full h-full flex flex-wrap fixed-width svelte-iniqp2");
     			add_location(div9, file, 75, 2, 2268);
     		},
@@ -17229,15 +17229,15 @@ zoo`.split('\n');
     				prop_dev(option0, "selected", option0_selected_value);
     			}
 
-    			if (!current || dirty & /*$theme*/ 128 && option1_selected_value !== (option1_selected_value = /*$theme*/ ctx[7] == "cupcake")) {
+    			if (!current || dirty & /*$theme*/ 128 && option1_selected_value !== (option1_selected_value = /*$theme*/ ctx[7] == "dark")) {
     				prop_dev(option1, "selected", option1_selected_value);
     			}
 
-    			if (!current || dirty & /*$theme*/ 128 && option2_selected_value !== (option2_selected_value = /*$theme*/ ctx[7] == "lofi")) {
+    			if (!current || dirty & /*$theme*/ 128 && option2_selected_value !== (option2_selected_value = /*$theme*/ ctx[7] == "cupcake")) {
     				prop_dev(option2, "selected", option2_selected_value);
     			}
 
-    			if (!current || dirty & /*$theme*/ 128 && option3_selected_value !== (option3_selected_value = /*$theme*/ ctx[7] == "dark")) {
+    			if (!current || dirty & /*$theme*/ 128 && option3_selected_value !== (option3_selected_value = /*$theme*/ ctx[7] == "lofi")) {
     				prop_dev(option3, "selected", option3_selected_value);
     			}
 
@@ -17322,7 +17322,7 @@ zoo`.split('\n');
     	return block;
     }
 
-    // (286:4) {:else}
+    // (287:4) {:else}
     function create_else_block_1(ctx) {
     	let hr;
     	let t0;
@@ -17383,49 +17383,49 @@ zoo`.split('\n');
     			t10 = space();
     			button1 = element("button");
     			button1.textContent = "Create";
-    			add_location(hr, file, 286, 6, 9616);
+    			add_location(hr, file, 287, 6, 9616);
     			attr_dev(path0, "fill", "currentColor");
     			attr_dev(path0, "d", "M224 480h640a32 32 0 1 1 0 64H224a32 32 0 0 1 0-64z");
-    			add_location(path0, file, 301, 15, 10104);
+    			add_location(path0, file, 302, 15, 10104);
     			attr_dev(path1, "fill", "currentColor");
     			attr_dev(path1, "d", "m237.248 512l265.408 265.344a32 32 0 0 1-45.312 45.312l-288-288a32 32 0 0 1 0-45.312l288-288a32 32 0 1 1 45.312 45.312L237.248 512z");
-    			add_location(path1, file, 304, 16, 10234);
+    			add_location(path1, file, 305, 16, 10234);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "19");
     			attr_dev(svg, "height", "19");
     			attr_dev(svg, "class", "mt-1");
     			attr_dev(svg, "viewBox", "0 0 1024 1024");
-    			add_location(svg, file, 295, 12, 9919);
+    			add_location(svg, file, 296, 12, 9919);
     			attr_dev(button0, "class", "link link-hover mx-auto text-lg flex flex-row space-x-8");
-    			add_location(button0, file, 289, 10, 9730);
+    			add_location(button0, file, 290, 10, 9730);
     			attr_dev(div0, "class", "flex flex-row space-x-8");
-    			add_location(div0, file, 288, 8, 9682);
+    			add_location(div0, file, 289, 8, 9682);
     			attr_dev(div1, "class", "w-full flex justify-start pr-8");
-    			add_location(div1, file, 287, 6, 9629);
+    			add_location(div1, file, 288, 6, 9629);
     			attr_dev(span0, "class", "font-semibold w-full");
-    			add_location(span0, file, 313, 6, 10549);
+    			add_location(span0, file, 314, 6, 10549);
     			attr_dev(span1, "class", "label-text");
-    			add_location(span1, file, 318, 12, 10774);
+    			add_location(span1, file, 319, 12, 10774);
     			attr_dev(input0, "type", "text");
     			attr_dev(input0, "class", "input input-bordered mt-2");
     			attr_dev(input0, "placeholder", "name");
-    			add_location(input0, file, 320, 12, 10824);
+    			add_location(input0, file, 321, 12, 10824);
     			attr_dev(div2, "class", "w-5/12 flex flex-col");
-    			add_location(div2, file, 317, 10, 10727);
+    			add_location(div2, file, 318, 10, 10727);
     			attr_dev(span2, "class", "label-text");
-    			add_location(span2, file, 329, 12, 11100);
+    			add_location(span2, file, 330, 12, 11100);
     			attr_dev(input1, "type", "password");
     			attr_dev(input1, "class", "input input-bordered mt-2");
     			attr_dev(input1, "placeholder", "nsec");
-    			add_location(input1, file, 331, 12, 11157);
+    			add_location(input1, file, 332, 12, 11157);
     			attr_dev(div3, "class", "flex-grow flex flex-col");
-    			add_location(div3, file, 328, 10, 11050);
+    			add_location(div3, file, 329, 10, 11050);
     			attr_dev(div4, "class", "flex w-11/12 flex-row pr-16 space-x-4");
-    			add_location(div4, file, 316, 8, 10665);
+    			add_location(div4, file, 317, 8, 10665);
     			attr_dev(button1, "class", "btn btn-primary w-full mt-4");
-    			add_location(button1, file, 340, 8, 11404);
+    			add_location(button1, file, 341, 8, 11404);
     			attr_dev(div5, "class", "form-control w-11/12 flex");
-    			add_location(div5, file, 315, 6, 10617);
+    			add_location(div5, file, 316, 6, 10617);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, hr, anchor);
@@ -17495,14 +17495,14 @@ zoo`.split('\n');
     		block,
     		id: create_else_block_1.name,
     		type: "else",
-    		source: "(286:4) {:else}",
+    		source: "(287:4) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (227:4) {#if creationMode == false}
+    // (228:4) {#if creationMode == false}
     function create_if_block_7(ctx) {
     	let div0;
     	let table;
@@ -17548,21 +17548,21 @@ zoo`.split('\n');
     			center = element("center");
     			button = element("button");
     			button.textContent = "+ add profile";
-    			add_location(th0, file, 232, 14, 7766);
+    			add_location(th0, file, 233, 14, 7766);
     			set_style(th1, "max-width", "60px");
-    			add_location(th1, file, 233, 14, 7787);
-    			add_location(tr, file, 231, 12, 7747);
-    			add_location(thead, file, 230, 10, 7727);
-    			add_location(tbody, file, 236, 10, 7866);
+    			add_location(th1, file, 234, 14, 7787);
+    			add_location(tr, file, 232, 12, 7747);
+    			add_location(thead, file, 231, 10, 7727);
+    			add_location(tbody, file, 237, 10, 7866);
     			attr_dev(table, "class", "table");
-    			add_location(table, file, 228, 8, 7671);
+    			add_location(table, file, 229, 8, 7671);
     			attr_dev(div0, "class", "w-full pr-4");
-    			add_location(div0, file, 227, 6, 7637);
+    			add_location(div0, file, 228, 6, 7637);
     			attr_dev(button, "class", "link link-hover mx-auto text-lg");
-    			add_location(button, file, 275, 10, 9369);
-    			add_location(center, file, 274, 8, 9350);
+    			add_location(button, file, 276, 10, 9369);
+    			add_location(center, file, 275, 8, 9350);
     			attr_dev(div1, "class", "w-full flex justify-end pr-8");
-    			add_location(div1, file, 273, 6, 9299);
+    			add_location(div1, file, 274, 6, 9299);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div0, anchor);
@@ -17630,14 +17630,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_7.name,
     		type: "if",
-    		source: "(227:4) {#if creationMode == false}",
+    		source: "(228:4) {#if creationMode == false}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (238:12) {#each $profiles as profile}
+    // (239:12) {#each $profiles as profile}
     function create_each_block(ctx) {
     	let tr;
     	let td0;
@@ -17679,24 +17679,24 @@ zoo`.split('\n');
     			path = svg_element("path");
     			t4 = space();
     			attr_dev(td0, "class", "flex-grow text-lg");
-    			add_location(td0, file, 239, 16, 7950);
+    			add_location(td0, file, 240, 16, 7950);
     			attr_dev(button0, "class", "btn btn-outline btn-sm btn-info mb-2");
-    			add_location(button0, file, 243, 20, 8159);
+    			add_location(button0, file, 244, 20, 8159);
     			attr_dev(path, "fill", "currentColor");
     			attr_dev(path, "d", "M7 21q-.825 0-1.413-.588T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.588 1.413T17 21H7ZM17 6H7v13h10V6ZM9 17h2V8H9v9Zm4 0h2V8h-2v9ZM7 6v13V6Z");
-    			add_location(path, file, 260, 25, 8854);
+    			add_location(path, file, 261, 25, 8854);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "24");
     			attr_dev(svg, "height", "24");
     			attr_dev(svg, "viewBox", "0 0 24 24");
-    			add_location(svg, file, 255, 22, 8650);
+    			add_location(svg, file, 256, 22, 8650);
     			attr_dev(button1, "class", "btn btn-outline btn-square btn-sm btn-error");
-    			add_location(button1, file, 249, 20, 8400);
+    			add_location(button1, file, 250, 20, 8400);
     			attr_dev(div, "class", "flex space-x-2 pr-8");
-    			add_location(div, file, 241, 18, 8064);
+    			add_location(div, file, 242, 18, 8064);
     			set_style(td1, "max-width", "60px");
-    			add_location(td1, file, 240, 16, 8016);
-    			add_location(tr, file, 238, 14, 7929);
+    			add_location(td1, file, 241, 16, 8016);
+    			add_location(tr, file, 239, 14, 7929);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, tr, anchor);
@@ -17736,14 +17736,14 @@ zoo`.split('\n');
     		block,
     		id: create_each_block.name,
     		type: "each",
-    		source: "(238:12) {#each $profiles as profile}",
+    		source: "(239:12) {#each $profiles as profile}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (142:44) 
+    // (143:44) 
     function create_if_block_6(ctx) {
     	let div;
     	let button0;
@@ -17790,28 +17790,28 @@ zoo`.split('\n');
     			button4.textContent = "Logout";
     			attr_dev(path, "fill", "currentColor");
     			attr_dev(path, "d", "M12 20q-.825 0-1.413-.588T10 18q0-.825.588-1.413T12 16q.825 0 1.413.588T14 18q0 .825-.588 1.413T12 20Zm0-6q-.825 0-1.413-.588T10 12q0-.825.588-1.413T12 10q.825 0 1.413.588T14 12q0 .825-.588 1.413T12 14Zm0-6q-.825 0-1.413-.588T10 6q0-.825.588-1.413T12 4q.825 0 1.413.588T14 6q0 .825-.588 1.413T12 8Z");
-    			add_location(path, file, 149, 17, 4949);
+    			add_location(path, file, 150, 17, 4949);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "24");
     			attr_dev(svg, "height", "24");
     			attr_dev(svg, "viewBox", "0 0 24 24");
-    			add_location(svg, file, 144, 14, 4785);
+    			add_location(svg, file, 145, 14, 4785);
     			attr_dev(button0, "tabindex", "-1");
     			attr_dev(button0, "class", "btn btn-ghost btn-circle");
-    			add_location(button0, file, 143, 12, 4715);
-    			add_location(button1, file, 160, 16, 5581);
-    			add_location(li0, file, 159, 14, 5560);
-    			add_location(button2, file, 167, 16, 5785);
-    			add_location(li1, file, 166, 14, 5764);
-    			add_location(button3, file, 174, 16, 5985);
-    			add_location(li2, file, 173, 14, 5964);
-    			add_location(button4, file, 181, 16, 6183);
-    			add_location(li3, file, 180, 14, 6162);
+    			add_location(button0, file, 144, 12, 4715);
+    			add_location(button1, file, 161, 16, 5581);
+    			add_location(li0, file, 160, 14, 5560);
+    			add_location(button2, file, 168, 16, 5785);
+    			add_location(li1, file, 167, 14, 5764);
+    			add_location(button3, file, 175, 16, 5985);
+    			add_location(li2, file, 174, 14, 5964);
+    			add_location(button4, file, 182, 16, 6183);
+    			add_location(li3, file, 181, 14, 6162);
     			attr_dev(ul, "tabindex", "-1");
     			attr_dev(ul, "class", "dropdown-content shadow-xl bg-base-200 z-[1] menu p-2 shadow bg-base-100 rounded-box w-52");
-    			add_location(ul, file, 155, 12, 5388);
+    			add_location(ul, file, 156, 12, 5388);
     			attr_dev(div, "class", "dropdown dropdown-end");
-    			add_location(div, file, 142, 10, 4667);
+    			add_location(div, file, 143, 10, 4667);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -17855,14 +17855,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_6.name,
     		type: "if",
-    		source: "(142:44) ",
+    		source: "(143:44) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (120:8) {#if currentPage !== Page.Home}
+    // (121:8) {#if currentPage !== Page.Home}
     function create_if_block_5(ctx) {
     	let button;
     	let svg;
@@ -17881,14 +17881,14 @@ zoo`.split('\n');
     			attr_dev(path, "stroke-linejoin", "round");
     			attr_dev(path, "stroke-width", "2");
     			attr_dev(path, "d", "M12 12L7 7m5 5l5 5m-5-5l5-5m-5 5l-5 5");
-    			add_location(path, file, 131, 15, 4314);
+    			add_location(path, file, 132, 15, 4314);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "24");
     			attr_dev(svg, "height", "24");
     			attr_dev(svg, "viewBox", "0 0 24 24");
-    			add_location(svg, file, 126, 12, 4160);
+    			add_location(svg, file, 127, 12, 4160);
     			attr_dev(button, "class", "btn btn-ghost btn-circle");
-    			add_location(button, file, 120, 10, 3999);
+    			add_location(button, file, 121, 10, 3999);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -17912,14 +17912,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_5.name,
     		type: "if",
-    		source: "(120:8) {#if currentPage !== Page.Home}",
+    		source: "(121:8) {#if currentPage !== Page.Home}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (200:43) 
+    // (201:43) 
     function create_if_block_4(ctx) {
     	let about;
     	let current;
@@ -17951,14 +17951,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_4.name,
     		type: "if",
-    		source: "(200:43) ",
+    		source: "(201:43) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (198:44) 
+    // (199:44) 
     function create_if_block_3(ctx) {
     	let qrcode;
     	let current;
@@ -17990,14 +17990,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(198:44) ",
+    		source: "(199:44) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (196:46) 
+    // (197:46) 
     function create_if_block_2(ctx) {
     	let settings;
     	let current;
@@ -18029,14 +18029,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_2.name,
     		type: "if",
-    		source: "(196:46) ",
+    		source: "(197:46) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (194:6) {#if currentPage === Page.Home}
+    // (195:6) {#if currentPage === Page.Home}
     function create_if_block_1(ctx) {
     	let home;
     	let current;
@@ -18068,7 +18068,7 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(194:6) {#if currentPage === Page.Home}",
+    		source: "(195:6) {#if currentPage === Page.Home}",
     		ctx
     	});
 
