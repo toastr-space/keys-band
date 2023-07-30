@@ -16,7 +16,7 @@ export default {
       "halloween",
       "black",
       "luxury",
-      "dracula",
+      "autumn",
     ],
   },
 };

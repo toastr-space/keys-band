@@ -9331,16 +9331,12 @@ zoo`.split('\n');
             web.storage.local.get("theme", (value) => {
                 if (value.theme) {
                     theme.set(value.theme);
-                    if (value.theme === "light") {
-                        document.documentElement.setAttribute("data-theme", "lofi");
-                    }
-                    else
-                        document.documentElement.setAttribute("data-theme", "black");
+                    document.documentElement.setAttribute("data-theme", value.theme);
                 }
                 else {
-                    web.storage.local.set({ theme: "light" });
-                    theme.set("light");
-                    document.documentElement.setAttribute("data-theme", "lofi");
+                    web.storage.local.set({ theme: "cupcake" });
+                    theme.set("cupcake");
+                    document.documentElement.setAttribute("data-theme", "cupcake");
                 }
                 resolve();
             });

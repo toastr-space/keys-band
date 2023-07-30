@@ -122,20 +122,12 @@ export async function updateNotification(name): Promise<void> {
   });
 }
 
-export async function switchTheme(): Promise<void> {
+export async function switchTheme(themeName: string): Promise<void> {
   return new Promise((resolve) => {
-    web.storage.local.get("theme", (value) => {
-      if (value.theme === "light") {
-        web.storage.local.set({ theme: "dark" });
-        theme.set("dark");
-        document.documentElement.setAttribute("data-theme", "black");
-      } else {
-        web.storage.local.set({ theme: "light" });
-        theme.set("light");
-        document.documentElement.setAttribute("data-theme", "lofi");
-      }
-      resolve();
-    });
+    web.storage.local.set({ theme: themeName });
+    theme.set(themeName);
+    document.documentElement.setAttribute("data-theme", themeName);
+    resolve();
   });
 }
 
@@ -144,13 +136,11 @@ export async function loadTheme(): Promise<void> {
     web.storage.local.get("theme", (value) => {
       if (value.theme) {
         theme.set(value.theme);
-        if (value.theme === "light") {
-          document.documentElement.setAttribute("data-theme", "lofi");
-        } else document.documentElement.setAttribute("data-theme", "black");
+        document.documentElement.setAttribute("data-theme", value.theme);
       } else {
-        web.storage.local.set({ theme: "light" });
-        theme.set("light");
-        document.documentElement.setAttribute("data-theme", "lofi");
+        web.storage.local.set({ theme: "cupcake" });
+        theme.set("cupcake");
+        document.documentElement.setAttribute("data-theme", "cupcake");
       }
       resolve();
     });

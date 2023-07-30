@@ -1,6 +1,6 @@
 <script lang="ts">
   import { web, domainToUrl, remainingTime } from "src/stores/utils";
-  import { loadWebSites, webSites } from "src/stores/key-store";
+  import { loadWebSites, webSites, type WebSite } from "src/stores/key-store";
   import Authorization from "./Authorization.svelte";
   import AuthAlert from "./AuthAlert.svelte";
   import Footer from "./Footer.svelte";
@@ -30,6 +30,25 @@
   let hour = 0;
   let minute = 0;
   let second = 0;
+
+  webSites.subscribe((value) => {
+    if (value === null || value === undefined) {
+      return;
+    }
+    let _webSite: WebSite;
+    if (Object.keys(value).indexOf(domainToUrl(currentTab.url)) !== -1)
+      _webSite = value[domainToUrl(currentTab.url)];
+    else return;
+
+    timerExpire = remainingTime(
+      new Date(_webSite?.permission.authorizationStop)
+    );
+    const splitedTimerExpire = timerExpire.split(":");
+
+    hour = parseInt(splitedTimerExpire[0]);
+    minute = parseInt(splitedTimerExpire[1]);
+    second = parseInt(splitedTimerExpire[2]);
+  });
 
   $: authAlertMessage = `Authorization expires in`;
 

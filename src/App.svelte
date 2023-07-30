@@ -125,38 +125,22 @@
           {$userProfile?.nip05 || ""}
         </div>
       </div>
-      <div class="w-4/12 py-4 pt-2 pl-7">
+      <div class="w-6/12 py-4 pt-2 pl-7 flex">
         <!-- cog icon button -->
-        <button
-          class="btn btn-ghost btn-circle"
-          on:click={() => {
-            switchTheme();
+        <select
+          class="select select-bordered select-xs w-7/12 h-8 mt-2 max-w-xs pl-2 pr-0"
+          on:change={(e) => {
+            switchTheme(e.target.value);
           }}
         >
-          {#if $theme !== "dark"}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="21"
-              height="21"
-              viewBox="0 0 256 256"
-              ><path
-                fill="currentColor"
-                d="M235.54 150.21a104.84 104.84 0 0 1-37 52.91A104 104 0 0 1 32 120a103.09 103.09 0 0 1 20.88-62.52a104.84 104.84 0 0 1 52.91-37a8 8 0 0 1 10 10a88.08 88.08 0 0 0 109.8 109.8a8 8 0 0 1 10 10Z"
-              /></svg
-            >
-          {:else}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 256 256"
-              ><path
-                fill="currentColor"
-                d="M120 40V16a8 8 0 0 1 16 0v24a8 8 0 0 1-16 0Zm72 88a64 64 0 1 1-64-64a64.07 64.07 0 0 1 64 64Zm-16 0a48 48 0 1 0-48 48a48.05 48.05 0 0 0 48-48ZM58.34 69.66a8 8 0 0 0 11.32-11.32l-16-16a8 8 0 0 0-11.32 11.32Zm0 116.68l-16 16a8 8 0 0 0 11.32 11.32l16-16a8 8 0 0 0-11.32-11.32ZM192 72a8 8 0 0 0 5.66-2.34l16-16a8 8 0 0 0-11.32-11.32l-16 16A8 8 0 0 0 192 72Zm5.66 114.34a8 8 0 0 0-11.32 11.32l16 16a8 8 0 0 0 11.32-11.32ZM48 128a8 8 0 0 0-8-8H16a8 8 0 0 0 0 16h24a8 8 0 0 0 8-8Zm80 80a8 8 0 0 0-8 8v24a8 8 0 0 0 16 0v-24a8 8 0 0 0-8-8Zm112-88h-24a8 8 0 0 0 0 16h24a8 8 0 0 0 0-16Z"
-              /></svg
-            >
-          {/if}
-        </button>
+          <option value="light" selected={$theme == "light"}>Light</option>
+          <option value="cupcake" selected={$theme == "cupcake"}>Cupcake</option
+          >
+          <option value="lofi" selected={$theme == "lofi"}>Lofi</option>
+          <option value="dark" selected={$theme == "dark"}>Dark</option>
+          <option value="autumn" selected={$theme == "autumn"}>Autumn</option>
+        </select>
+
         {#if currentPage !== Page.Home}
           <button
             class="btn btn-ghost btn-circle"
@@ -246,36 +230,18 @@
   <div
     class="w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2 overflow-y-auto"
   >
-    <button
-      class="btn btn-ghost btn-circle absolute top-3 right-3"
-      on:click={() => {
-        switchTheme();
+    <select
+      class="select select-bordered select-xs w-2/12 h-8 mt-2 max-w-xs pl-2 pr-0 absolute top-3 right-3"
+      on:change={(e) => {
+        switchTheme(e.target.value || "light");
       }}
     >
-      {#if $theme !== "dark"}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="21"
-          height="21"
-          viewBox="0 0 256 256"
-          ><path
-            fill="currentColor"
-            d="M235.54 150.21a104.84 104.84 0 0 1-37 52.91A104 104 0 0 1 32 120a103.09 103.09 0 0 1 20.88-62.52a104.84 104.84 0 0 1 52.91-37a8 8 0 0 1 10 10a88.08 88.08 0 0 0 109.8 109.8a8 8 0 0 1 10 10Z"
-          /></svg
-        >
-      {:else}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 256 256"
-          ><path
-            fill="currentColor"
-            d="M120 40V16a8 8 0 0 1 16 0v24a8 8 0 0 1-16 0Zm72 88a64 64 0 1 1-64-64a64.07 64.07 0 0 1 64 64Zm-16 0a48 48 0 1 0-48 48a48.05 48.05 0 0 0 48-48ZM58.34 69.66a8 8 0 0 0 11.32-11.32l-16-16a8 8 0 0 0-11.32 11.32Zm0 116.68l-16 16a8 8 0 0 0 11.32 11.32l16-16a8 8 0 0 0-11.32-11.32ZM192 72a8 8 0 0 0 5.66-2.34l16-16a8 8 0 0 0-11.32-11.32l-16 16A8 8 0 0 0 192 72Zm5.66 114.34a8 8 0 0 0-11.32 11.32l16 16a8 8 0 0 0 11.32-11.32ZM48 128a8 8 0 0 0-8-8H16a8 8 0 0 0 0 16h24a8 8 0 0 0 8-8Zm80 80a8 8 0 0 0-8 8v24a8 8 0 0 0 16 0v-24a8 8 0 0 0-8-8Zm112-88h-24a8 8 0 0 0 0 16h24a8 8 0 0 0 0-16Z"
-          /></svg
-        >
-      {/if}
-    </button>
+      <option value="light" selected={$theme == "light"}>Light</option>
+      <option value="cupcake" selected={$theme == "cupcake"}>Cupcake</option>
+      <option value="lofi" selected={$theme == "lofi"}>Lofi</option>
+      <option value="dark" selected={$theme == "dark"}>Dark</option>
+      <option value="autumn" selected={$theme == "autumn"}>Autumn</option>
+    </select>
     <div class="w-full">
       <img src="/assets/logo.png" width="80" class="mx-auto" alt="" />
     </div>
@@ -413,5 +379,8 @@
   .fixed-width {
     width: 400px;
     max-width: 400px;
+  }
+  .select {
+    background-image: none;
   }
 </style>
