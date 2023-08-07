@@ -2730,6 +2730,9 @@ html {
 .mt-4 {
   margin-top: 1rem;
 }
+.mt-3 {
+  margin-top: 0.75rem;
+}
 .flex {
   display: flex;
 }
@@ -2947,6 +2950,9 @@ html {
 }
 .pt-5 {
   padding-top: 1.25rem;
+}
+.pt-3 {
+  padding-top: 0.75rem;
 }
 .text-center {
   text-align: center;

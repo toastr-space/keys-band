@@ -82,6 +82,7 @@ export async function saveProfiles(): Promise<void> {
 
 export async function settingProfile(profile: Profile): Promise<void> {
   return new Promise((resolve) => {
+    web.storage.local.set({ profile: "" });
     web.storage.local.set({ privateKey: profile.data.privateKey });
     web.storage.local.set({ profileName: profile.name });
     web.storage.local.set({ webSites: profile.data.webSites });
@@ -198,16 +199,20 @@ webSites.subscribe((value) => {
 
 export async function getProfile(): Promise<void> {
   if (!get(keyStore)) return;
-  pool
-    .get(_relays, {
-      authors: [getPublicKey(get(keyStore))],
-      kinds: [0],
-    })
-    .then((event) => {
-      const profile = JSON.parse(event.content);
-      userProfile.set(profile);
-      web.storage.local.set({ profile: profile });
-    });
+  try {
+    pool
+      .get(_relays, {
+        authors: [getPublicKey(get(keyStore))],
+        kinds: [0],
+      })
+      .then((event) => {
+        const profile = JSON.parse(event.content);
+        userProfile.set(profile);
+        web.storage.local.set({ profile: profile });
+      });
+  } catch (error) {
+    alert(error.message);
+  }
 
   return new Promise((resolve) => {
     web.storage.local.get("profile", (value) => {
@@ -292,8 +297,10 @@ export async function logout(): Promise<void> {
     userProfile.set({});
     webSites.set({});
     return new Promise(async (resolve) => {
-      await web.storage.local.set({ privateKey: "", profile: "" }, () => {
-        resolve();
+      await web.storage.local.set({ privateKey: "" }, async () => {
+        await web.storage.local.set({ profile: "" }, () => {
+          resolve();
+        });
       });
     });
   });

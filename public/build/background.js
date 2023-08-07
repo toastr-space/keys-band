@@ -8948,16 +8948,21 @@ zoo`.split('\n');
     async function getProfile() {
         if (!get_store_value(keyStore))
             return;
-        pool
-            .get(_relays, {
-            authors: [getPublicKey(get_store_value(keyStore))],
-            kinds: [0],
-        })
-            .then((event) => {
-            const profile = JSON.parse(event.content);
-            userProfile.set(profile);
-            web.storage.local.set({ profile: profile });
-        });
+        try {
+            pool
+                .get(_relays, {
+                authors: [getPublicKey(get_store_value(keyStore))],
+                kinds: [0],
+            })
+                .then((event) => {
+                const profile = JSON.parse(event.content);
+                userProfile.set(profile);
+                web.storage.local.set({ profile: profile });
+            });
+        }
+        catch (error) {
+            alert(error.message);
+        }
         return new Promise((resolve) => {
             web.storage.local.get("profile", (value) => {
                 userProfile.set(value.profile);

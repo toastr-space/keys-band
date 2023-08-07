@@ -18,7 +18,7 @@
 
   import Settings from "./components/Settings.svelte";
   import Home from "./components/Home.svelte";
-  import { getPublicKey } from "nostr-tools";
+  import { getPublicKey, nip05 } from "nostr-tools";
   import QrCode from "./components/QrCode.svelte";
   import About from "./components/About.svelte";
 
@@ -115,7 +115,11 @@
       </div>
       <div class="w-6/12 p-4 pl-2 pt-2">
         <!-- profile name and subtitle (nip05) -->
-        <div class="text-xl font-bold">
+        <div
+          class="text-xl font-bold {$userProfile.name && $userProfile.nip05
+            ? ''
+            : 'mt-2'}"
+        >
           <!-- manage long name -->
           {#if $userProfile?.name}
             {$userProfile?.name?.length > 12
