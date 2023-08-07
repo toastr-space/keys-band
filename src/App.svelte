@@ -117,9 +117,13 @@
         <!-- profile name and subtitle (nip05) -->
         <div class="text-xl font-bold">
           <!-- manage long name -->
-          {$userProfile?.name?.length > 12
-            ? $userProfile?.name.substr(0, 12) + "..."
-            : $userProfile?.name || getPublicKey($keyStore).substr(0, 16)}
+          {#if $userProfile?.name}
+            {$userProfile?.name?.length > 12
+              ? $userProfile?.name.substr(0, 12) + "..."
+              : $userProfile?.name || getPublicKey($keyStore).substr(0, 16)}
+          {:else}
+            {getPublicKey($keyStore).substr(0, 10)}
+          {/if}
         </div>
         <div class="text-sm text-secondary text-gray-500">
           {$userProfile?.nip05 || ""}

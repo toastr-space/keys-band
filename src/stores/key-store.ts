@@ -281,7 +281,6 @@ export async function logout(): Promise<void> {
     };
 
     console.log(profile);
-    // replace profile in profiles
     const index = _profiles.findIndex((p) => p.name === value.profileName);
     _profiles[index] = profile;
     await web.storage.local.set({ profiles: _profiles });
@@ -293,7 +292,7 @@ export async function logout(): Promise<void> {
     userProfile.set({});
     webSites.set({});
     return new Promise(async (resolve) => {
-      await web.storage.local.set({ privateKey: "" }, () => {
+      await web.storage.local.set({ privateKey: "", profile: "" }, () => {
         resolve();
       });
     });

@@ -9732,7 +9732,6 @@ zoo`.split('\n');
                 },
             };
             console.log(profile);
-            // replace profile in profiles
             const index = _profiles.findIndex((p) => p.name === value.profileName);
             _profiles[index] = profile;
             await web.storage.local.set({ profiles: _profiles });
@@ -9742,7 +9741,7 @@ zoo`.split('\n');
             userProfile.set({});
             webSites.set({});
             return new Promise(async (resolve) => {
-                await web.storage.local.set({ privateKey: "" }, () => {
+                await web.storage.local.set({ privateKey: "", profile: "" }, () => {
                     resolve();
                 });
             });
@@ -12646,7 +12645,7 @@ zoo`.split('\n');
     	let current_block_type_index;
     	let if_block;
     	let current;
-    	const if_block_creators = [create_if_block_1$1, create_else_block_2];
+    	const if_block_creators = [create_if_block_1$1, create_else_block_2$1];
     	const if_blocks = [];
 
     	function select_block_type_1(ctx, dirty) {
@@ -12786,7 +12785,7 @@ zoo`.split('\n');
     }
 
     // (167:4) {:else}
-    function create_else_block_2(ctx) {
+    function create_else_block_2$1(ctx) {
     	let button;
     	let mounted;
     	let dispose;
@@ -12818,7 +12817,7 @@ zoo`.split('\n');
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_else_block_2.name,
+    		id: create_else_block_2$1.name,
     		type: "else",
     		source: "(167:4) {:else}",
     		ctx
@@ -16847,8 +16846,8 @@ zoo`.split('\n');
     	return child_ctx;
     }
 
-    // (206:0) {:else}
-    function create_else_block(ctx) {
+    // (210:0) {:else}
+    function create_else_block_1(ctx) {
     	let div1;
     	let select;
     	let option0;
@@ -16876,12 +16875,12 @@ zoo`.split('\n');
     	let mounted;
     	let dispose;
 
-    	function select_block_type_3(ctx, dirty) {
-    		if (/*creationMode*/ ctx[4] == false) return create_if_block_7;
-    		return create_else_block_1;
+    	function select_block_type_4(ctx, dirty) {
+    		if (/*creationMode*/ ctx[4] == false) return create_if_block_8;
+    		return create_else_block_2;
     	}
 
-    	let current_block_type = select_block_type_3(ctx);
+    	let current_block_type = select_block_type_4(ctx);
     	let if_block = current_block_type(ctx);
 
     	const block = {
@@ -16909,36 +16908,36 @@ zoo`.split('\n');
     			option0.__value = "light";
     			option0.value = option0.__value;
     			option0.selected = option0_selected_value = /*$theme*/ ctx[7] == "light";
-    			add_location(option0, file, 215, 6, 7053);
+    			add_location(option0, file, 219, 6, 7180);
     			option1.__value = "dark";
     			option1.value = option1.__value;
     			option1.selected = option1_selected_value = /*$theme*/ ctx[7] == "dark";
-    			add_location(option1, file, 216, 6, 7125);
+    			add_location(option1, file, 220, 6, 7252);
     			option2.__value = "cupcake";
     			option2.value = option2.__value;
     			option2.selected = option2_selected_value = /*$theme*/ ctx[7] == "cupcake";
-    			add_location(option2, file, 217, 6, 7194);
+    			add_location(option2, file, 221, 6, 7321);
     			option3.__value = "lofi";
     			option3.value = option3.__value;
     			option3.selected = option3_selected_value = /*$theme*/ ctx[7] == "lofi";
-    			add_location(option3, file, 218, 6, 7272);
+    			add_location(option3, file, 222, 6, 7399);
     			option4.__value = "autumn";
     			option4.value = option4.__value;
     			option4.selected = option4_selected_value = /*$theme*/ ctx[7] == "autumn";
-    			add_location(option4, file, 219, 6, 7341);
+    			add_location(option4, file, 223, 6, 7468);
     			attr_dev(select, "class", "select select-bordered select-xs w-2/12 h-8 mt-2 max-w-xs pl-2 pr-0 absolute top-3 right-3 svelte-iniqp2");
-    			add_location(select, file, 209, 4, 6845);
+    			add_location(select, file, 213, 4, 6972);
     			if (!src_url_equal(img.src, img_src_value = "/assets/logo.png")) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "width", "80");
     			attr_dev(img, "class", "mx-auto");
     			attr_dev(img, "alt", "");
-    			add_location(img, file, 222, 6, 7455);
+    			add_location(img, file, 226, 6, 7582);
     			attr_dev(div0, "class", "w-full");
-    			add_location(div0, file, 221, 4, 7428);
+    			add_location(div0, file, 225, 4, 7555);
     			attr_dev(span, "class", "text-lg text-center w-full");
-    			add_location(span, file, 225, 4, 7536);
+    			add_location(span, file, 229, 4, 7663);
     			attr_dev(div1, "class", "w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2 overflow-y-auto");
-    			add_location(div1, file, 206, 2, 6744);
+    			add_location(div1, file, 210, 2, 6871);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div1, anchor);
@@ -16987,7 +16986,7 @@ zoo`.split('\n');
     				prop_dev(option4, "selected", option4_selected_value);
     			}
 
-    			if (current_block_type === (current_block_type = select_block_type_3(ctx)) && if_block) {
+    			if (current_block_type === (current_block_type = select_block_type_4(ctx)) && if_block) {
     				if_block.p(ctx, dirty);
     			} else {
     				if_block.d(1);
@@ -17011,9 +17010,9 @@ zoo`.split('\n');
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_else_block.name,
+    		id: create_else_block_1.name,
     		type: "else",
-    		source: "(206:0) {:else}",
+    		source: "(210:0) {:else}",
     		ctx
     	});
 
@@ -17032,54 +17031,56 @@ zoo`.split('\n');
     	let t0;
     	let div5;
     	let div3;
-
-    	let t1_value = (/*$userProfile*/ ctx[5]?.name?.length > 12
-    	? /*$userProfile*/ ctx[5]?.name.substr(0, 12) + "..."
-    	: /*$userProfile*/ ctx[5]?.name || getPublicKey(/*$keyStore*/ ctx[6]).substr(0, 16)) + "";
-
     	let t1;
-    	let t2;
     	let div4;
-    	let t3_value = (/*$userProfile*/ ctx[5]?.nip05 || "") + "";
+    	let t2_value = (/*$userProfile*/ ctx[5]?.nip05 || "") + "";
+    	let t2;
     	let t3;
-    	let t4;
     	let div6;
     	let select;
     	let option0;
-    	let t5;
+    	let t4;
     	let option0_selected_value;
     	let option1;
-    	let t6;
+    	let t5;
     	let option1_selected_value;
     	let option2;
-    	let t7;
+    	let t6;
     	let option2_selected_value;
     	let option3;
-    	let t8;
+    	let t7;
     	let option3_selected_value;
     	let option4;
-    	let t9;
+    	let t8;
     	let option4_selected_value;
+    	let t9;
     	let t10;
-    	let t11;
     	let div8;
     	let current_block_type_index;
-    	let if_block1;
+    	let if_block2;
     	let current;
     	let mounted;
     	let dispose;
 
     	function select_block_type_1(ctx, dirty) {
+    		if (/*$userProfile*/ ctx[5]?.name) return create_if_block_7;
+    		return create_else_block;
+    	}
+
+    	let current_block_type = select_block_type_1(ctx);
+    	let if_block0 = current_block_type(ctx);
+
+    	function select_block_type_2(ctx, dirty) {
     		if (/*currentPage*/ ctx[1] !== /*Page*/ ctx[0].Home) return create_if_block_5;
     		if (/*currentPage*/ ctx[1] === /*Page*/ ctx[0].Home) return create_if_block_6;
     	}
 
-    	let current_block_type = select_block_type_1(ctx);
-    	let if_block0 = current_block_type && current_block_type(ctx);
+    	let current_block_type_1 = select_block_type_2(ctx);
+    	let if_block1 = current_block_type_1 && current_block_type_1(ctx);
     	const if_block_creators = [create_if_block_1, create_if_block_2, create_if_block_3, create_if_block_4];
     	const if_blocks = [];
 
-    	function select_block_type_2(ctx, dirty) {
+    	function select_block_type_3(ctx, dirty) {
     		if (/*currentPage*/ ctx[1] === /*Page*/ ctx[0].Home) return 0;
     		if (/*currentPage*/ ctx[1] === /*Page*/ ctx[0].Settings) return 1;
     		if (/*currentPage*/ ctx[1] === /*Page*/ ctx[0].QrCode) return 2;
@@ -17087,8 +17088,8 @@ zoo`.split('\n');
     		return -1;
     	}
 
-    	if (~(current_block_type_index = select_block_type_2(ctx))) {
-    		if_block1 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+    	if (~(current_block_type_index = select_block_type_3(ctx))) {
+    		if_block2 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
     	}
 
     	const block = {
@@ -17102,28 +17103,28 @@ zoo`.split('\n');
     			t0 = space();
     			div5 = element("div");
     			div3 = element("div");
-    			t1 = text(t1_value);
-    			t2 = space();
+    			if_block0.c();
+    			t1 = space();
     			div4 = element("div");
-    			t3 = text(t3_value);
-    			t4 = space();
+    			t2 = text(t2_value);
+    			t3 = space();
     			div6 = element("div");
     			select = element("select");
     			option0 = element("option");
-    			t5 = text("Light");
+    			t4 = text("Light");
     			option1 = element("option");
-    			t6 = text("Dark");
+    			t5 = text("Dark");
     			option2 = element("option");
-    			t7 = text("Cupcake");
+    			t6 = text("Cupcake");
     			option3 = element("option");
-    			t8 = text("Lofi");
+    			t7 = text("Lofi");
     			option4 = element("option");
-    			t9 = text("Autumn");
-    			t10 = space();
-    			if (if_block0) if_block0.c();
-    			t11 = space();
-    			div8 = element("div");
+    			t8 = text("Autumn");
+    			t9 = space();
     			if (if_block1) if_block1.c();
+    			t10 = space();
+    			div8 = element("div");
+    			if (if_block2) if_block2.c();
     			attr_dev(img, "loading", "lazy");
     			if (!src_url_equal(img.src, img_src_value = /*$userProfile*/ ctx[5]?.picture || "https://toastr.space/images/toastr.png")) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "");
@@ -17137,37 +17138,37 @@ zoo`.split('\n');
     			attr_dev(div3, "class", "text-xl font-bold");
     			add_location(div3, file, 93, 8, 2878);
     			attr_dev(div4, "class", "text-sm text-secondary text-gray-500");
-    			add_location(div4, file, 99, 8, 3142);
+    			add_location(div4, file, 103, 8, 3269);
     			attr_dev(div5, "class", "w-6/12 p-4 pl-2 pt-2");
     			add_location(div5, file, 91, 6, 2784);
     			option0.__value = "light";
     			option0.value = option0.__value;
     			option0.selected = option0_selected_value = /*$theme*/ ctx[7] == "light";
-    			add_location(option0, file, 111, 10, 3545);
+    			add_location(option0, file, 115, 10, 3672);
     			option1.__value = "dark";
     			option1.value = option1.__value;
     			option1.selected = option1_selected_value = /*$theme*/ ctx[7] == "dark";
-    			add_location(option1, file, 112, 10, 3621);
+    			add_location(option1, file, 116, 10, 3748);
     			option2.__value = "cupcake";
     			option2.value = option2.__value;
     			option2.selected = option2_selected_value = /*$theme*/ ctx[7] == "cupcake";
-    			add_location(option2, file, 114, 10, 3695);
+    			add_location(option2, file, 118, 10, 3822);
     			option3.__value = "lofi";
     			option3.value = option3.__value;
     			option3.selected = option3_selected_value = /*$theme*/ ctx[7] == "lofi";
-    			add_location(option3, file, 116, 10, 3788);
+    			add_location(option3, file, 120, 10, 3915);
     			option4.__value = "autumn";
     			option4.value = option4.__value;
     			option4.selected = option4_selected_value = /*$theme*/ ctx[7] == "autumn";
-    			add_location(option4, file, 117, 10, 3861);
+    			add_location(option4, file, 121, 10, 3988);
     			attr_dev(select, "class", "select select-bordered select-xs w-7/12 h-8 mt-2 max-w-xs pl-2 pr-0 svelte-iniqp2");
-    			add_location(select, file, 105, 8, 3347);
+    			add_location(select, file, 109, 8, 3474);
     			attr_dev(div6, "class", "w-6/12 py-4 pt-2 pl-7 flex");
-    			add_location(div6, file, 103, 6, 3265);
+    			add_location(div6, file, 107, 6, 3392);
     			attr_dev(div7, "class", "w-full h-16 bg-base-100 flex shadow-sm");
     			add_location(div7, file, 76, 4, 2327);
     			attr_dev(div8, "class", "w-full h-full pt-2");
-    			add_location(div8, file, 193, 4, 6420);
+    			add_location(div8, file, 197, 4, 6547);
     			attr_dev(div9, "class", "w-full h-full flex flex-wrap fixed-width svelte-iniqp2");
     			add_location(div9, file, 75, 2, 2268);
     		},
@@ -17181,26 +17182,26 @@ zoo`.split('\n');
     			append_dev(div7, t0);
     			append_dev(div7, div5);
     			append_dev(div5, div3);
-    			append_dev(div3, t1);
-    			append_dev(div5, t2);
+    			if_block0.m(div3, null);
+    			append_dev(div5, t1);
     			append_dev(div5, div4);
-    			append_dev(div4, t3);
-    			append_dev(div7, t4);
+    			append_dev(div4, t2);
+    			append_dev(div7, t3);
     			append_dev(div7, div6);
     			append_dev(div6, select);
     			append_dev(select, option0);
-    			append_dev(option0, t5);
+    			append_dev(option0, t4);
     			append_dev(select, option1);
-    			append_dev(option1, t6);
+    			append_dev(option1, t5);
     			append_dev(select, option2);
-    			append_dev(option2, t7);
+    			append_dev(option2, t6);
     			append_dev(select, option3);
-    			append_dev(option3, t8);
+    			append_dev(option3, t7);
     			append_dev(select, option4);
-    			append_dev(option4, t9);
-    			append_dev(div6, t10);
-    			if (if_block0) if_block0.m(div6, null);
-    			append_dev(div9, t11);
+    			append_dev(option4, t8);
+    			append_dev(div6, t9);
+    			if (if_block1) if_block1.m(div6, null);
+    			append_dev(div9, t10);
     			append_dev(div9, div8);
 
     			if (~current_block_type_index) {
@@ -17219,11 +17220,19 @@ zoo`.split('\n');
     				attr_dev(img, "src", img_src_value);
     			}
 
-    			if ((!current || dirty & /*$userProfile, $keyStore*/ 96) && t1_value !== (t1_value = (/*$userProfile*/ ctx[5]?.name?.length > 12
-    			? /*$userProfile*/ ctx[5]?.name.substr(0, 12) + "..."
-    			: /*$userProfile*/ ctx[5]?.name || getPublicKey(/*$keyStore*/ ctx[6]).substr(0, 16)) + "")) set_data_dev(t1, t1_value);
+    			if (current_block_type === (current_block_type = select_block_type_1(ctx)) && if_block0) {
+    				if_block0.p(ctx, dirty);
+    			} else {
+    				if_block0.d(1);
+    				if_block0 = current_block_type(ctx);
 
-    			if ((!current || dirty & /*$userProfile*/ 32) && t3_value !== (t3_value = (/*$userProfile*/ ctx[5]?.nip05 || "") + "")) set_data_dev(t3, t3_value);
+    				if (if_block0) {
+    					if_block0.c();
+    					if_block0.m(div3, null);
+    				}
+    			}
+
+    			if ((!current || dirty & /*$userProfile*/ 32) && t2_value !== (t2_value = (/*$userProfile*/ ctx[5]?.nip05 || "") + "")) set_data_dev(t2, t2_value);
 
     			if (!current || dirty & /*$theme*/ 128 && option0_selected_value !== (option0_selected_value = /*$theme*/ ctx[7] == "light")) {
     				prop_dev(option0, "selected", option0_selected_value);
@@ -17245,23 +17254,23 @@ zoo`.split('\n');
     				prop_dev(option4, "selected", option4_selected_value);
     			}
 
-    			if (current_block_type === (current_block_type = select_block_type_1(ctx)) && if_block0) {
-    				if_block0.p(ctx, dirty);
+    			if (current_block_type_1 === (current_block_type_1 = select_block_type_2(ctx)) && if_block1) {
+    				if_block1.p(ctx, dirty);
     			} else {
-    				if (if_block0) if_block0.d(1);
-    				if_block0 = current_block_type && current_block_type(ctx);
+    				if (if_block1) if_block1.d(1);
+    				if_block1 = current_block_type_1 && current_block_type_1(ctx);
 
-    				if (if_block0) {
-    					if_block0.c();
-    					if_block0.m(div6, null);
+    				if (if_block1) {
+    					if_block1.c();
+    					if_block1.m(div6, null);
     				}
     			}
 
     			let previous_block_index = current_block_type_index;
-    			current_block_type_index = select_block_type_2(ctx);
+    			current_block_type_index = select_block_type_3(ctx);
 
     			if (current_block_type_index !== previous_block_index) {
-    				if (if_block1) {
+    				if (if_block2) {
     					group_outros();
 
     					transition_out(if_blocks[previous_block_index], 1, 1, () => {
@@ -17272,34 +17281,35 @@ zoo`.split('\n');
     				}
 
     				if (~current_block_type_index) {
-    					if_block1 = if_blocks[current_block_type_index];
+    					if_block2 = if_blocks[current_block_type_index];
 
-    					if (!if_block1) {
-    						if_block1 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
-    						if_block1.c();
+    					if (!if_block2) {
+    						if_block2 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+    						if_block2.c();
     					}
 
-    					transition_in(if_block1, 1);
-    					if_block1.m(div8, null);
+    					transition_in(if_block2, 1);
+    					if_block2.m(div8, null);
     				} else {
-    					if_block1 = null;
+    					if_block2 = null;
     				}
     			}
     		},
     		i: function intro(local) {
     			if (current) return;
-    			transition_in(if_block1);
+    			transition_in(if_block2);
     			current = true;
     		},
     		o: function outro(local) {
-    			transition_out(if_block1);
+    			transition_out(if_block2);
     			current = false;
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div9);
+    			if_block0.d();
 
-    			if (if_block0) {
-    				if_block0.d();
+    			if (if_block1) {
+    				if_block1.d();
     			}
 
     			if (~current_block_type_index) {
@@ -17322,8 +17332,8 @@ zoo`.split('\n');
     	return block;
     }
 
-    // (287:4) {:else}
-    function create_else_block_1(ctx) {
+    // (291:4) {:else}
+    function create_else_block_2(ctx) {
     	let hr;
     	let t0;
     	let div1;
@@ -17383,49 +17393,49 @@ zoo`.split('\n');
     			t10 = space();
     			button1 = element("button");
     			button1.textContent = "Create";
-    			add_location(hr, file, 287, 6, 9616);
+    			add_location(hr, file, 291, 6, 9743);
     			attr_dev(path0, "fill", "currentColor");
     			attr_dev(path0, "d", "M224 480h640a32 32 0 1 1 0 64H224a32 32 0 0 1 0-64z");
-    			add_location(path0, file, 302, 15, 10104);
+    			add_location(path0, file, 306, 15, 10231);
     			attr_dev(path1, "fill", "currentColor");
     			attr_dev(path1, "d", "m237.248 512l265.408 265.344a32 32 0 0 1-45.312 45.312l-288-288a32 32 0 0 1 0-45.312l288-288a32 32 0 1 1 45.312 45.312L237.248 512z");
-    			add_location(path1, file, 305, 16, 10234);
+    			add_location(path1, file, 309, 16, 10361);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "19");
     			attr_dev(svg, "height", "19");
     			attr_dev(svg, "class", "mt-1");
     			attr_dev(svg, "viewBox", "0 0 1024 1024");
-    			add_location(svg, file, 296, 12, 9919);
+    			add_location(svg, file, 300, 12, 10046);
     			attr_dev(button0, "class", "link link-hover mx-auto text-lg flex flex-row space-x-8");
-    			add_location(button0, file, 290, 10, 9730);
+    			add_location(button0, file, 294, 10, 9857);
     			attr_dev(div0, "class", "flex flex-row space-x-8");
-    			add_location(div0, file, 289, 8, 9682);
+    			add_location(div0, file, 293, 8, 9809);
     			attr_dev(div1, "class", "w-full flex justify-start pr-8");
-    			add_location(div1, file, 288, 6, 9629);
+    			add_location(div1, file, 292, 6, 9756);
     			attr_dev(span0, "class", "font-semibold w-full");
-    			add_location(span0, file, 314, 6, 10549);
+    			add_location(span0, file, 318, 6, 10676);
     			attr_dev(span1, "class", "label-text");
-    			add_location(span1, file, 319, 12, 10774);
+    			add_location(span1, file, 323, 12, 10901);
     			attr_dev(input0, "type", "text");
     			attr_dev(input0, "class", "input input-bordered mt-2");
     			attr_dev(input0, "placeholder", "name");
-    			add_location(input0, file, 321, 12, 10824);
+    			add_location(input0, file, 325, 12, 10951);
     			attr_dev(div2, "class", "w-5/12 flex flex-col");
-    			add_location(div2, file, 318, 10, 10727);
+    			add_location(div2, file, 322, 10, 10854);
     			attr_dev(span2, "class", "label-text");
-    			add_location(span2, file, 330, 12, 11100);
+    			add_location(span2, file, 334, 12, 11227);
     			attr_dev(input1, "type", "password");
     			attr_dev(input1, "class", "input input-bordered mt-2");
     			attr_dev(input1, "placeholder", "nsec");
-    			add_location(input1, file, 332, 12, 11157);
+    			add_location(input1, file, 336, 12, 11284);
     			attr_dev(div3, "class", "flex-grow flex flex-col");
-    			add_location(div3, file, 329, 10, 11050);
+    			add_location(div3, file, 333, 10, 11177);
     			attr_dev(div4, "class", "flex w-11/12 flex-row pr-16 space-x-4");
-    			add_location(div4, file, 317, 8, 10665);
+    			add_location(div4, file, 321, 8, 10792);
     			attr_dev(button1, "class", "btn btn-primary w-full mt-4");
-    			add_location(button1, file, 341, 8, 11404);
+    			add_location(button1, file, 345, 8, 11531);
     			attr_dev(div5, "class", "form-control w-11/12 flex");
-    			add_location(div5, file, 316, 6, 10617);
+    			add_location(div5, file, 320, 6, 10744);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, hr, anchor);
@@ -17493,17 +17503,17 @@ zoo`.split('\n');
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_else_block_1.name,
+    		id: create_else_block_2.name,
     		type: "else",
-    		source: "(287:4) {:else}",
+    		source: "(291:4) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (228:4) {#if creationMode == false}
-    function create_if_block_7(ctx) {
+    // (232:4) {#if creationMode == false}
+    function create_if_block_8(ctx) {
     	let div0;
     	let table;
     	let thead;
@@ -17548,21 +17558,21 @@ zoo`.split('\n');
     			center = element("center");
     			button = element("button");
     			button.textContent = "+ add profile";
-    			add_location(th0, file, 233, 14, 7766);
+    			add_location(th0, file, 237, 14, 7893);
     			set_style(th1, "max-width", "60px");
-    			add_location(th1, file, 234, 14, 7787);
-    			add_location(tr, file, 232, 12, 7747);
-    			add_location(thead, file, 231, 10, 7727);
-    			add_location(tbody, file, 237, 10, 7866);
+    			add_location(th1, file, 238, 14, 7914);
+    			add_location(tr, file, 236, 12, 7874);
+    			add_location(thead, file, 235, 10, 7854);
+    			add_location(tbody, file, 241, 10, 7993);
     			attr_dev(table, "class", "table");
-    			add_location(table, file, 229, 8, 7671);
+    			add_location(table, file, 233, 8, 7798);
     			attr_dev(div0, "class", "w-full pr-4");
-    			add_location(div0, file, 228, 6, 7637);
+    			add_location(div0, file, 232, 6, 7764);
     			attr_dev(button, "class", "link link-hover mx-auto text-lg");
-    			add_location(button, file, 276, 10, 9369);
-    			add_location(center, file, 275, 8, 9350);
+    			add_location(button, file, 280, 10, 9496);
+    			add_location(center, file, 279, 8, 9477);
     			attr_dev(div1, "class", "w-full flex justify-end pr-8");
-    			add_location(div1, file, 274, 6, 9299);
+    			add_location(div1, file, 278, 6, 9426);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div0, anchor);
@@ -17628,16 +17638,16 @@ zoo`.split('\n');
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_if_block_7.name,
+    		id: create_if_block_8.name,
     		type: "if",
-    		source: "(228:4) {#if creationMode == false}",
+    		source: "(232:4) {#if creationMode == false}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (239:12) {#each $profiles as profile}
+    // (243:12) {#each $profiles as profile}
     function create_each_block(ctx) {
     	let tr;
     	let td0;
@@ -17679,24 +17689,24 @@ zoo`.split('\n');
     			path = svg_element("path");
     			t4 = space();
     			attr_dev(td0, "class", "flex-grow text-lg");
-    			add_location(td0, file, 240, 16, 7950);
+    			add_location(td0, file, 244, 16, 8077);
     			attr_dev(button0, "class", "btn btn-outline btn-sm btn-info mb-2");
-    			add_location(button0, file, 244, 20, 8159);
+    			add_location(button0, file, 248, 20, 8286);
     			attr_dev(path, "fill", "currentColor");
     			attr_dev(path, "d", "M7 21q-.825 0-1.413-.588T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.588 1.413T17 21H7ZM17 6H7v13h10V6ZM9 17h2V8H9v9Zm4 0h2V8h-2v9ZM7 6v13V6Z");
-    			add_location(path, file, 261, 25, 8854);
+    			add_location(path, file, 265, 25, 8981);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "24");
     			attr_dev(svg, "height", "24");
     			attr_dev(svg, "viewBox", "0 0 24 24");
-    			add_location(svg, file, 256, 22, 8650);
+    			add_location(svg, file, 260, 22, 8777);
     			attr_dev(button1, "class", "btn btn-outline btn-square btn-sm btn-error");
-    			add_location(button1, file, 250, 20, 8400);
+    			add_location(button1, file, 254, 20, 8527);
     			attr_dev(div, "class", "flex space-x-2 pr-8");
-    			add_location(div, file, 242, 18, 8064);
+    			add_location(div, file, 246, 18, 8191);
     			set_style(td1, "max-width", "60px");
-    			add_location(td1, file, 241, 16, 8016);
-    			add_location(tr, file, 239, 14, 7929);
+    			add_location(td1, file, 245, 16, 8143);
+    			add_location(tr, file, 243, 14, 8056);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, tr, anchor);
@@ -17736,14 +17746,81 @@ zoo`.split('\n');
     		block,
     		id: create_each_block.name,
     		type: "each",
-    		source: "(239:12) {#each $profiles as profile}",
+    		source: "(243:12) {#each $profiles as profile}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (143:44) 
+    // (100:10) {:else}
+    function create_else_block(ctx) {
+    	let t_value = getPublicKey(/*$keyStore*/ ctx[6]).substr(0, 10) + "";
+    	let t;
+
+    	const block = {
+    		c: function create() {
+    			t = text(t_value);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, t, anchor);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*$keyStore*/ 64 && t_value !== (t_value = getPublicKey(/*$keyStore*/ ctx[6]).substr(0, 10) + "")) set_data_dev(t, t_value);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(t);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block.name,
+    		type: "else",
+    		source: "(100:10) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (96:10) {#if $userProfile?.name}
+    function create_if_block_7(ctx) {
+    	let t_value = (/*$userProfile*/ ctx[5]?.name?.length > 12
+    	? /*$userProfile*/ ctx[5]?.name.substr(0, 12) + "..."
+    	: /*$userProfile*/ ctx[5]?.name || getPublicKey(/*$keyStore*/ ctx[6]).substr(0, 16)) + "";
+
+    	let t;
+
+    	const block = {
+    		c: function create() {
+    			t = text(t_value);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, t, anchor);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*$userProfile, $keyStore*/ 96 && t_value !== (t_value = (/*$userProfile*/ ctx[5]?.name?.length > 12
+    			? /*$userProfile*/ ctx[5]?.name.substr(0, 12) + "..."
+    			: /*$userProfile*/ ctx[5]?.name || getPublicKey(/*$keyStore*/ ctx[6]).substr(0, 16)) + "")) set_data_dev(t, t_value);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(t);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_7.name,
+    		type: "if",
+    		source: "(96:10) {#if $userProfile?.name}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (147:44) 
     function create_if_block_6(ctx) {
     	let div;
     	let button0;
@@ -17790,28 +17867,28 @@ zoo`.split('\n');
     			button4.textContent = "Logout";
     			attr_dev(path, "fill", "currentColor");
     			attr_dev(path, "d", "M12 20q-.825 0-1.413-.588T10 18q0-.825.588-1.413T12 16q.825 0 1.413.588T14 18q0 .825-.588 1.413T12 20Zm0-6q-.825 0-1.413-.588T10 12q0-.825.588-1.413T12 10q.825 0 1.413.588T14 12q0 .825-.588 1.413T12 14Zm0-6q-.825 0-1.413-.588T10 6q0-.825.588-1.413T12 4q.825 0 1.413.588T14 6q0 .825-.588 1.413T12 8Z");
-    			add_location(path, file, 150, 17, 4949);
+    			add_location(path, file, 154, 17, 5076);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "24");
     			attr_dev(svg, "height", "24");
     			attr_dev(svg, "viewBox", "0 0 24 24");
-    			add_location(svg, file, 145, 14, 4785);
+    			add_location(svg, file, 149, 14, 4912);
     			attr_dev(button0, "tabindex", "-1");
     			attr_dev(button0, "class", "btn btn-ghost btn-circle");
-    			add_location(button0, file, 144, 12, 4715);
-    			add_location(button1, file, 161, 16, 5581);
-    			add_location(li0, file, 160, 14, 5560);
-    			add_location(button2, file, 168, 16, 5785);
-    			add_location(li1, file, 167, 14, 5764);
-    			add_location(button3, file, 175, 16, 5985);
-    			add_location(li2, file, 174, 14, 5964);
-    			add_location(button4, file, 182, 16, 6183);
-    			add_location(li3, file, 181, 14, 6162);
+    			add_location(button0, file, 148, 12, 4842);
+    			add_location(button1, file, 165, 16, 5708);
+    			add_location(li0, file, 164, 14, 5687);
+    			add_location(button2, file, 172, 16, 5912);
+    			add_location(li1, file, 171, 14, 5891);
+    			add_location(button3, file, 179, 16, 6112);
+    			add_location(li2, file, 178, 14, 6091);
+    			add_location(button4, file, 186, 16, 6310);
+    			add_location(li3, file, 185, 14, 6289);
     			attr_dev(ul, "tabindex", "-1");
     			attr_dev(ul, "class", "dropdown-content shadow-xl bg-base-200 z-[1] menu p-2 shadow bg-base-100 rounded-box w-52");
-    			add_location(ul, file, 156, 12, 5388);
+    			add_location(ul, file, 160, 12, 5515);
     			attr_dev(div, "class", "dropdown dropdown-end");
-    			add_location(div, file, 143, 10, 4667);
+    			add_location(div, file, 147, 10, 4794);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -17855,14 +17932,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_6.name,
     		type: "if",
-    		source: "(143:44) ",
+    		source: "(147:44) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (121:8) {#if currentPage !== Page.Home}
+    // (125:8) {#if currentPage !== Page.Home}
     function create_if_block_5(ctx) {
     	let button;
     	let svg;
@@ -17881,14 +17958,14 @@ zoo`.split('\n');
     			attr_dev(path, "stroke-linejoin", "round");
     			attr_dev(path, "stroke-width", "2");
     			attr_dev(path, "d", "M12 12L7 7m5 5l5 5m-5-5l5-5m-5 5l-5 5");
-    			add_location(path, file, 132, 15, 4314);
+    			add_location(path, file, 136, 15, 4441);
     			attr_dev(svg, "xmlns", "http://www.w3.org/2000/svg");
     			attr_dev(svg, "width", "24");
     			attr_dev(svg, "height", "24");
     			attr_dev(svg, "viewBox", "0 0 24 24");
-    			add_location(svg, file, 127, 12, 4160);
+    			add_location(svg, file, 131, 12, 4287);
     			attr_dev(button, "class", "btn btn-ghost btn-circle");
-    			add_location(button, file, 121, 10, 3999);
+    			add_location(button, file, 125, 10, 4126);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -17912,14 +17989,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_5.name,
     		type: "if",
-    		source: "(121:8) {#if currentPage !== Page.Home}",
+    		source: "(125:8) {#if currentPage !== Page.Home}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (201:43) 
+    // (205:43) 
     function create_if_block_4(ctx) {
     	let about;
     	let current;
@@ -17951,14 +18028,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_4.name,
     		type: "if",
-    		source: "(201:43) ",
+    		source: "(205:43) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (199:44) 
+    // (203:44) 
     function create_if_block_3(ctx) {
     	let qrcode;
     	let current;
@@ -17990,14 +18067,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(199:44) ",
+    		source: "(203:44) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (197:46) 
+    // (201:46) 
     function create_if_block_2(ctx) {
     	let settings;
     	let current;
@@ -18029,14 +18106,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_2.name,
     		type: "if",
-    		source: "(197:46) ",
+    		source: "(201:46) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (195:6) {#if currentPage === Page.Home}
+    // (199:6) {#if currentPage === Page.Home}
     function create_if_block_1(ctx) {
     	let home;
     	let current;
@@ -18068,7 +18145,7 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(195:6) {#if currentPage === Page.Home}",
+    		source: "(199:6) {#if currentPage === Page.Home}",
     		ctx
     	});
 
@@ -18080,7 +18157,7 @@ zoo`.split('\n');
     	let if_block;
     	let if_block_anchor;
     	let current;
-    	const if_block_creators = [create_if_block, create_else_block];
+    	const if_block_creators = [create_if_block, create_else_block_1];
     	const if_blocks = [];
 
     	function select_block_type(ctx, dirty) {
