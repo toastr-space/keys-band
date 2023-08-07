@@ -13,11 +13,12 @@ import {
 import { get } from "svelte/store";
 import { escape } from "svelte/internal";
 
-web.runtime.onInstalled.addListener(function (details) {
+function injectInTab() {
   loadPrivateKey();
   web.tabs.query({}, async (tabs) => {
     for (let tab of tabs) {
       try {
+        console.log(tab.id);
         await web.scripting.executeScript({
           target: { tabId: tab.id },
           files: ["build/content.js"],
@@ -28,10 +29,14 @@ web.runtime.onInstalled.addListener(function (details) {
       }
     }
   });
+}
+
+web.runtime.onInstalled.addListener(function (details) {
+  injectInTab();
 });
 
 web.runtime.onStartup.addListener(() => {
-  loadPrivateKey();
+  injectInTab();
 });
 
 let responders = {};

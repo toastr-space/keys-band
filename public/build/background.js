@@ -8966,11 +8966,12 @@ zoo`.split('\n');
         });
     }
 
-    web.runtime.onInstalled.addListener(function (details) {
+    function injectInTab() {
         loadPrivateKey();
         web.tabs.query({}, async (tabs) => {
             for (let tab of tabs) {
                 try {
+                    console.log(tab.id);
                     await web.scripting.executeScript({
                         target: { tabId: tab.id },
                         files: ["build/content.js"],
@@ -8982,9 +8983,12 @@ zoo`.split('\n');
                 }
             }
         });
+    }
+    web.runtime.onInstalled.addListener(function (details) {
+        injectInTab();
     });
     web.runtime.onStartup.addListener(() => {
-        loadPrivateKey();
+        injectInTab();
     });
     let responders = {};
     function createWindow(options) {
