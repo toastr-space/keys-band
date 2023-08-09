@@ -266,7 +266,6 @@ export async function addKey(value: string): Promise<void> {
 
 export async function logout(): Promise<void> {
   return new Promise(async (resolve) => {
-    console.log("fethcing profileName");
     let value = await web.storage.local.get("profileName");
     await loadPrivateKey();
     await loadKeyInfo();
@@ -289,8 +288,6 @@ export async function logout(): Promise<void> {
     const index = _profiles.findIndex((p) => p.name === value.profileName);
     _profiles[index] = profile;
     await web.storage.local.set({ profiles: _profiles });
-
-    console.log("not finding profileName");
 
     relays.set([]);
     keyStore.set("");

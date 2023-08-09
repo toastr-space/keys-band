@@ -2,6 +2,7 @@
   import { domainToUrl, getDuration, web } from "../stores/utils";
   import { loadPrivateKey, loadWebSites, webSites } from "../stores/key-store";
   import { createEventDispatcher } from "svelte";
+  import { tr } from "../stores/utils";
   let login = false;
   export let parameter;
   export let isPopup = false;
@@ -118,9 +119,9 @@
         <br />
         <span class="badge p-4 mt-2 badge-secondary">
           {#if isPopup}
-            {parameter.get("type")}
+            {tr(parameter.get("type"))}
           {:else}
-            getPermission
+            {tr("permission")}
           {/if}
         </span>
       </span>

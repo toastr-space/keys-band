@@ -130,6 +130,10 @@ export function tr(name: string) {
       return "Get Permission";
     case "nip04":
       return "Message Encryption/Decription";
+    case "nip04.encrypt":
+      return "Message Encryption/Decription";
+    case "nip04.decrypt":
+      return "Message Encryption/Decription";
     case "getPublicKey":
       return "Get Public Key";
     case "getRelays":
