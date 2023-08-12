@@ -12,7 +12,13 @@
     userProfile,
     webSites,
   } from "src/stores/key-store";
-  import { domainToUrl, reverseArray, timeAgo, web } from "src/stores/utils";
+  import {
+    domainToUrl,
+    reverseArray,
+    timeAgo,
+    tr,
+    web,
+  } from "src/stores/utils";
 
   const hexPubKey = getPublicKey($keyStore);
   const nPubKey = nip19.npubEncode(hexPubKey);
@@ -32,6 +38,7 @@
   let relayInput: string = "";
 
   let secretEchoMode: EchoMode = EchoMode.Password;
+  let secretHexEchoMode: EchoMode = EchoMode.Password;
   let currentTab = 0;
 
   function showNotification(message) {
@@ -89,6 +96,7 @@
             <thead>
               <tr>
                 <th>Name</th>
+                <th>State</th>
                 <th class="text-center w-16">Actions</th>
               </tr>
             </thead>
@@ -96,8 +104,8 @@
               <!-- row 1 -->
               {#each $webNotifications as notif}
                 <tr>
-                  <td
-                    >{notif.name}
+                  <td>{tr(notif.name || "")} </td>
+                  <td>
                     <span
                       class="badge badge-sm"
                       class:badge-secondary={notif.state == false}
@@ -123,15 +131,9 @@
       </div>
       <hr />
       <center>
-        <button
-          class="btn btn-secondary bordered border-2 border-base-200 my-8"
-          on:click={async () => {
-            await logout();
-            showNotification("logged out");
-          }}
-        >
-          logout
-        </button>
+        <p class="pt-4 font-sans">
+          Keys.Band <span class="text-primary">Vprocess.env.APP_VERSION</span>
+        </p>
       </center>
     </div>
   {:else if currentTab === 1}

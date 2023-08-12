@@ -515,6 +515,26 @@ var app = (function () {
                 return new Date(duration.getTime() + 5 * 24 * 60 * 60 * 1000);
         }
     }
+    function tr(name) {
+        switch (name) {
+            case "signEvent":
+                return "Sign Event";
+            case "permission":
+                return "Get Permission";
+            case "nip04":
+                return "Message Encryption/Decription";
+            case "nip04.encrypt":
+                return "Message Encryption/Decription";
+            case "nip04.decrypt":
+                return "Message Encryption/Decription";
+            case "getPublicKey":
+                return "Get Public Key";
+            case "getRelays":
+                return "Get Relays";
+            default:
+                return name;
+        }
+    }
 
     function number$1(n) {
         if (!Number.isSafeInteger(n) || n < 0)
@@ -9334,9 +9354,9 @@ zoo`.split('\n');
                     document.documentElement.setAttribute("data-theme", value.theme);
                 }
                 else {
-                    web.storage.local.set({ theme: "light" });
-                    theme.set("light");
-                    document.documentElement.setAttribute("data-theme", "light");
+                    web.storage.local.set({ theme: "cupcake" });
+                    theme.set("cupcake");
+                    document.documentElement.setAttribute("data-theme", "cupcake");
                 }
                 resolve();
             });
@@ -9379,16 +9399,21 @@ zoo`.split('\n');
     async function getProfile() {
         if (!get_store_value(keyStore))
             return;
-        pool
-            .get(_relays, {
-            authors: [getPublicKey(get_store_value(keyStore))],
-            kinds: [0],
-        })
-            .then((event) => {
-            const profile = JSON.parse(event.content);
-            userProfile.set(profile);
-            web.storage.local.set({ profile: profile });
-        });
+        try {
+            pool
+                .get(_relays, {
+                authors: [getPublicKey(get_store_value(keyStore))],
+                kinds: [0],
+            })
+                .then((event) => {
+                const profile = JSON.parse(event.content);
+                userProfile.set(profile);
+                web.storage.local.set({ profile: profile });
+            });
+        }
+        catch (error) {
+            alert(error.message);
+        }
         return new Promise((resolve) => {
             web.storage.local.get("profile", (value) => {
                 userProfile.set(value.profile);
@@ -9402,7 +9427,7 @@ zoo`.split('\n');
     const { Object: Object_1 } = globals;
     const file = "src/components/Authorization.svelte";
 
-    // (110:2) {#if login}
+    // (111:2) {#if login}
     function create_if_block(ctx) {
     	let p;
     	let span2;
@@ -9537,88 +9562,88 @@ zoo`.split('\n');
     			t26 = space();
     			if (if_block2) if_block2.c();
     			attr_dev(span0, "class", "text-primary-content font-sans font-italic italic");
-    			add_location(span0, file, 112, 8, 3745);
-    			add_location(br, file, 115, 8, 3853);
+    			add_location(span0, file, 113, 8, 3788);
+    			add_location(br, file, 116, 8, 3896);
     			attr_dev(span1, "class", "badge p-4 mt-2 badge-secondary");
-    			add_location(span1, file, 116, 8, 3868);
+    			add_location(span1, file, 117, 8, 3911);
     			attr_dev(span2, "class", "text-center text-xl prose prose-lg");
-    			add_location(span2, file, 111, 6, 3687);
+    			add_location(span2, file, 112, 6, 3730);
     			attr_dev(p, "class", "w-full text-center p-10 pt-4 pb-6");
-    			add_location(p, file, 110, 4, 3635);
+    			add_location(p, file, 111, 4, 3678);
     			attr_dev(span3, "class", "label-text mr-2");
-    			add_location(span3, file, 130, 10, 4255);
+    			add_location(span3, file, 131, 10, 4307);
     			attr_dev(input0, "type", "radio");
     			attr_dev(input0, "class", "radio");
     			input0.__value = 0;
     			input0.value = input0.__value;
-    			add_location(input0, file, 131, 10, 4311);
+    			add_location(input0, file, 132, 10, 4363);
     			attr_dev(label0, "class", "cursor-pointer label");
-    			add_location(label0, file, 129, 8, 4208);
+    			add_location(label0, file, 130, 8, 4260);
     			attr_dev(div0, "class", "form-control");
-    			add_location(div0, file, 128, 6, 4173);
+    			add_location(div0, file, 129, 6, 4225);
     			attr_dev(span4, "class", "label-text mr-2");
-    			add_location(span4, file, 136, 10, 4496);
+    			add_location(span4, file, 137, 10, 4548);
     			attr_dev(input1, "type", "radio");
     			attr_dev(input1, "class", "radio");
     			input1.__value = 1;
     			input1.value = input1.__value;
-    			add_location(input1, file, 137, 10, 4550);
+    			add_location(input1, file, 138, 10, 4602);
     			attr_dev(label1, "class", "cursor-pointer label");
-    			add_location(label1, file, 135, 8, 4449);
+    			add_location(label1, file, 136, 8, 4501);
     			attr_dev(div1, "class", "form-control");
-    			add_location(div1, file, 134, 6, 4414);
+    			add_location(div1, file, 135, 6, 4466);
     			attr_dev(span5, "class", "label-text mr-2");
-    			add_location(span5, file, 142, 10, 4735);
+    			add_location(span5, file, 143, 10, 4787);
     			attr_dev(input2, "type", "radio");
     			attr_dev(input2, "class", "radio");
     			input2.__value = 2;
     			input2.value = input2.__value;
-    			add_location(input2, file, 143, 10, 4797);
+    			add_location(input2, file, 144, 10, 4849);
     			attr_dev(label2, "class", "cursor-pointer label");
-    			add_location(label2, file, 141, 8, 4688);
+    			add_location(label2, file, 142, 8, 4740);
     			attr_dev(div2, "class", "form-control");
-    			add_location(div2, file, 140, 6, 4653);
+    			add_location(div2, file, 141, 6, 4705);
     			attr_dev(span6, "class", "label-text mr-2");
-    			add_location(span6, file, 148, 10, 4982);
+    			add_location(span6, file, 149, 10, 5034);
     			attr_dev(input3, "type", "radio");
     			attr_dev(input3, "class", "radio");
     			input3.__value = 3;
     			input3.value = input3.__value;
-    			add_location(input3, file, 149, 10, 5039);
+    			add_location(input3, file, 150, 10, 5091);
     			attr_dev(label3, "class", "cursor-pointer label");
-    			add_location(label3, file, 147, 8, 4935);
+    			add_location(label3, file, 148, 8, 4987);
     			attr_dev(div3, "class", "form-control");
-    			add_location(div3, file, 146, 6, 4900);
+    			add_location(div3, file, 147, 6, 4952);
     			attr_dev(span7, "class", "label-text mr-2");
-    			add_location(span7, file, 155, 10, 5225);
+    			add_location(span7, file, 156, 10, 5277);
     			attr_dev(input4, "type", "radio");
     			attr_dev(input4, "class", "radio");
     			input4.__value = 4;
     			input4.value = input4.__value;
-    			add_location(input4, file, 156, 10, 5285);
+    			add_location(input4, file, 157, 10, 5337);
     			attr_dev(label4, "class", "cursor-pointer label");
-    			add_location(label4, file, 154, 8, 5178);
+    			add_location(label4, file, 155, 8, 5230);
     			attr_dev(div4, "class", "form-control");
-    			add_location(div4, file, 153, 6, 5143);
+    			add_location(div4, file, 154, 6, 5195);
     			attr_dev(span8, "class", "label-text mr-2");
-    			add_location(span8, file, 162, 10, 5471);
+    			add_location(span8, file, 163, 10, 5523);
     			attr_dev(input5, "type", "radio");
     			attr_dev(input5, "class", "radio");
     			input5.__value = 5;
     			input5.value = input5.__value;
-    			add_location(input5, file, 163, 10, 5530);
+    			add_location(input5, file, 164, 10, 5582);
     			attr_dev(label5, "class", "cursor-pointer label");
-    			add_location(label5, file, 161, 8, 5424);
+    			add_location(label5, file, 162, 8, 5476);
     			attr_dev(div5, "class", "form-control");
-    			add_location(div5, file, 160, 6, 5389);
+    			add_location(div5, file, 161, 6, 5441);
     			attr_dev(div6, "class", "w-full p-4 pt-2 flex flex-row flex-wrap justify-center space-x-2");
-    			add_location(div6, file, 125, 4, 4077);
+    			add_location(div6, file, 126, 4, 4129);
     			attr_dev(button0, "class", "w-full btn btn-accent mb-2");
-    			add_location(button0, file, 168, 6, 5721);
+    			add_location(button0, file, 169, 6, 5773);
     			attr_dev(button1, "class", "w-full btn btn-secondary mb-2");
-    			add_location(button1, file, 174, 6, 5867);
+    			add_location(button1, file, 175, 6, 5919);
     			attr_dev(div7, "class", "w-full flex flex-col justify-center items-center p-10 pt-0");
-    			add_location(div7, file, 167, 4, 5642);
+    			add_location(div7, file, 168, 4, 5694);
     			binding_group.p(input0, input1, input2, input3, input4, input5);
     		},
     		m: function mount(target, anchor) {
@@ -9783,20 +9808,21 @@ zoo`.split('\n');
     		block,
     		id: create_if_block.name,
     		type: "if",
-    		source: "(110:2) {#if login}",
+    		source: "(111:2) {#if login}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (120:10) {:else}
+    // (121:10) {:else}
     function create_else_block(ctx) {
+    	let t_value = tr("permission") + "";
     	let t;
 
     	const block = {
     		c: function create() {
-    			t = text("getPermission");
+    			t = text(t_value);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, t, anchor);
@@ -9811,16 +9837,16 @@ zoo`.split('\n');
     		block,
     		id: create_else_block.name,
     		type: "else",
-    		source: "(120:10) {:else}",
+    		source: "(121:10) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (118:10) {#if isPopup}
+    // (119:10) {#if isPopup}
     function create_if_block_3(ctx) {
-    	let t_value = /*parameter*/ ctx[1].get("type") + "";
+    	let t_value = tr(/*parameter*/ ctx[1].get("type")) + "";
     	let t;
 
     	const block = {
@@ -9831,7 +9857,7 @@ zoo`.split('\n');
     			insert_dev(target, t, anchor);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*parameter*/ 2 && t_value !== (t_value = /*parameter*/ ctx[1].get("type") + "")) set_data_dev(t, t_value);
+    			if (dirty & /*parameter*/ 2 && t_value !== (t_value = tr(/*parameter*/ ctx[1].get("type")) + "")) set_data_dev(t, t_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(t);
@@ -9842,14 +9868,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(118:10) {#if isPopup}",
+    		source: "(119:10) {#if isPopup}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (182:6) {#if !isPopup}
+    // (183:6) {#if !isPopup}
     function create_if_block_2(ctx) {
     	let button;
     	let mounted;
@@ -9860,7 +9886,7 @@ zoo`.split('\n');
     			button = element("button");
     			button.textContent = "Cancel";
     			attr_dev(button, "class", "w-full btn btn-neutral");
-    			add_location(button, file, 182, 8, 6041);
+    			add_location(button, file, 183, 8, 6093);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -9882,14 +9908,14 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_2.name,
     		type: "if",
-    		source: "(182:6) {#if !isPopup}",
+    		source: "(183:6) {#if !isPopup}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (188:6) {#if isPopup}
+    // (189:6) {#if isPopup}
     function create_if_block_1(ctx) {
     	let div;
     	let code;
@@ -9902,9 +9928,9 @@ zoo`.split('\n');
     			code = element("code");
     			t = text(t_value);
     			attr_dev(code, "class", "prose break-words p-4");
-    			add_location(code, file, 189, 10, 6252);
+    			add_location(code, file, 190, 10, 6304);
     			attr_dev(div, "class", "mockup-code justify-center mt-4 w-11/12 mx-2");
-    			add_location(div, file, 188, 8, 6183);
+    			add_location(div, file, 189, 8, 6235);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -9923,7 +9949,7 @@ zoo`.split('\n');
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(188:6) {#if isPopup}",
+    		source: "(189:6) {#if isPopup}",
     		ctx
     	});
 
@@ -9939,7 +9965,7 @@ zoo`.split('\n');
     			div = element("div");
     			if (if_block) if_block.c();
     			attr_dev(div, "class", "w-full h-full flex flex-wrap fixed-width");
-    			add_location(div, file, 108, 0, 3562);
+    			add_location(div, file, 109, 0, 3605);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -10068,7 +10094,7 @@ zoo`.split('\n');
     					st["history"] = array;
     					site[domain] = st;
     					_webSites[domain] = st;
-    					await web.storage.local.set({ webSites: site });
+    					await web.storage.local.set({ webSites: _webSites });
     					await loadWebSites();
     				} else {
     					let site = $webSites;
@@ -10171,6 +10197,7 @@ zoo`.split('\n');
     		loadWebSites,
     		webSites,
     		createEventDispatcher,
+    		tr,
     		login,
     		parameter,
     		isPopup,

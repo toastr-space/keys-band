@@ -1,6 +1,37 @@
-<script>
+<script lang="ts">
+  import { webSites, type WebSite } from "src/stores/key-store";
+  import { web, domainToUrl, remainingTime } from "src/stores/utils";
+  let currentTab = { url: "" };
+  web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    var activeTab = tabs[0];
+    currentTab = activeTab;
+  });
   export let alertColor = "";
   export let message = "";
+  export let countdown = false;
+  export let hour = 0;
+  export let minute = 0;
+  export let second = 0;
+
+  let timer;
+
+  function startTimer() {
+    timer = setInterval(() => {
+      if (second > 0) {
+        second--;
+      } else if (minute > 0) {
+        minute--;
+        second = 59;
+      } else if (hour > 0) {
+        hour--;
+        minute = 59;
+        second = 59;
+      }
+    }, 1000);
+  }
+
+  startTimer();
+
   export let onButtonClick = () => {};
 </script>
 
@@ -18,7 +49,16 @@
     /></svg
   >
   <span class="text-lg font-sans">{message}</span>
+  {#if countdown}
+    <span class="countdown font-mono text-2xl">
+      <span style="--value:{hour};" />:
+      <span style="--value:{minute};" />:
+      <span style="--value:{second};" />
+    </span>
+  {/if}
   <div>
-    <button class="btn btn-sm px-4" on:click={onButtonClick}>Update</button>
+    <button class="btn btn-outline btn-sm px-4" on:click={onButtonClick}
+      >Update</button
+    >
   </div>
 </div>

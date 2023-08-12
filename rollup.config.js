@@ -11,6 +11,7 @@ import autoprefixer from "autoprefixer";
 import { spawn } from "child_process";
 import sveltePreprocess from "svelte-preprocess";
 import typescript from "@rollup/plugin-typescript";
+import dotenv from "dotenv";
 
 function serve() {
   let server;
@@ -37,7 +38,10 @@ function getPlugins(cssOutputFile) {
   return [
     svelte({
       include: "src/**/*.svelte",
-      preprocess: sveltePreprocess({ sourceMap: !production }),
+      preprocess: sveltePreprocess({
+        sourceMap: !production,
+        replace: [["process.env.APP_VERSION", process.env.APP_VERSION]],
+      }),
       compilerOptions: {
         dev: !production,
       },
@@ -57,6 +61,8 @@ function getPlugins(cssOutputFile) {
     resolve({ browser: true, dedupe: ["svelte"] }),
   ];
 }
+
+dotenv.config();
 
 export default [
   {
