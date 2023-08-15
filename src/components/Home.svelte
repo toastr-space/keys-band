@@ -4,7 +4,6 @@
   import Authorization from "./Authorization.svelte";
   import AuthAlert from "./AuthAlert.svelte";
   import Footer from "./Footer.svelte";
-  import { tweened } from "svelte/motion";
 
   let currentTab = { url: "" };
   web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
