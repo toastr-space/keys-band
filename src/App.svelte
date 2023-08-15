@@ -18,7 +18,7 @@
 
   import Settings from "./components/Settings.svelte";
   import Home from "./components/Home.svelte";
-  import { getPublicKey, nip05 } from "nostr-tools";
+  import { generatePrivateKey, getPublicKey, nip05, nip19 } from "nostr-tools";
   import QrCode from "./components/QrCode.svelte";
   import About from "./components/About.svelte";
 
@@ -252,7 +252,7 @@
       <option value="autumn" selected={$theme == "autumn"}>Autumn</option>
     </select>
     <div class="w-full">
-      <img src="/assets/logo.png" width="80" class="mx-auto" alt="" />
+      <img src="/assets/logo.png" width="70" class="mx-auto" alt="" />
     </div>
 
     <span class="text-lg text-center w-full">Your profiles</span>
@@ -271,8 +271,8 @@
             {#each $profiles as profile}
               <tr>
                 <td class="flex-grow text-lg">{profile.name}</td>
-                <td style="max-width: 60px;">
-                  <div class="flex space-x-2 pr-8">
+                <td style="max-width: 60px">
+                  <div class="flex space-x-2 float-right pt-2">
                     <!-- align right -->
                     <button
                       class="btn btn-outline btn-sm btn-info mb-2"
@@ -344,12 +344,12 @@
           </button>
         </div>
       </div>
-      <span class="font-semibold w-full">Create new profile</span>
+      <!-- <span class="font-semibold w-full">Create new profile</span> -->
 
       <div class="form-control w-11/12 flex">
-        <div class="flex w-11/12 flex-row pr-16 space-x-4">
-          <div class="w-5/12 flex flex-col">
-            <span class="label-text">Name</span>
+        <div class="flex w-12/12 flex-col space-y-0 pr-2 space-x-4">
+          <div class="w-full flex flex-col">
+            <span class="label-text">Profile name</span>
 
             <input
               type="text"
@@ -359,16 +359,28 @@
               on:keydown={(e) => {}}
             />
           </div>
-          <div class="flex-grow flex flex-col">
+          <br />
+          <div class="w-full flex flex-col" style="margin-left: 0px;">
             <span class="label-text">Private Key</span>
 
-            <input
-              type="password"
-              class="input input-bordered mt-2"
-              bind:value={_keyStore}
-              placeholder="nsec"
-              on:keydown={(e) => {}}
-            />
+            <div class="flex">
+              <input
+                type="text"
+                class="input input-bordered mt-2 flex-grow"
+                bind:value={_keyStore}
+                placeholder="nsec"
+                on:keydown={(e) => {}}
+              />
+              <button
+                class="btn btn-outline btn-primary ml-2 mt-2"
+                on:click={() => {
+                  let sk = generatePrivateKey();
+                  _keyStore = nip19.nsecEncode(sk);
+                }}
+              >
+                Generer</button
+              >
+            </div>
           </div>
         </div>
         <button
