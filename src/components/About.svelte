@@ -18,7 +18,7 @@
       <p class="text-lg">
         You can contribute on GitHub <a
           class="link link-hover text-secondary"
-          href="https://github.com/toastr-space/keys.band"
+          href="https://github.com/toastr-space/keys-band"
           target="_blank">here</a
         >
       </p>
