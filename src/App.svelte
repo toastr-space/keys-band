@@ -201,7 +201,7 @@
                 <button
                   on:click={() => {
                     currentPage = Page.QrCode;
-                  }}>QrCode</button
+                  }}>QR Code</button
                 >
               </li>
               <li>
@@ -242,7 +242,7 @@
     <select
       class="select select-bordered select-xs w-2/12 h-8 mt-2 max-w-xs pl-2 pr-0 absolute top-3 right-3"
       on:change={(e) => {
-        switchTheme(e.target.value || "light");
+        switchTheme(e.target.value || "dark");
       }}
     >
       <option value="light" selected={$theme == "light"}>Light</option>
@@ -255,7 +255,7 @@
       <img src="/assets/logo.png" width="70" class="mx-auto" alt="" />
     </div>
 
-    <span class="text-lg text-center w-full">Your profiles</span>
+    <span class="text-lg text-center w-full">keys.band</span>
 
     {#if creationMode == false}
       <div class="w-full pr-4">
@@ -275,13 +275,13 @@
                   <div class="flex space-x-2 float-right pt-2">
                     <!-- align right -->
                     <button
-                      class="btn btn-outline btn-sm btn-info mb-2"
+                      class="btn btn-sm btn-accent mb-2"
                       on:click={() => {
                         openProfile(profile);
                       }}>OPEN</button
                     >
                     <button
-                      class="btn btn-outline btn-square btn-sm btn-error"
+                      class="btn btn-square btn-sm btn-secondary"
                       on:click={() => {
                         removeProfileByName(profile.name);
                       }}
@@ -378,7 +378,7 @@
                   _keyStore = nip19.nsecEncode(sk);
                 }}
               >
-                Generer</button
+                Generate Key</button
               >
             </div>
           </div>
@@ -389,7 +389,7 @@
             addProfile(_name, _keyStore);
           }}
         >
-          Create
+          Load profile
         </button>
       </div>
     {/if}

@@ -1,10 +1,8 @@
-# Keys.Band
+# keys.band
 
 ### Based on [Nos2x](https://raw.githubusercontent.com/fiatjaf/nos2x/)
 
-### notes and other stuff signed by an extension
-
-## Nostr Signer Extension
+## Multi-key Nostr Signing Extension
 
 Use this to sign [Nostr](https://github.com/nostr-protocol/nostr) events on web-apps without having to give them your keys.
 
@@ -18,7 +16,7 @@ async window.nostr.nip04.encrypt(pubkey, plaintext): string // returns ciphertex
 async window.nostr.nip04.decrypt(pubkey, ciphertext): string // takes ciphertext+iv as specified in nip04
 ```
 
-This extension is Chromium-only. For a maintained Firefox fork, see [nos2x-fox](https://diegogurpegui.com/nos2x-fox/).
+This extension is Chromium-only.
 
 ## Install
 
@@ -29,10 +27,10 @@ This extension is Chromium-only. For a maintained Firefox fork, see [nos2x-fox](
 To run the plugin from this code:
 
 ```
-git clone https://github.com/toastr-space/nos2x-svelte
-cd nos2x-svelte
+git clone https://github.com/toastr-space/keys.band
+cd keys.band
 pnpm install
-pnpm run build || pnpm run dev # for developpement mode
+pnpm run build || pnpm run dev # for development mode
 ```
 
 then
@@ -44,6 +42,4 @@ then
 
 ---
 
-LICENSE: public domain.
-
-Icon made by <a href="https://iconify.design/" title="Freepik">Iconify.design</a>.
+LICENSE: [MIT](docs/mit-license.md).

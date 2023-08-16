@@ -1,15 +1,12 @@
 <script lang="ts">
   import { getPublicKey, nip19 } from "nostr-tools";
   import {
-    getProfile,
     keyStore,
     loadWebSites,
-    logout,
     relays,
     webNotifications,
     loadNotifications,
     updateNotification,
-    userProfile,
     webSites,
   } from "src/stores/key-store";
   import {
@@ -132,7 +129,7 @@
       <hr />
       <center>
         <p class="pt-4 font-sans">
-          Keys.Band <span class="text-primary">Vprocess.env.APP_VERSION</span>
+          keys.band <span class="text-primary">Vprocess.env.APP_VERSION</span>
         </p>
       </center>
     </div>
