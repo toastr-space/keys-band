@@ -28,7 +28,7 @@ To run the plugin from this code:
 
 ```
 git clone https://github.com/toastr-space/keys-band
-cd keys.band
+cd keys-band
 pnpm install
 pnpm run build || pnpm run dev # for development mode
 ```
