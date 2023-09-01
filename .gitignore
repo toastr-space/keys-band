@@ -8,3 +8,9 @@ node_modules
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+public/build/background.css
+public/build/background.js
+public/build/bundle.js
+public/build/bundle.css
+public/build/popup.css
+public/build/popup.js

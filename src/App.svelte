@@ -18,7 +18,7 @@
 
   import Settings from "./components/Settings.svelte";
   import Home from "./components/Home.svelte";
-  import { generatePrivateKey, getPublicKey, nip05, nip19 } from "nostr-tools";
+  import { generatePrivateKey, getPublicKey, nip19 } from "nostr-tools";
   import QrCode from "./components/QrCode.svelte";
   import About from "./components/About.svelte";
 
@@ -54,8 +54,21 @@
 
   async function addProfile(name, key) {
     let decodedValue;
+    // check if name already exist in profile or key
+    if (name.length < 4) {
+      alert("Name must be at least 4 characters");
+      return;
+    }
+
     try {
       decodedValue = await verifyKey(key);
+      let prs = $profiles.filter(
+        (pr) => pr.name === name || pr.data.privateKey === decodedValue
+      );
+      if (prs.length > 0) {
+        alert("Name or key already exist");
+        return;
+      }
       let profile: Profile = {
         name: name,
         data: {
@@ -240,7 +253,7 @@
     class="w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2 overflow-y-auto"
   >
     <select
-      class="select select-bordered select-xs w-2/12 h-8 mt-2 max-w-xs pl-2 pr-0 absolute top-3 right-3"
+      class="select select-bordered select-xs h-8 mt-2 pl-2 pr-2 absolute top-3 right-3"
       on:change={(e) => {
         switchTheme(e.target.value || "dark");
       }}
@@ -372,13 +385,13 @@
                 on:keydown={(e) => {}}
               />
               <button
-                class="btn btn-outline btn-primary ml-2 mt-2"
+                class="btn btn-outline btn-primary ml-2 mt-2 w-4/12 text-xs"
                 on:click={() => {
                   let sk = generatePrivateKey();
                   _keyStore = nip19.nsecEncode(sk);
                 }}
               >
-                Generate Key</button
+                Generate</button
               >
             </div>
           </div>
