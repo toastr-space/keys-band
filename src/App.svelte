@@ -373,26 +373,29 @@
             />
           </div>
           <br />
-          <div class="w-full flex flex-col" style="margin-left: 0px;">
+          <div class="w-full flex max-w-lg flex-col" style="margin-left: 0px;">
             <span class="label-text">Private Key</span>
 
-            <div class="flex">
-              <input
-                type="text"
-                class="input input-bordered mt-2 flex-grow"
-                bind:value={_keyStore}
-                placeholder="nsec"
-                on:keydown={(e) => {}}
-              />
-              <button
-                class="btn btn-outline btn-primary ml-2 mt-2 w-4/12 text-xs"
-                on:click={() => {
-                  let sk = generatePrivateKey();
-                  _keyStore = nip19.nsecEncode(sk);
-                }}
-              >
-                Generate</button
-              >
+            <div class="flex flex-row w-full">
+              <div class="w-full relative">
+                <input
+                  type="text"
+                  class="input input-bordered mt-2 w-full"
+                  style="padding-right: 103px;"
+                  bind:value={_keyStore}
+                  placeholder="nsec"
+                  on:keydown={(e) => {}}
+                />
+                <button
+                  class="btn btn-outline bg-base-100 btn-primary text-xs absolute top-0 right-0 mt-2 mr-0"
+                  on:click={() => {
+                    let sk = generatePrivateKey();
+                    _keyStore = nip19.nsecEncode(sk);
+                  }}
+                >
+                  Generate</button
+                >
+              </div>
             </div>
           </div>
         </div>
