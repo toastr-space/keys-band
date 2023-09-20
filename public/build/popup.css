@@ -2638,14 +2638,23 @@ html {
 .absolute {
   position: absolute;
 }
+.relative {
+  position: relative;
+}
 .bottom-0 {
   bottom: 0px;
 }
 .left-0 {
   left: 0px;
 }
+.right-0 {
+  right: 0px;
+}
 .right-3 {
   right: 0.75rem;
+}
+.top-0 {
+  top: 0px;
 }
 .top-3 {
   top: 0.75rem;
@@ -2671,14 +2680,14 @@ html {
 .mb-2 {
   margin-bottom: 0.5rem;
 }
-.ml-2 {
-  margin-left: 0.5rem;
-}
 .ml-20 {
   margin-left: 5rem;
 }
 .ml-28 {
   margin-left: 7rem;
+}
+.mr-0 {
+  margin-right: 0px;
 }
 .mr-2 {
   margin-right: 0.5rem;
@@ -2745,6 +2754,9 @@ html {
 }
 .w-full {
   width: 100%;
+}
+.max-w-lg {
+  max-width: 32rem;
 }
 .max-w-xs {
   max-width: 20rem;
@@ -2940,6 +2952,10 @@ html {
 .text-xl {
   font-size: 1.25rem;
   line-height: 1.75rem;
+}
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
 }
 .font-bold {
   font-weight: 700;
