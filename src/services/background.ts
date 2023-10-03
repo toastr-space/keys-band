@@ -120,6 +120,10 @@ async function makeResponse(type: string, data: any, domain: string) {
       break;
     case "signEvent":
       res = data;
+      if (res.pubkey == null) {
+        const pk = getPublicKey(get(keyStore));
+        res.pubkey = pk;
+      }
       res.id = getEventHash(res);
       res.sig = getSignature(res, get(keyStore));
       break;
@@ -439,7 +443,7 @@ async function manageRequest(message, sendResponse) {
       };
       try {
         let res = await createWindow(options);
-      } catch (e) {}
+      } catch (e) { }
     });
   });
 }
