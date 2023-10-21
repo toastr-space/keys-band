@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Keys.Band",
-  "version": "1.0",
+  "version": "1.1.0",
   "description": "Nostr Nip07 implementation",
   "action": {
     "default_popup": "index.html"

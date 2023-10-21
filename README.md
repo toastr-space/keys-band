@@ -38,7 +38,7 @@ then
 1. go to `chrome://extensions`;
 2. ensure "developer mode" is enabled on the top right;
 3. click on "Load unpackaged";
-4. select the `extension/` folder of this repository.
+4. select the `public/` folder of this repository.
 
 ---
 

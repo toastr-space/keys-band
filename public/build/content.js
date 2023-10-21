@@ -28,7 +28,7 @@
   window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     if (!event.data) return;
-    if (event.data.ext !== "nos2x") return;
+    if (event.data.ext !== "keys.band") return;
     if (event.data.response === undefined || event.data.response === null) {
       const data = event.data || {};
       data["url"] = event.origin;

@@ -40,7 +40,7 @@
               reject: !accept,
             },
           },
-          ext: "nos2x",
+          ext: "keys.band",
           url: parameter.get("url"),
           requestId: parameter.get("requestId"),
         });

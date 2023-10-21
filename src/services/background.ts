@@ -268,7 +268,7 @@ async function manageResult(message, sender) {
         responderData.resolve({
           id: message.requestId,
           type: responderData.type,
-          ext: "nos2x",
+          ext: "keys.band",
           response: {
             error: {
               message: "User rejected the request",
@@ -290,7 +290,7 @@ async function manageResult(message, sender) {
       responderData.resolve({
         id: message.requestId,
         type: responderData.type,
-        ext: "nos2x",
+        ext: "keys.band",
         response: res,
       });
       web.windows.remove(sender.tab.windowId);
@@ -311,7 +311,7 @@ async function manageRequest(message, sendResponse) {
       resolve({
         id: message.id,
         type: message.type,
-        ext: "nos2x",
+        ext: "keys.band",
         response: {
           error: {
             message: "No private key found",
@@ -353,7 +353,7 @@ async function manageRequest(message, sendResponse) {
           resolve({
             id: message.id,
             type: message.type,
-            ext: "nos2x",
+            ext: "keys.band",
             response: res,
           });
           return;
@@ -377,7 +377,7 @@ async function manageRequest(message, sendResponse) {
             resolve({
               id: message.id,
               type: message.type,
-              ext: "nos2x",
+              ext: "keys.band",
               response: res,
             });
             return;
@@ -405,7 +405,7 @@ async function manageRequest(message, sendResponse) {
               resolve({
                 id: message.id,
                 type: message.type,
-                ext: "nos2x",
+                ext: "keys.band",
                 response: {
                   error: {
                     message: "User rejected the request",
@@ -443,7 +443,7 @@ async function manageRequest(message, sendResponse) {
       };
       try {
         let res = await createWindow(options);
-      } catch (e) { }
+      } catch (e) {}
     });
   });
 }
