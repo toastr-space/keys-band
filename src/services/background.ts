@@ -120,6 +120,8 @@ async function makeResponse(type: string, data: any, domain: string) {
       break;
     case "signEvent":
       res = data;
+      console.log("signEvent");
+      console.log(res);
       if (res.pubkey == null) {
         const pk = getPublicKey(get(keyStore));
         res.pubkey = pk;

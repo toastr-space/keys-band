@@ -193,4 +193,4 @@
   </div>
 {/if}
 
-<Footer />
+<!-- <Footer /> -->

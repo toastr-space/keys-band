@@ -21,6 +21,14 @@
   import { generatePrivateKey, getPublicKey, nip19 } from "nostr-tools";
   import QrCode from "./components/QrCode.svelte";
   import About from "./components/About.svelte";
+  import Header from "./components/Header.svelte";
+  import AuthorizationNew from "./components/AuthorizationNew.svelte";
+  import Duration from "./components/Duration.svelte";
+  import ActionButtons from "./components/ActionButtons.svelte";
+  import AuthorizedApp from "./components/AuthorizedApp.svelte";
+  import RecentActivity from "./components/RecentActivity.svelte";
+  import SettingsHeader from "./components/SettingsHeader.svelte";
+  import SettingsNew from "./components/SettingsNew.svelte";
 
   enum Page {
     Home,
@@ -110,6 +118,17 @@
 </script>
 
 {#if $keyStore !== "" && $keyStore !== undefined}
+  <div class="flex flex-col justify-center gap-3 w-full items-start p-3">
+    <Header />
+    <AuthorizationNew />
+    <Duration />
+    <ActionButtons />
+    <AuthorizedApp />
+    <RecentActivity />
+    <SettingsHeader />
+    <SettingsNew />
+  </div>
+
   <div class="w-full h-full flex flex-wrap fixed-width">
     <div class="w-full h-16 bg-base-100 flex shadow-sm">
       <div class="w-2/12 p-2">
