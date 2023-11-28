@@ -1,11 +1,11 @@
-/** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./src/**/*.svelte", "./public/index.html"],
-  theme: {
-    extend: {},
-  },
-  plugins: [require("daisyui")],
-  daisyui: {
-    themes: ["light", "dark"],
-  },
-};
+	content: ["./src/**/*.{html,js,svelte,ts}"],
+	theme: {
+		extend: {},
+	},
+	plugins: [require("daisyui"), require("@tailwindcss/typography")],
+	daisyui: {
+		themes: ["light", "dark", "cyberpunk", "lofi", "black", "forest", "dracula", "cupcake"],
+	},
+}
+

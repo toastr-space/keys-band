@@ -1,45 +1,38 @@
-# keys.band
+# create-svelte
 
-### Based on [Nos2x](https://raw.githubusercontent.com/fiatjaf/nos2x/)
+Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
 
-## Multi-key Nostr Signing Extension
+## Creating a project
 
-Use this to sign [Nostr](https://github.com/nostr-protocol/nostr) events on web-apps without having to give them your keys.
+If you're seeing this, you've probably already done this step. Congrats!
 
-It implements [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md), i.e. provides a `window.nostr` object which has the following methods:
+```bash
+# create a new project in the current directory
+npm create svelte@latest
 
-```
-async window.nostr.getPublicKey(): string // returns your public key as hex
-async window.nostr.signEvent(event): Event // returns the full event object signed
-async window.nostr.getRelays(): { [url: string]: RelayPolicy } // returns a map of relays
-async window.nostr.nip04.encrypt(pubkey, plaintext): string // returns ciphertext+iv as specified in nip04
-async window.nostr.nip04.decrypt(pubkey, ciphertext): string // takes ciphertext+iv as specified in nip04
+# create a new project in my-app
+npm create svelte@latest my-app
 ```
 
-This extension is Chromium-only.
+## Developing
 
-## Install
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
-- Load the folder `public/` on your browser in developer mode
+```bash
+npm run dev
 
-## Develop
-
-To run the plugin from this code:
-
-```
-git clone https://github.com/toastr-space/keys-band
-cd keys-band
-pnpm install
-pnpm run build || pnpm run dev # for development mode
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
 ```
 
-then
+## Building
 
-1. go to `chrome://extensions`;
-2. ensure "developer mode" is enabled on the top right;
-3. click on "Load unpackaged";
-4. select the `public/` folder of this repository.
+To create a production version of your app:
 
----
+```bash
+npm run build
+```
 
-LICENSE: [MIT](docs/mit-license.md).
+You can preview the production build with `npm run preview`.
+
+> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
