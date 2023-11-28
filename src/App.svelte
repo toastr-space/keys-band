@@ -118,17 +118,6 @@
 </script>
 
 {#if $keyStore !== "" && $keyStore !== undefined}
-  <div class="flex flex-col justify-center gap-3 w-full items-start p-3">
-    <Header />
-    <AuthorizationNew />
-    <Duration />
-    <ActionButtons />
-    <AuthorizedApp />
-    <RecentActivity />
-    <SettingsHeader />
-    <SettingsNew />
-  </div>
-
   <div class="w-full h-full flex flex-wrap fixed-width">
     <div class="w-full h-16 bg-base-100 flex shadow-sm">
       <div class="w-2/12 p-2">
