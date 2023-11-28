@@ -120,6 +120,12 @@ async function makeResponse(type: string, data: any, domain: string) {
       break;
     case "signEvent":
       res = data;
+      console.log("signEvent");
+      console.log(res);
+      if (res.pubkey == null) {
+        const pk = getPublicKey(get(keyStore));
+        res.pubkey = pk;
+      }
       res.id = getEventHash(res);
       res.sig = getSignature(res, get(keyStore));
       break;
@@ -264,7 +270,7 @@ async function manageResult(message, sender) {
         responderData.resolve({
           id: message.requestId,
           type: responderData.type,
-          ext: "nos2x",
+          ext: "keys.band",
           response: {
             error: {
               message: "User rejected the request",
@@ -286,7 +292,7 @@ async function manageResult(message, sender) {
       responderData.resolve({
         id: message.requestId,
         type: responderData.type,
-        ext: "nos2x",
+        ext: "keys.band",
         response: res,
       });
       web.windows.remove(sender.tab.windowId);
@@ -307,7 +313,7 @@ async function manageRequest(message, sendResponse) {
       resolve({
         id: message.id,
         type: message.type,
-        ext: "nos2x",
+        ext: "keys.band",
         response: {
           error: {
             message: "No private key found",
@@ -349,7 +355,7 @@ async function manageRequest(message, sendResponse) {
           resolve({
             id: message.id,
             type: message.type,
-            ext: "nos2x",
+            ext: "keys.band",
             response: res,
           });
           return;
@@ -373,7 +379,7 @@ async function manageRequest(message, sendResponse) {
             resolve({
               id: message.id,
               type: message.type,
-              ext: "nos2x",
+              ext: "keys.band",
               response: res,
             });
             return;
@@ -401,7 +407,7 @@ async function manageRequest(message, sendResponse) {
               resolve({
                 id: message.id,
                 type: message.type,
-                ext: "nos2x",
+                ext: "keys.band",
                 response: {
                   error: {
                     message: "User rejected the request",
