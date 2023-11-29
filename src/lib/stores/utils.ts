@@ -1,3 +1,4 @@
+
 export function getBrowser() {
   // @ts-ignore
   if (typeof browser !== "undefined") {
@@ -11,21 +12,7 @@ export function getBrowser() {
 
   return null;
 }
-export let web: {
-  storage: {
-    local: {
-      get: (key: string, callback: (value: any) => void) => void;
-      set: (key: string, callback: (value: any) => void) => void;
-    };
-  };
-  runtime: {
-    getURL: (key: string) => string;
-    sendMessage: (
-      data: any,
-      callback: (response: any) => void
-    ) => void;
-  };
-} = getBrowser();
+export let web: typeof chrome = getBrowser();
 
 export function domainToUrl(url) {
   return url?.split("/")[2];

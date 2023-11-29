@@ -1,34 +1,23 @@
 <script lang="ts">
 	import {
 		keyStore,
-		loadPrivateKey,
-		loadTheme,
 		userProfile,
-		addKey,
 		theme,
-		switchTheme,
-		logout,
 		profiles,
-		verifyKey,
-		loadProfiles,
-		saveProfiles,
-		settingProfile
+		profileControlleur
 	} from '$lib/stores/key-store';
-	import type { Profile } from '$lib/stores/key-store';
+
+	let loadPrivateKey = profileControlleur.loadPrivateKey;
+	let loadTheme = profileControlleur.loadTheme;
+	let switchTheme = profileControlleur.switchTheme;
+	let logout = profileControlleur.logout;
+	let loadProfiles = profileControlleur.loadProfiles;
 
 	import Settings from '$lib/components/Settings.svelte';
 	import Home from '$lib/components/Home.svelte';
 	import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools';
 	import QrCode from '$lib/components/QrCode.svelte';
 	import About from '$lib/components/About.svelte';
-	import Header from '$lib/components/Header.svelte';
-	import AuthorizationNew from '$lib/components/AuthorizationNew.svelte';
-	import Duration from '$lib/components/Duration.svelte';
-	import ActionButtons from '$lib/components/ActionButtons.svelte';
-	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
-	import RecentActivity from '$lib/components/RecentActivity.svelte';
-	import SettingsHeader from '$lib/components/SettingsHeader.svelte';
-	import SettingsNew from '$lib/components/SettingsNew.svelte';
 
 	enum Page {
 		Home,
@@ -41,71 +30,21 @@
 	let _keyStore = '';
 	let _name = '';
 	let creationMode = false;
+	let themeSelected = 'light';
 
-	function registerKeyStore(value: string): void {
-		addKey(value)
-			.then((_) => {
-				loadPrivateKey();
-				const i = setInterval(() => {
-					if ($userProfile?.name !== '') {
-						clearInterval(i);
-						currentPage = Page.Home;
-					} else {
-						loadPrivateKey();
-					}
-				}, 100);
-			})
-			.catch((err) => {
-				alert(err);
-			});
+	function updateTheme() {
+		switchTheme(themeSelected);
 	}
 
-	async function addProfile(name, key) {
-		let decodedValue;
-		// check if name already exist in profile or key
-		if (name.length < 4) {
-			alert('Name must be at least 4 characters');
-			return;
-		}
-
+	async function addProfile(name: string, key: string) {
 		try {
-			decodedValue = await verifyKey(key);
-			let prs = $profiles.filter((pr) => pr.name === name || pr.data.privateKey === decodedValue);
-			if (prs.length > 0) {
-				alert('Name or key already exist');
-				return;
-			}
-			let profile: Profile = {
-				name: name,
-				data: {
-					privateKey: decodedValue,
-					webSites: {},
-					relays: []
-				}
-			};
-			profiles.update((profiles) => [...profiles, profile]);
-			saveProfiles();
+			await profileControlleur.createProfile(name, key);
 			_name = '';
 			_keyStore = '';
 			creationMode = false;
-		} catch (error) {
-			alert(error);
+		} catch (err) {
+			alert(err);
 		}
-	}
-
-	async function removeProfileByName(name) {
-		profiles.update((profiles) => profiles.filter((profile) => profile.name !== name));
-		saveProfiles();
-	}
-
-	async function openProfile(profile) {
-		keyStore.set(profile.data.privateKey);
-		// store website and relays
-
-		await settingProfile(profile);
-
-		loadPrivateKey();
-		currentPage = Page.Home;
 	}
 
 	loadPrivateKey();
@@ -114,17 +53,6 @@
 </script>
 
 {#if $keyStore !== '' && $keyStore !== undefined}
-	<div class="flex flex-col justify-center gap-3 w-full items-start p-3">
-		<Header />
-		<AuthorizationNew />
-		<Duration />
-		<ActionButtons />
-		<AuthorizedApp />
-		<RecentActivity />
-		<SettingsHeader />
-		<SettingsNew />
-	</div>
-
 	<div class="w-full h-full flex flex-wrap fixed-width">
 		<div class="w-full h-16 bg-base-100 flex shadow-sm">
 			<div class="w-2/12 p-2">
@@ -158,9 +86,8 @@
 				<!-- cog icon button -->
 				<select
 					class="select select-bordered select-xs w-7/12 h-8 mt-2 max-w-xs pl-2 pr-0"
-					on:change={(e) => {
-						switchTheme(e.target.value);
-					}}
+					bind:value={themeSelected}
+					on:change={updateTheme}
 				>
 					<option value="light" selected={$theme == 'light'}>Light</option>
 					<option value="dark" selected={$theme == 'dark'}>Dark</option>
@@ -251,9 +178,8 @@
 	<div class="w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2 overflow-y-auto">
 		<select
 			class="select select-bordered select-xs h-8 mt-2 pl-2 pr-2 absolute top-3 right-3"
-			on:change={(e) => {
-				switchTheme(e.target.value || 'dark');
-			}}
+			bind:value={themeSelected}
+			on:change={updateTheme}
 		>
 			<option value="light" selected={$theme == 'light'}>Light</option>
 			<option value="dark" selected={$theme == 'dark'}>Dark</option>
@@ -287,13 +213,13 @@
 										<button
 											class="btn btn-sm btn-accent mb-2"
 											on:click={() => {
-												openProfile(profile);
+												profileControlleur.loadProfile(profile);
 											}}>OPEN</button
 										>
 										<button
 											class="btn btn-square btn-sm btn-secondary"
 											on:click={() => {
-												removeProfileByName(profile.name);
+												profileControlleur.deleteProfile(profile);
 											}}
 										>
 											<svg
