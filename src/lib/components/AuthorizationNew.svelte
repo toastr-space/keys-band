@@ -1,5 +1,13 @@
-<script>
+<script lang="ts">
 	import Icon from '@iconify/svelte';
+	import Duration from './Duration.svelte';
+
+	let durationChoice: number = 0;
+
+	function handleDurationChange(event: { detail: { value: number } }) {
+		durationChoice = event.detail.value;
+		console.log('durationChoice', durationChoice);
+	}
 </script>
 
 <div
@@ -32,4 +40,20 @@
 			do some other stuff
 		</div>
 	</div>
+</div>
+
+<Duration on:durationChange={handleDurationChange} />
+
+<div class="items-stretch flex w-full gap-3 mt-3">
+	<button
+		class="text-white hover:bg-surface-800 text-base font-medium leading-5 whitespace-nowrap justify-center bg-white bg-opacity-20 px-8 py-3 rounded-full"
+	>
+		Reject
+	</button>
+	<button
+		class="bg-teal-400 hover:bg-teal-300 flex gap-2 px-20 py-3 rounded-full w-full place-content-center max-md:px-5"
+	>
+		<div class="text-black text-base font-medium leading-5">Confirm</div>
+		<Icon icon="mdi:check" width={20} class="text-black" />
+	</button>
 </div>

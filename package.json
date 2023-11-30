@@ -8,7 +8,7 @@
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"nodemon": "nodemon --watch src --watch static --ext .* --exec \"vite build & npx esbuild ./src/lib/services/background.ts --bundle --outdir=build/ & npx esbuild ./src/lib/services/content.ts --bundle --outdir=build/\"",
+		"nodemon": "nodemon --watch 'src/**/*.ts' --watch 'src/**/*.js' --watch 'static/**/*' --exec \"vite build && npx esbuild ./src/lib/services/background.ts --bundle --outdir=build/ && npx esbuild ./src/lib/services/content.ts --bundle --outdir=build/\"",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write ."
 	},
@@ -41,6 +41,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@floating-ui/dom": "^1.5.3",
 		"@iconify/svelte": "^3.1.4",
 		"@sveltejs/vite-plugin-svelte": "^3.0.1",
 		"@types/chrome": "^0.0.253",

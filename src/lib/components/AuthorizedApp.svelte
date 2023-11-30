@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 
-	let daysLeft = 2;
+	export let timeLeft = 2;
+	export let timeUnit = 'days';
 </script>
 
 <div
@@ -14,7 +15,7 @@
 			AUTHORIZED APP
 		</div>
 		<div class="text-teal-400 text-xs leading-4 whitespace-nowrap">
-			{daysLeft} more days
+			{timeLeft} more {timeUnit}
 		</div>
 	</div>
 	<div class="justify-between items-stretch flex gap-5 mt-2">

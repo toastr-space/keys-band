@@ -3,8 +3,6 @@
 	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
 	import RecentActivity from '$lib/components/RecentActivity.svelte';
 	import AuthorizationNew from '$lib/components/AuthorizationNew.svelte';
-	import Duration from '$lib/components/Duration.svelte';
-	import ActionButtons from '$lib/components/ActionButtons.svelte';
 </script>
 
 <div class="w-full">
@@ -20,7 +18,5 @@
 	>
 		<Header />
 		<AuthorizationNew />
-		<Duration />
-		<ActionButtons />
 	</div>
 </div>
