@@ -1,8 +1,13 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import Duration from './Duration.svelte';
+	import { tr } from '$lib/stores/utils';
 
 	let durationChoice: number = 0;
+
+	export let domain: string;
+	export let parameter;
+	export let isPopup = false;
 
 	function handleDurationChange(event: { detail: { value: number } }) {
 		durationChoice = event.detail.value;
@@ -16,28 +21,20 @@
 	<div
 		class="text-white text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
 	>
-		AUTHORISATION
+		AUTHORIZATION
 	</div>
 	<div class="text-white text-2xl font-semibold leading-7 whitespace-nowrap mt-2">
-		coracle.social
+		{domain}
 	</div>
 	<div class="text-white text-base leading-5 whitespace-nowrap mt-2">would like to:</div>
 	<div class="items-center flex justify-between gap-3 mt-2">
 		<Icon icon="mdi:check" width={16} class="text-teal-400" />
 		<div class="text-white text-base leading-5 self-stretch grow whitespace-nowrap">
-			read your public key
-		</div>
-	</div>
-	<div class="items-center flex justify-between gap-3 mt-2">
-		<Icon icon="mdi:check" width={16} class="text-teal-400" />
-		<div class="text-white text-base leading-5 self-stretch grow whitespace-nowrap">
-			sign some events
-		</div>
-	</div>
-	<div class="items-center flex justify-between gap-3 mt-2">
-		<Icon icon="mdi:check" width={16} class="text-teal-400" />
-		<div class="text-white text-base leading-5 self-stretch grow whitespace-nowrap">
-			do some other stuff
+			{#if isPopup}
+				{tr(parameter?.get('type'))}
+			{:else}
+				{tr('permission')}
+			{/if}
 		</div>
 	</div>
 </div>

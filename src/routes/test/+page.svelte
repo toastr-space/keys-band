@@ -3,6 +3,12 @@
 	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
 	import RecentActivity from '$lib/components/RecentActivity.svelte';
 	import AuthorizationNew from '$lib/components/AuthorizationNew.svelte';
+	import { domainToUrl } from '$lib/stores/utils';
+
+	let parameter: any;
+	if (typeof window !== 'undefined') {
+		parameter = new URLSearchParams(document.location.search);
+	}
 </script>
 
 <div class="w-full">
@@ -17,6 +23,6 @@
 		class="flex flex-col w-full m-16 bg-surface-900 rounded-3xl border border-surface-600 p-[12px]"
 	>
 		<Header />
-		<AuthorizationNew />
+		<AuthorizationNew {parameter} isPopup={true} domain={domainToUrl(parameter?.get('url'))} />
 	</div>
 </div>

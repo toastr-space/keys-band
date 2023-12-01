@@ -1,4 +1,22 @@
 <script>
+	import { reverseArray, timeAgo } from '$lib/stores/utils';
+
+	let currentSite = {
+		history: [
+			{ type: 'Note', created_at: new Date() },
+			{ type: 'Reply', created_at: new Date() },
+			{ type: 'Reaction', created_at: new Date() },
+			{ type: 'Note', created_at: new Date() },
+			{ type: 'Highlight', created_at: new Date() }
+		]
+	};
+
+	// loadWebSites().then(() => {
+	//   currentSite = $webSites[domainToUrl(_currentTab.url)];
+	//   if (currentSite === undefined) {
+	//     currentSite = { history: [] };
+	//   }
+	// });
 </script>
 
 <div
@@ -9,34 +27,14 @@
 	>
 		RECENT ACTIVITY
 	</div>
-	<div class="justify-between items-stretch flex gap-5 mt-2">
-		<div class="text-white text-base leading-5">Note</div>
-		<div class="text-white text-opacity-30 text-xs leading-4 self-center whitespace-nowrap my-auto">
-			A hour ago
+	{#each reverseArray(currentSite.history) as site, i}
+		<div class="justify-between items-stretch flex gap-5 mt-2">
+			<div class="text-white text-base leading-5">{site.type}</div>
+			<div
+				class="text-white text-opacity-30 text-xs leading-4 self-center whitespace-nowrap my-auto"
+			>
+				{timeAgo(new Date(site.created_at))}
+			</div>
 		</div>
-	</div>
-	<div class="justify-between items-stretch flex gap-5 mt-2">
-		<div class="text-white text-base leading-5">Reply</div>
-		<div class="text-white text-opacity-30 text-xs leading-4 self-center whitespace-nowrap my-auto">
-			A hour ago
-		</div>
-	</div>
-	<div class="justify-between items-stretch flex gap-5 mt-2">
-		<div class="text-white text-base leading-5">Reaction</div>
-		<div class="text-white text-opacity-30 text-xs leading-4 self-center whitespace-nowrap my-auto">
-			A hour ago
-		</div>
-	</div>
-	<div class="justify-between items-stretch flex gap-5 mt-2">
-		<div class="text-white text-base leading-5">Note</div>
-		<div class="text-white text-opacity-30 text-xs leading-4 self-center whitespace-nowrap my-auto">
-			A hour ago
-		</div>
-	</div>
-	<div class="justify-between items-stretch flex gap-5 mt-2">
-		<div class="text-white text-base leading-5">Highlight</div>
-		<div class="text-white text-opacity-30 text-xs leading-4 self-center whitespace-nowrap my-auto">
-			A hour ago
-		</div>
-	</div>
+	{/each}
 </div>

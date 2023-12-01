@@ -91,7 +91,7 @@
 				<li
 					class="justify-center items-stretch self-stretch flex w-full flex-col mt-3 border-t-[0.33px] border-t-white border-t-opacity-30 border-solid"
 				>
-					<div class="justify-between items-stretch flex w-full gap-5">
+					<div class="justify-between items-stretch flex w-full gap-5 background-teal-400">
 						<div class="items-stretch flex justify-between gap-3">
 							<button on:click={() => selectDuration(option)}>
 								<div class="text-white text-base self-center my-auto">{option.name}</div>
