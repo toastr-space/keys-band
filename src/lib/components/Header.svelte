@@ -1,10 +1,9 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { popup } from '@skeletonlabs/skeleton';
+	import { popup, Avatar } from '@skeletonlabs/skeleton';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
 
 	import { userProfile, theme } from '../stores/key-store';
-	import Avatar from './Avatar.svelte';
 
 	let accountDropdownMenuOpen = false;
 
@@ -28,11 +27,15 @@
 		<div class="flex flex-row gap-3 mt-2 pr-0.5 items-center">
 			<div class="items-stretch flex justify-between gap-3">
 				<button
-					class="btn background-surface-900 pl-0"
+					class="btn background-surface-900 pl-0 justify-between items-center flex gap-1"
 					use:popup={accountDropdownMenu}
 					on:click={() => (accountDropdownMenuOpen = !accountDropdownMenuOpen)}
 				>
-					<Avatar picture={$userProfile?.picture || ''} />
+					<Avatar
+						src={$userProfile?.picture || 'https://toastr.space/images/toastr.png'}
+						width="w-10"
+						rounded="rounded-full"
+					/>
 					<div
 						class="text-white text-2xl font-semibold leading-7 self-center grow whitespace-nowrap my-auto"
 					>
@@ -91,7 +94,12 @@
 				<div class="justify-between items-stretch flex w-full gap-5">
 					<div class="items-stretch flex justify-between gap-3">
 						<a href="/elements/lists">
-							<Avatar picture={$userProfile?.picture || ''} />
+							<Avatar
+								src={$userProfile?.picture || 'https://toastr.space/images/toastr.png'}
+								width="w-10"
+								rounded="rounded-full"
+							/>
+
 							<div class="text-white text-base self-center my-auto">Elisa Keys</div>
 							<Icon icon="mdi:check" width={22} class="text-teal-400" />
 						</a>
@@ -107,7 +115,12 @@
 				<div class="justify-between items-stretch flex w-full gap-5">
 					<div class="items-stretch flex justify-between gap-3">
 						<a href="/elements/lists">
-							<Avatar picture={$userProfile?.picture || ''} />
+							<Avatar
+								src={$userProfile?.picture || 'https://toastr.space/images/toastr.png'}
+								width="w-10"
+								rounded="rounded-full"
+							/>
+
 							<div class="text-white text-base self-center my-auto">Business account</div>
 						</a>
 					</div>
@@ -121,7 +134,12 @@
 			>
 				<div class="items-stretch flex justify-between gap-3">
 					<a href="/elements/lists">
-						<Avatar picture={$userProfile?.picture || ''} />
+						<Avatar
+							src={$userProfile?.picture || 'https://toastr.space/images/toastr.png'}
+							width="w-10"
+							rounded="rounded-full"
+						/>
+
 						<div class="text-white text-base self-center my-auto">Nym account</div>
 					</a>
 					<button class="btn background-surface-900" on:click={() => console.log('delete account')}>
