@@ -1,11 +1,15 @@
 <script lang="ts">
+	import type { WebSite } from '$lib/types/profile';
+
+	import { webSites } from '$lib/stores/data';
+	import { profileControlleur } from '$lib/stores/key-store';
 	import { web, domainToUrl, remainingTime } from '$lib/stores/utils';
-	import { loadWebSites, webSites, type WebSite } from '$lib/stores/key-store';
-	import Authorization from '../components/Authorization.svelte';
+
 	import AuthAlert from '../components/AuthAlert.svelte';
+	import Authorization from '../components/Authorization.svelte';
 	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
 
-	let currentTab = { url: '' };
+	let currentTab: chrome.tabs.Tab;
 	web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
 		var activeTab = tabs[0];
 		currentTab = activeTab;
@@ -32,8 +36,8 @@
 			return;
 		}
 		let _webSite: WebSite;
-		if (Object.keys(value).indexOf(domainToUrl(currentTab.url)) !== -1)
-			_webSite = value[domainToUrl(currentTab.url)];
+		if (Object.keys(value).indexOf(domainToUrl(currentTab?.url || '')) !== -1)
+			_webSite = value[domainToUrl(currentTab?.url || '')];
 		else return;
 
 		timerExpire = remainingTime(new Date(_webSite?.permission.authorizationStop));
@@ -58,20 +62,25 @@
 
 	let showAuthorization = false;
 
-	loadWebSites().then((_webSites) => {
-		if (_webSites === null || _webSites === undefined) {
-			_webSites = {};
-		}
-		if (Object.keys(_webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
-			webSite = _webSites[domainToUrl(currentTab.url)];
+	profileControlleur
+		.loadWebSites()
+		.then((_webSites) => {
+			if (_webSites === null || _webSites === undefined) {
+				_webSites = {};
+			}
+			if (Object.keys(_webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
+				webSite = _webSites[domainToUrl(currentTab.url)];
 
-		timerExpire = remainingTime(new Date(webSite.permission.authorizationStop));
-		const splitedTimerExpire = timerExpire.split(':');
+			timerExpire = remainingTime(new Date(webSite.permission.authorizationStop));
+			const splitedTimerExpire = timerExpire.split(':');
 
-		hour = parseInt(splitedTimerExpire[0]);
-		minute = parseInt(splitedTimerExpire[1]);
-		second = parseInt(splitedTimerExpire[2]);
-	});
+			hour = parseInt(splitedTimerExpire[0]);
+			minute = parseInt(splitedTimerExpire[1]);
+			second = parseInt(splitedTimerExpire[2]);
+		})
+		.catch((err) => {
+			alert(err);
+		});
 </script>
 
 <div class="w-full px-3">
@@ -83,10 +92,15 @@
 			isPopup={false}
 			parameter={null}
 			on:cancel={() => {
-				loadWebSites().then(() => {
-					if (Object.keys($webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
-						webSite = $webSites[domainToUrl(currentTab.url)];
-				});
+				profileControlleur
+					.loadWebSites()
+					.then(() => {
+						if (Object.keys($webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
+							webSite = $webSites[domainToUrl(currentTab.url)];
+					})
+					.catch((err) => {
+						alert(err);
+					});
 				showAuthorization = false;
 			}}
 		/>

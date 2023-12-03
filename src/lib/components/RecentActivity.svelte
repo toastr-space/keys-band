@@ -10,13 +10,6 @@
 			{ type: 'Highlight', created_at: new Date() }
 		]
 	};
-
-	// loadWebSites().then(() => {
-	//   currentSite = $webSites[domainToUrl(_currentTab.url)];
-	//   if (currentSite === undefined) {
-	//     currentSite = { history: [] };
-	//   }
-	// });
 </script>
 
 <div

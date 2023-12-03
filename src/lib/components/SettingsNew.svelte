@@ -1,16 +1,19 @@
 <script lang="ts">
-	// import { relays } from '../stores/key-store';
 	import Icon from '@iconify/svelte';
 	import { writable, type Writable } from 'svelte/store';
-	import type { Relay } from 'nostr-tools';
+	import type { Relay } from '$lib/types/profile';
 	import ToggleSwitch from './ToggleSwitch.svelte';
 
 	export let relays: Writable<Relay[]> = writable([
 		{
-			url: 'https://relay1.nostr.space'
+			url: 'https://relay1.nostr.space',
+			enabled: true,
+			created_at: new Date()
 		},
 		{
-			url: 'https://relay2.nostr.space'
+			url: 'https://relay2.nostr.space',
+			enabled: true,
+			created_at: new Date()
 		}
 	]);
 	let notifications: any[] = [];
@@ -58,11 +61,11 @@
 					class="btn-icon btn-icon-sm bg-teal-400"
 					on:click={() => {
 						// remove
-						relays.set($relays.filter((r) => r.url !== relay.url));
-						web?.storage?.local?.set({
-							relays: $relays
-						});
-						showNotification('relay removed');
+						// relays.set($relays.filter((r) => r.url !== relay.url));
+						// web?.storage?.local?.set({
+						// 	relays: $relays
+						// });
+						//showNotification('relay removed');
 					}}
 				>
 					<Icon icon="mdi:delete" class="text-black" />
@@ -85,21 +88,19 @@
 				type="button"
 				class="btn bg-teal-400 text-black"
 				on:click={() => {
-					relays.set([
-						...$relays,
-						{
-							url: relayInput,
-							enabled: true,
-							created_at: new Date()
-						}
-					]);
-					web?.storage?.local?.set({
-						relays: $relays
-					});
-
-					relayInput = '';
-
-					showNotification('relay added');
+					// relays.set([
+					// 	...$relays,
+					// 	{
+					// 		url: relayInput,
+					// 		enabled: true,
+					// 		created_at: new Date()
+					// 	}
+					// ]);
+					// // web?.storage?.local?.set({
+					// // 	relays: $relays
+					// // });
+					// relayInput = '';
+					// showNotification('relay added');
 				}}
 			>
 				<Icon icon="mdi:plus" class="text-black" width={20} />

@@ -1,17 +1,23 @@
 import { getEventHash, getPublicKey, getSignature, nip04 } from "nostr-tools";
 import { domainToUrl, web } from "../stores/utils";
 import {
-  loadPrivateKey,
-  webSites,
-  type WebSite,
-  keyStore,
-  loadWebSites,
-  loadRelays,
-  loadNotifications,
-  webNotifications,
+  profileControlleur
 } from "../stores/key-store";
+
+import type {
+  WebSite
+} from "$lib/types/profile"
+
+import {
+  webSites, webNotifications, keyStore
+} from "$lib/stores/data"
 import { get } from "svelte/store";
 import { escape } from "svelte/internal";
+
+const loadPrivateKey = profileControlleur.loadPrivateKey
+const loadWebSites = profileControlleur.loadWebSites
+const loadRelays = profileControlleur.loadRelays
+const loadNotifications = profileControlleur.loadNotifications
 
 function injectInTab() {
   loadPrivateKey();
@@ -457,6 +463,8 @@ web.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else {
     manageRequest(message, sendResponse).then((data) => {
       sendResponse(data);
+    }).catch((err) => {
+      alert(err);
     });
   }
   return true; // Renvoie true pour indiquer une réponse asynchrone.

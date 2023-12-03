@@ -1,17 +1,11 @@
 <script lang="ts">
-	import {
-		keyStore,
-		userProfile,
-		theme,
-		profiles,
-		profileControlleur
-	} from '$lib/stores/key-store';
+	import { keyStore, profiles } from '$lib/stores/data';
+	import { profileControlleur } from '$lib/stores/key-store';
 
 	import Home from '$lib/subpages/Home.svelte';
 	import About from '$lib/components/About.svelte';
 	import QrCode from '$lib/components/QrCode.svelte';
 	import Settings from '$lib/components/Settings.svelte';
-	import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools';
 	import Header from '$lib/components/Header.svelte';
 
 	enum Page {
@@ -114,14 +108,7 @@
 		</div>
 		<div class="w-full flex justify-end pr-8">
 			<center>
-				<button
-					class="link link-hover mx-auto text-lg"
-					on:click={() => {
-						creationMode = true;
-					}}
-				>
-					+ add profile
-				</button>
+				<button class="link link-hover mx-auto text-lg"> + add profile </button>
 			</center>
 		</div>
 	</div>
@@ -131,8 +118,5 @@
 	.fixed-width {
 		width: 400px;
 		max-width: 400px;
-	}
-	.select {
-		background-image: none;
 	}
 </style>

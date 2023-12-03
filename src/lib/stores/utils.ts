@@ -12,20 +12,20 @@ export function getBrowser() {
 
   return null;
 }
-export let web: typeof chrome = getBrowser();
+export const web: typeof chrome = getBrowser();
 
-export function domainToUrl(url) {
+export function domainToUrl(url: string) {
   return url?.split("/")[2];
 }
 
 // function that return remaining time from data display day only if it's more than 1 day and minute, complete with zero if one character
-export function remainingTime(datetime) {
-  let now = new Date();
-  let diff = datetime.getTime() - now.getTime();
-  let days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  let seconds = Math.floor((diff % (1000 * 60)) / 1000);
+export function remainingTime(datetime: Date) {
+  const now: Date = new Date();
+  const diff = datetime.getTime() - now.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
   let _hours = hours.toString();
   let _minutes = minutes.toString();
@@ -49,8 +49,8 @@ export function remainingTime(datetime) {
   return _hours + ":" + _minutes + ":" + _seconds + "";
 }
 
-export function getDuration(choice: number): Date {
-  let duration = new Date();
+export function getDuration(choice: number): Date | undefined {
+  const duration = new Date();
   switch (choice) {
     case 0:
       return new Date();
@@ -67,21 +67,21 @@ export function getDuration(choice: number): Date {
   }
 }
 
-export function reverseArray(arr) {
-  var newArray = [];
-  for (var i = arr.length - 1; i >= 0; i--) {
+export function reverseArray(arr: unknown[]) {
+  const newArray: unknown[] = [];
+  for (let i = arr.length - 1; i >= 0; i--) {
     newArray.push(arr[i]);
   }
   return newArray;
 }
 
-export function timeAgo(date) {
-  let now = new Date();
-  let diff = now.getTime() - date.getTime();
-  let days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  let seconds = Math.floor((diff % (1000 * 60)) / 1000);
+export function timeAgo(date: Date) {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
   if (days > 0) {
     return days + " days ago";

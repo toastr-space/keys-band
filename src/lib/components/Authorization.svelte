@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { domainToUrl, getDuration, web } from '$lib/stores/utils';
-	import { profileControlleur, webSites } from '$lib/stores/key-store';
+	import { profileControlleur } from '$lib/stores/key-store';
+	import { webSites } from '$lib/stores/data';
 	import { createEventDispatcher } from 'svelte';
 	import { tr } from '$lib/stores/utils';
 	let login = false;
@@ -34,84 +35,96 @@
 			return;
 		}
 		if (isPopup) {
-			loadPrivateKey().then(() => {
-				web.runtime.sendMessage({
-					prompt: true,
-					response: {
-						status: 'success',
-						error: accept ? false : true,
-						permission: {
-							always: choice === 1,
-							duration: getDuration(choice),
-							accept: accept,
-							reject: !accept
-						}
-					},
-					ext: 'keys.band',
-					url: parameter?.get('url'),
-					requestId: parameter?.get('requestId')
-				});
-			});
-		} else {
-			loadPrivateKey().then(async () => {
-				let _webSites = await loadWebSites();
-				if (_webSites === undefined || _webSites === null) {
-					_webSites = {};
-				}
-				if (Object.keys(_webSites).indexOf(domain) !== -1) {
-					let site = $webSites;
-					if (site === undefined || site === null) {
-						site = {};
-					}
-					let st = site[domain];
-					st.permission = {
-						always: choice === 1,
-						authorizationStop: getDuration(choice).toString(),
-						accept: accept,
-						reject: !accept
-					};
-					let array = st.history || [];
-					array.push({
-						accepted: accept,
-						type: 'permission',
-						created_at: new Date().toString(),
-						data: undefined
+			loadPrivateKey()
+				.then(() => {
+					web.runtime.sendMessage({
+						prompt: true,
+						response: {
+							status: 'success',
+							error: accept ? false : true,
+							permission: {
+								always: choice === 1,
+								duration: getDuration(choice),
+								accept: accept,
+								reject: !accept
+							}
+						},
+						ext: 'keys.band',
+						url: parameter?.get('url'),
+						requestId: parameter?.get('requestId')
 					});
-					st['history'] = array;
-					site[domain] = st;
-					_webSites[domain] = st;
-					await web?.storage?.local?.set({ webSites: _webSites });
-					await loadWebSites();
-				} else {
-					let site = $webSites;
-					if (site === undefined || site === null) {
-						site = {};
-					}
-					let st = {
-						auth: true,
-						history: [
-							{
+				})
+				.catch((err) => {
+					alert(err);
+				});
+		} else {
+			loadPrivateKey()
+				.then(async () => {
+					try {
+						let _webSites = await loadWebSites();
+						if (_webSites === undefined || _webSites === null) {
+							_webSites = {};
+						}
+						if (Object.keys(_webSites).indexOf(domain) !== -1) {
+							let site = $webSites;
+							if (site === undefined || site === null) {
+								site = {};
+							}
+							let st = site[domain];
+							st.permission = {
+								always: choice === 1,
+								authorizationStop: getDuration(choice).toString(),
+								accept: accept,
+								reject: !accept
+							};
+							let array = st.history || [];
+							array.push({
 								accepted: accept,
 								type: 'permission',
 								created_at: new Date().toString(),
 								data: undefined
+							});
+							st['history'] = array;
+							site[domain] = st;
+							_webSites[domain] = st;
+							await web?.storage?.local?.set({ webSites: _webSites });
+							await loadWebSites();
+						} else {
+							let site = $webSites;
+							if (site === undefined || site === null) {
+								site = {};
 							}
-						],
-						permission: {
-							always: choice === 1,
-							authorizationStop: getDuration(choice).toString(),
-							accept: accept,
-							reject: !accept
+							let st = {
+								auth: true,
+								history: [
+									{
+										accepted: accept,
+										type: 'permission',
+										created_at: new Date().toString(),
+										data: undefined
+									}
+								],
+								permission: {
+									always: choice === 1,
+									authorizationStop: getDuration(choice).toString(),
+									accept: accept,
+									reject: !accept
+								}
+							};
+
+							site[domain] = st;
+							await web?.storage?.local?.set({ webSites: site });
+							await loadWebSites();
 						}
-					};
 
-					site[domain] = st;
-					await web?.storage?.local?.set({ webSites: site });
-					await loadWebSites();
-				}
-
-				cancel();
-			});
+						cancel();
+					} catch (err) {
+						alert(err);
+					}
+				})
+				.catch((err) => {
+					alert(err);
+				});
 		}
 	}
 </script>

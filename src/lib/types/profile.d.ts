@@ -4,7 +4,7 @@ export interface Profile {
     id?: string;
     data?: {
         privateKey?: string;
-        webSites?: {};
+        webSites?: object;
         relays?: Relay[];
     };
 }
@@ -27,10 +27,19 @@ export interface WebSite {
     permission?: Authorization;
     history?: {
         type: string;
-        data?: {};
+        data?: unknown;
         created_at: string;
         accepted: boolean;
     }[];
+}
+
+
+interface ProfileSetting {
+    profile: string,
+    privateKey: string,
+    profileName: string,
+    webSites: object,
+    relays: Relay[]
 }
 
 export interface Relay {

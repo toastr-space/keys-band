@@ -1,37 +1,62 @@
-import { ProfileDeleteMethod } from '$lib/types/profile.d';
-import { get, writable, type Writable } from 'svelte/store';
+/*eslint no-async-promise-executor: 0*/
+
+import { ProfileDeleteMethod, } from '$lib/types/profile.d';
+import { get, type Writable } from 'svelte/store';
 import { defaultWebNotificationSettings, web } from './utils';
-import { getPublicKey, nip19, SimplePool, type Relay } from 'nostr-tools';
-import type { NotificationSetting, Profile, UserProfile } from '$lib/types/profile.d';
+import { getPublicKey, nip19, SimplePool } from 'nostr-tools';
+import type { NotificationSetting, Profile, ProfileSetting, Relay } from '$lib/types/profile.d';
+import { profiles, webNotifications, keyStore, relays, webSites, userProfile, theme } from './data';
 
 const _relays = ['wss://relay.damus.io', 'wss://nos.lol'];
 const pool = new SimplePool();
 
-export const keyStore: Writable<string> = writable('');
-export const userProfile: Writable<UserProfile> = writable({});
-export let profiles: Writable<Profile[]> = writable([]);
-export const webSites: Writable<any> = writable();
-export let relays: Writable<Relay[]> = writable([]);
-export let theme: Writable<string> = writable('dark');
-export let webNotifications: Writable<NotificationSetting[]> = writable([]);
 
-export async function loadProfiles(): Promise<void> {
-	return new Promise(async (resolve) => {
-		const value = await web.storage.local.get('profiles');
-		console.log(JSON.stringify(value));
-		if (value.profiles) {
-			profiles.set(value.profiles);
-		} else {
-			web.storage.local.set({ profiles: [] });
-			profiles.set([]);
+function browserControlleur() {
+	const get = async (key: string): Promise<{ [key: string]: unknown }> => {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const result = await web?.storage?.local?.get(key);
+				resolve(result)
+			} catch (err) { reject(err) }
+		})
+
+	}
+	const set = async (items: { [key: string]: unknown }): Promise<void> => {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const result = await web?.storage?.local?.set(items);
+				resolve(result)
+			} catch (err) { reject(err) }
+		})
+	}
+
+	return { get, set }
+}
+
+const browser: { get: (key: string) => Promise<{ [key: string]: unknown }>, set: (items: { [key: string]: unknown }) => Promise<void> } = browserControlleur();
+
+
+export async function loadProfiles(): Promise<Writable<Profile[]>> {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const value = await browser.get('profiles');
+			if (value?.profiles) {
+				profiles.set(value?.profiles as Profile[] || []);
+			} else {
+				browser.set({ profiles: [] });
+				profiles.set([]);
+			}
+			resolve(profiles);
+		} catch (err) {
+			reject(err)
 		}
-		resolve();
+
 	});
 }
 
 export async function saveProfiles(): Promise<void> {
 	return new Promise((resolve) => {
-		web.storage.local.set({ profiles: get(profiles) });
+		browser.set({ profiles: get(profiles) });
 		resolve();
 	});
 }
@@ -39,10 +64,10 @@ export async function saveProfiles(): Promise<void> {
 export async function loadNotifications(): Promise<void> {
 	return new Promise((resolve) => {
 		web.storage.local.get('notificationsSettings', (value) => {
-			if (value.notificationsSettings) {
-				webNotifications.set(value.notificationsSettings);
+			if (value?.notificationsSettings) {
+				webNotifications.set(value?.notificationsSettings);
 			} else {
-				web.storage.local.set({
+				browser.set({
 					notificationsSettings: defaultWebNotificationSettings
 				});
 				webNotifications.set(defaultWebNotificationSettings);
@@ -52,25 +77,28 @@ export async function loadNotifications(): Promise<void> {
 	});
 }
 
-export async function updateNotification(name): Promise<void> {
-	return new Promise((resolve) => {
-		web.storage.local.get('notificationsSettings', (value) => {
-			let notifications = value.notificationsSettings;
-			notifications.forEach((notification) => {
-				if (notification.name === name) {
-					notification.state = !notification.state;
-				}
+export async function updateNotification(name: string): Promise<void> {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const value = await browser.get('notificationsSettings')
+			let notifications = value.notificationsSettings as NotificationSetting[];
+			notifications = notifications.map((notification) => {
+				if (notification.name === name) notification.state = !notification.state;
+				return notification
 			});
-			web.storage.local.set({ notificationsSettings: notifications });
+			await browser.set({ notificationsSettings: notifications });
 			webNotifications.set(notifications);
 			resolve();
-		});
+		} catch (err) {
+			reject(err)
+		}
+
 	});
 }
 
 export async function switchTheme(themeName: string): Promise<void> {
 	return new Promise((resolve) => {
-		web.storage.local.set({ theme: themeName });
+		browser.set({ theme: themeName });
 		theme.set(themeName);
 		if (typeof document === 'undefined') return;
 		document.documentElement.setAttribute('data-theme', themeName);
@@ -79,72 +107,97 @@ export async function switchTheme(themeName: string): Promise<void> {
 }
 
 export async function loadTheme(): Promise<void> {
-	return new Promise((resolve) => {
-		web.storage.local.get('theme', (value) => {
-			if (value.theme) {
-				theme.set(value.theme);
-				if (typeof document === 'undefined') return;
-				document.documentElement.setAttribute('data-theme', value.theme);
-			} else {
-				web.storage.local.set({ theme: 'cupcake' });
-				theme.set('cupcake');
-				if (typeof document === 'undefined') return;
-				document.documentElement.setAttribute('data-theme', 'cupcake');
+	return new Promise(async (resolve, reject) => {
+		try {
+			if (typeof document === 'undefined') return (reject());
+
+			let value = await browser.get('theme') as { theme: string }
+
+			if (!value.theme) {
+				await browser.set({ theme: 'cupcake' });
+				value = { theme: 'cupcake' }
 			}
-			resolve();
-		});
+
+			theme.set(value?.theme);
+			document.documentElement.setAttribute('data-theme', value.theme);
+			resolve()
+		} catch (err) {
+			reject(err)
+		}
+
 	});
 }
 
 function loadKeyInfo(): Promise<void> {
-	return new Promise(async (resolve) => {
-		await Promise.all([getProfile(), loadWebSites(), loadRelays()]);
-		resolve();
+	return new Promise(async (resolve, reject) => {
+		try {
+			await Promise.all([getProfile(), loadWebSites(), loadRelays()]);
+			resolve();
+		} catch (err) {
+			reject(err)
+		}
+
 	});
 }
 
 function registerPrivateKey(value: string): Promise<void> {
-	return new Promise((resolve) => {
-		web.storage.local.set({ privateKey: value }, async () => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			await browser.set({ privateKey: value })
 			keyStore.set(value);
 			await loadKeyInfo();
 			resolve();
-		});
+		} catch (err) {
+			reject(err)
+		}
+
 	});
 }
 
-export async function loadRelays(): Promise<void> {
-	return new Promise((resolve) => {
-		web.storage.local.get('relays', (value) => {
-			relays.set(value.relays || []);
-			resolve(value.relays);
-		});
+export async function loadRelays(): Promise<Relay[]> {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const value = await browser.get('relays') as { relays: Relay[] }
+			relays.set(value?.relays || []);
+			resolve(value?.relays);
+		} catch (err) {
+			reject(err)
+		}
+
 	});
 }
 
-export async function loadPrivateKey(): Promise<void> {
-	return new Promise((resolve) => {
-		web.storage.local.get('privateKey', (value) => {
-			keyStore.set(value.privateKey);
-			resolve(value.privateKey);
+export async function loadPrivateKey(): Promise<string> {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const value = await browser.get('privateKey') as { privateKey: string }
+			keyStore.set(value?.privateKey || "");
+			resolve(value?.privateKey || "");
 			loadKeyInfo();
-		});
+		} catch (err) {
+			reject(err)
+		}
+
 	});
 }
 
-export async function loadWebSites(): Promise<{}> {
-	return new Promise((resolve) => {
-		web.storage.local.get('webSites', (value) => {
-			webSites.set(value.webSites);
-			resolve(value.webSites);
-		});
+export async function loadWebSites(): Promise<unknown> {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const value = await browser.get('webSites') as { webSites: unknown };
+			webSites.set(value?.webSites);
+			resolve(value?.webSites);
+		} catch (err) {
+			reject(err)
+		}
+
 	});
 }
 
-// TODO: Eanble this when the web extension is ready
+// TODO: Enable this when the web extension is ready
 // if (typeof document !== 'undefined')
 //  webSites.subscribe((value) => {
-//    web.storage.local.set({ webSites: value });
+//    browser.set({ webSites: value });
 //  });
 
 export async function getProfile(): Promise<void> {
@@ -158,37 +211,41 @@ export async function getProfile(): Promise<void> {
 			.then((event) => {
 				const profile = JSON.parse(event?.content || '{}');
 				userProfile.set(profile);
-				web.storage.local.set({ profile: profile });
+				browser.set({ profile: profile });
+			}).catch((err) => {
+				alert(err);
 			});
-	} catch (error) {
-		alert(error.message);
+	} catch (error: any) {
+		alert(error.message || "");
 	}
 
-	return new Promise((resolve) => {
-		web.storage.local.get('profile', (value) => {
-			userProfile.set(value.profile);
-			resolve(value.profile);
-		});
-	});
+	try {
+		const value = await browser.get('profile') as { profile: Profile }
+		userProfile.set(value?.profile);
+	} catch (err) {
+		alert(err)
+	}
+
+
 }
 
 export async function verifyKey(value: string): Promise<string> {
 	return new Promise(async (resolve, reject) => {
-		if (value.length < 63) {
+		if (value?.length < 63) {
 			reject('Invalid key');
 			return;
 		}
 
 		let decodedValue;
 
-		if (value.toString().startsWith('nsec')) {
+		if (value?.toString().startsWith('nsec')) {
 			try {
 				decodedValue = nip19.decode(value).data;
 			} catch (e) {
 				reject('Invalid key');
 				return;
 			}
-		} else if (value.length === 64) {
+		} else if (value?.length === 64) {
 			decodedValue = value;
 		} else {
 			reject('Invalid key');
@@ -204,7 +261,7 @@ export async function addKey(value: string): Promise<void> {
 
 	return new Promise(async (resolve, reject) => {
 		try {
-			let decodedValue = await verifyKey(value);
+			const decodedValue = await verifyKey(value);
 
 			await registerPrivateKey(decodedValue);
 			resolve();
@@ -215,50 +272,58 @@ export async function addKey(value: string): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
-	return new Promise(async (resolve) => {
-		let value = await web.storage.local.get('profileName');
-		await loadPrivateKey();
-		await loadKeyInfo();
+	return new Promise(async (resolve, reject) => {
+		try {
+			const value = await browser.get('profileName');
+			await loadPrivateKey();
+			await loadKeyInfo();
 
-		let _webSites = await web.storage.local.get('webSites');
-		let _relays = await web.storage.local.get('relays');
+			const _webSites = await browser.get('webSites');
+			const _relays = await browser.get('relays');
 
-		console.log(get(webSites), get(relays), _webSites, _relays);
-		const _profiles = get(profiles);
-		const profile = {
-			name: value.profileName,
-			data: {
-				privateKey: get(keyStore),
-				webSites: get(webSites),
-				relays: get(relays)
-			}
-		};
+			console.log(get(webSites), get(relays), _webSites, _relays);
+			const _profiles = get(profiles);
+			const profile = {
+				name: value.profileName,
+				data: {
+					privateKey: get(keyStore),
+					webSites: get(webSites),
+					relays: get(relays)
+				}
+			};
 
-		console.log(profile);
-		const index = _profiles.findIndex((p) => p.name === value.profileName);
-		_profiles[index] = profile;
-		await web.storage.local.set({ profiles: _profiles });
+			console.log(profile);
+			const index = _profiles.findIndex((p) => p.name === value.profileName);
+			_profiles[index] = profile;
+			await browser.set({ profiles: _profiles });
 
-		relays.set([]);
-		keyStore.set('');
-		userProfile.set({});
-		webSites.set({});
-		return new Promise(async (resolve) => {
-			await web.storage.local.set({ privateKey: '' }, async () => {
-				await web.storage.local.set({ profile: '' }, () => {
-					resolve();
-				});
+			relays.set([]);
+			keyStore.set('');
+			userProfile.set({});
+			webSites.set({});
+			return new Promise(async () => {
+				await browser.set({ privateKey: '' })
+				await browser.set({ profile: '' })
+				resolve()
 			});
-		});
+		} catch (err) {
+			reject(err)
+		}
+
 	});
 }
 
 export async function isProfileExist(name: string, key: string): Promise<string> {
-	const _profiles = get(profiles);
-	const pkey = await verifyKey(key);
-	return _profiles.findIndex((p: Profile) => p.name === name || p?.data?.privateKey === pkey) !== -1
-		? ''
-		: pkey;
+	try {
+		const _profiles = get(profiles);
+		const pkey = await verifyKey(key);
+		return _profiles.findIndex((p: Profile) => p.name === name || p?.data?.privateKey || "" === pkey) !== -1
+			? ''
+			: pkey;
+	} catch (err) {
+		alert(err)
+	}
+	return new Promise(() => { });
 }
 
 export async function createProfile(name: string, key: string): Promise<boolean> {
@@ -276,7 +341,7 @@ export async function createProfile(name: string, key: string): Promise<boolean>
 				return;
 			}
 
-			let profile: Profile = {
+			const profile: Profile = {
 				name: name,
 				data: {
 					privateKey: privateKey,
@@ -297,7 +362,7 @@ export async function deleteProfile(
 	profile: Profile,
 	method: ProfileDeleteMethod = ProfileDeleteMethod.DEFAULT
 ): Promise<void> {
-	return new Promise(async (resolve) => {
+	return new Promise((resolve) => {
 		if (method === ProfileDeleteMethod.DEFAULT) {
 			const _profiles = get(profiles);
 			const index = _profiles.findIndex((p) => p.name === profile.name);
@@ -309,66 +374,125 @@ export async function deleteProfile(
 	});
 }
 
+
 export async function settingProfile(profile: Profile): Promise<void> {
-	return new Promise((resolve) => {
-		web.storage.local.set({ profile: '' });
-		web.storage.local.set({ privateKey: profile.data.privateKey });
-		web.storage.local.set({ profileName: profile.name });
-		web.storage.local.set({ webSites: profile.data.webSites });
-		web.storage.local.set({ relays: profile.data.relays });
-		resolve();
+	return new Promise(async (resolve, reject) => {
+		const data: ProfileSetting = {
+			profile: '',
+			privateKey: (profile.data?.privateKey as string),
+			profileName: (profile.name as string),
+			webSites: (profile.data?.webSites as object),
+			relays: (profile.data?.relays as Relay[])
+		}
+		try {
+			await browser.set(data);
+			resolve();
+		} catch (err) {
+			reject(err)
+		}
+
 	});
 }
 
 export async function loadProfile(profile: Profile): Promise<boolean> {
 	return new Promise(async (resolve, reject) => {
-		if (profile.data === undefined || profile.data.privateKey === undefined) reject(false);
-		else {
-			keyStore.set(profile.data.privateKey);
-			await settingProfile(profile);
-			await loadPrivateKey();
-			alert('loaded from here');
-			resolve(true);
+		try {
+			if (profile.data === undefined || profile?.data?.privateKey === undefined) reject(false);
+			else {
+				keyStore.set(profile?.data?.privateKey || "");
+				await settingProfile(profile);
+				await loadPrivateKey();
+				resolve(true);
+			}
+		} catch (err) {
+			reject(err)
 		}
+
 	});
 }
 
+
 export const profileControlleur: {
-	createProfile: (name: string, key: string) => Promise<boolean> | any;
-	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void> | any;
-	logout: () => Promise<void> | any;
-	addKey: (value: string) => Promise<void> | any;
-	verifyKey: (value: string) => Promise<string> | any;
-	loadKeyInfo: () => Promise<void> | any;
-	loadPrivateKey: () => Promise<void> | any;
-	loadWebSites: () => Promise<{}> | any;
-	getProfile: () => Promise<void> | any;
-	loadRelays: () => Promise<void> | any;
-	loadTheme: () => Promise<void> | any;
-	switchTheme: (themeName: string) => Promise<void> | any;
-	updateNotification: (name: string) => Promise<void> | any;
-	loadNotifications: () => Promise<void> | any;
-	saveProfiles: () => Promise<void> | any;
-	loadProfiles: () => Promise<void> | any;
-	loadProfile: (profile: Profile) => Promise<boolean> | any;
-	settingProfile: (profile: Profile) => Promise<void> | any;
+	createProfile: (name: string, key: string) => Promise<boolean>;
+	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
+	logout: () => Promise<void>;
+	addKey: (value: string) => Promise<void>;
+	verifyKey: (value: string) => Promise<string>;
+	loadKeyInfo: () => Promise<void>
+	loadPrivateKey: () => Promise<string>
+	loadWebSites: () => Promise<unknown>
+	getProfile: () => Promise<void>
+	loadRelays: () => Promise<Relay[]>
+	loadTheme: () => Promise<void>
+	switchTheme: (themeName: string) => Promise<void>
+	updateNotification: (name: string) => Promise<void>
+	loadNotifications: () => Promise<void>
+	saveProfiles: () => Promise<void>
+	loadProfiles: () => Promise<Writable<Profile[]>>
+	loadProfile: (profile: Profile) => Promise<boolean>
+	settingProfile: (profile: Profile) => Promise<void>
 } = {
-	createProfile: typeof window === 'undefined' ? () => {} : createProfile,
-	deleteProfile: typeof window === 'undefined' ? () => {} : deleteProfile,
-	logout: typeof window === 'undefined' ? () => {} : logout,
-	addKey: typeof window === 'undefined' ? () => {} : addKey,
-	verifyKey: typeof window === 'undefined' ? () => {} : verifyKey,
-	loadKeyInfo: typeof window === 'undefined' ? () => {} : loadKeyInfo,
-	loadPrivateKey: typeof window === 'undefined' ? () => {} : loadPrivateKey,
-	loadWebSites: typeof window === 'undefined' ? () => {} : loadWebSites,
-	getProfile: typeof window === 'undefined' ? () => {} : getProfile,
-	loadRelays: typeof window === 'undefined' ? () => {} : loadRelays,
-	loadTheme: typeof window === 'undefined' ? () => {} : loadTheme,
-	switchTheme: typeof window === 'undefined' ? () => {} : switchTheme,
-	updateNotification: typeof window === 'undefined' ? () => {} : updateNotification,
-	loadNotifications: typeof window === 'undefined' ? () => {} : loadNotifications,
-	saveProfiles: typeof window === 'undefined' ? () => {} : saveProfiles,
-	loadProfiles: typeof window === 'undefined' ? () => {} : loadProfiles,
-	loadProfile: typeof window === 'undefined' ? () => {} : loadProfile,
-	settingProfile: typeof window === 'undefined' ? () => {} : settingProfile
+	createProfile: createProfile,
+	deleteProfile: deleteProfile,
+	logout: logout,
+	addKey: addKey,
+	verifyKey: verifyKey,
+	loadKeyInfo: loadKeyInfo,
+	loadPrivateKey: loadPrivateKey,
+	loadWebSites: loadWebSites,
+	getProfile: getProfile,
+	loadRelays: loadRelays,
+	loadTheme: loadTheme,
+	switchTheme: switchTheme,
+	updateNotification: updateNotification,
+	loadNotifications: loadNotifications,
+	saveProfiles: saveProfiles,
+	loadProfiles: loadProfiles,
+	loadProfile: loadProfile,
+	settingProfile: settingProfile
 };
+
+
+// [IMPORTANT] NEEDED ON TEST ------------->
+
+
+// export const profileControlleur: {
+// 	createProfile: (name: string, key: string) => Promise<boolean> | unknown;
+// 	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void> | unknown;
+// 	logout: () => Promise<void> | unknown;
+// 	addKey: (value: string) => Promise<void> | unknown;
+// 	verifyKey: (value: string) => Promise<string> | unknown;
+// 	loadKeyInfo: () => Promise<void> | unknown;
+// 	loadPrivateKey: () => Promise<void> | unknown;
+// 	loadWebSites: () => Promise<unknown> | unknown;
+// 	getProfile: () => Promise<void> | unknown;
+// 	loadRelays: () => Promise<void> | unknown;
+// 	loadTheme: () => Promise<void> | unknown;
+// 	switchTheme: (themeName: string) => Promise<void> | unknown;
+// 	updateNotification: (name: string) => Promise<void> | unknown;
+// 	loadNotifications: () => Promise<void> | unknown;
+// 	saveProfiles: () => Promise<void> | unknown;
+// 	loadProfiles: () => Promise<void> | unknown;
+// 	loadProfile: (profile: Profile) => Promise<boolean> | unknown;
+// 	settingProfile: (profile: Profile) => Promise<void> | unknown;
+// } = {
+// 	createProfile: typeof window === 'undefined' ? () => { } : createProfile,
+// 	deleteProfile: typeof window === 'undefined' ? () => { } : deleteProfile,
+// 	logout: typeof window === 'undefined' ? () => { } : logout,
+// 	addKey: typeof window === 'undefined' ? () => { } : addKey,
+// 	verifyKey: typeof window === 'undefined' ? () => { } : verifyKey,
+// 	loadKeyInfo: typeof window === 'undefined' ? () => { } : loadKeyInfo,
+// 	loadPrivateKey: typeof window === 'undefined' ? () => { } : loadPrivateKey,
+// 	loadWebSites: typeof window === 'undefined' ? () => { } : loadWebSites,
+// 	getProfile: typeof window === 'undefined' ? () => { } : getProfile,
+// 	loadRelays: typeof window === 'undefined' ? () => { } : loadRelays,
+// 	loadTheme: typeof window === 'undefined' ? () => { } : loadTheme,
+// 	switchTheme: typeof window === 'undefined' ? () => { } : switchTheme,
+// 	updateNotification: typeof window === 'undefined' ? () => { } : updateNotification,
+// 	loadNotifications: typeof window === 'undefined' ? () => { } : loadNotifications,
+// 	saveProfiles: typeof window === 'undefined' ? () => { } : saveProfiles,
+// 	loadProfiles: typeof window === 'undefined' ? () => { } : loadProfiles,
+// 	loadProfile: typeof window === 'undefined' ? () => { } : loadProfile,
+// 	settingProfile: typeof window === 'undefined' ? () => { } : settingProfile
+// };
+

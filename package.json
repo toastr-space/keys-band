@@ -8,7 +8,7 @@
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"nodemon": "nodemon --watch 'src/**/*.ts' --watch 'src/**/*.js' --watch 'static/**/*' --exec \"vite build && npx esbuild ./src/lib/services/background.ts --bundle --outdir=build/ && npx esbuild ./src/lib/services/content.ts --bundle --outdir=build/\"",
+		"nodemon": "nodemon --ext 'ts,js,svelte' --watch './src/**' --watch 'src/**' --watch 'src/**/*' --watch 'static/**' --exec \"vite build && npx esbuild ./src/lib/services/background.ts --bundle --outdir=build/ && npx esbuild ./src/lib/services/content.ts --bundle --outdir=build/\"",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write ."
 	},
