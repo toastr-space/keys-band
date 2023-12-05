@@ -44,7 +44,19 @@
 	}
 </script>
 
-<!-- Section 1 -->
+<!-- Header -->
+<div class="items-stretch self-stretch flex w-full justify-between gap-3">
+	<button type="button" class="btn-icon bg-surface-400 dark:bg-black pl-0">
+		<Icon icon="mdi:chevron-left" class="text-black dark:text-white" width={36} />
+	</button>
+	<div
+		class="text-white text-2xl font-semibold leading-7 self-center grow whitespace-nowrap my-auto"
+	>
+		Settings
+	</div>
+</div>
+
+<!-- Relays -->
 <div
 	class="justify-center items-stretch bg-surface-400 dark:bg-black bg-opacity-50 self-stretch flex w-full flex-col mt-3 p-4 rounded-2xl"
 >
