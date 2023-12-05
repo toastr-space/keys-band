@@ -82,7 +82,7 @@
 </div>
 
 <div
-	class="card w-42 shadow-xl backdrop-blur-xl bg-zinc-800 bg-opacity-70 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
+	class="card w-42 shadow-xl backdrop-blur-xl bg-zinc-400 dark:bg-zinc-800 bg-opacity-70 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
 	data-popup="durationDropdownMenu"
 >
 	<nav class="list-nav">
@@ -91,12 +91,14 @@
 				<li
 					class="justify-center items-stretch self-stretch flex w-full flex-col mt-3 border-t-[0.33px] border-t-white border-t-opacity-30 border-solid"
 				>
-					<div class="justify-between items-stretch flex w-full gap-5 background-teal-400">
+					<div class="justify-between items-stretch flex w-full gap-5">
 						<div class="items-stretch flex justify-between gap-3">
 							<button on:click={() => selectDuration(option)}>
-								<div class="text-white text-base self-center my-auto">{option.name}</div>
+								<div class="text-white dark:text-white text-base self-center my-auto">
+									{option.name}
+								</div>
 								{#if duration.name === option.name}
-									<Icon icon="mdi:check" width={22} class="text-teal-400" />
+									<Icon icon="mdi:check" width={22} class="text-pink-400 dark:text-teal-400" />
 								{/if}
 							</button>
 						</div>

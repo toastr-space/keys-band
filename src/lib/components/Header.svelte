@@ -99,7 +99,7 @@
 	</div>
 
 	<div
-		class="card w-72 shadow-xl backdrop-blur-xl bg-zinc-800 bg-opacity-70 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
+		class="card w-72 shadow-xl backdrop-blur-xl bg-zinc-400 dark:bg-zinc-800 bg-opacity-70 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
 		data-popup="accountDropdownMenu"
 	>
 		<nav class="list-nav">
@@ -115,14 +115,16 @@
 										rounded="rounded-full"
 									/>
 
-									<div class="text-black dark:text-white text-base self-center my-auto">
+									<div
+										class="text-black dark:text-black dark:text-white text-base self-center my-auto"
+									>
 										Elisa Keys
 									</div>
-									<Icon icon="mdi:check" width={22} class="text-teal-400" />
+									<Icon icon="mdi:check" width={22} class="text-pink-400 dark:text-teal-400" />
 								</a>
 							</div>
 							<button
-								class="btn background-surface-900"
+								class="btn bg-surface-400 dark:bg-surface-900"
 								on:click={() => console.log('delete account')}
 							>
 								<Icon icon="mdi:trash-can-outline" width={22} />
