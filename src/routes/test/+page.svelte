@@ -15,20 +15,20 @@
 
 <div class="w-full">
 	<div
-		class="flex flex-col w-full m-16 bg-surface-900 rounded-3xl border border-surface-600 p-[12px]"
+		class="flex flex-col w-full m-16 bg-white dark:bg-surface-900 rounded-3xl border border-surface-300 dark:border-surface-600 p-[12px]"
 	>
 		<Header />
 		<AuthorizedApp />
 		<RecentActivity />
 	</div>
 	<div
-		class="flex flex-col w-full m-16 bg-surface-900 rounded-3xl border border-surface-600 p-[12px]"
+		class="flex flex-col w-full m-16 bg-white dark:bg-surface-900 rounded-3xl border border-surface-300 dark:border-surface-600 p-[12px]"
 	>
 		<Header />
 		<AuthorizationNew {parameter} isPopup={true} domain={domainToUrl(parameter?.get('url'))} />
 	</div>
 	<div
-		class="flex flex-col w-full m-16 bg-surface-900 rounded-3xl border border-surface-600 p-[12px]"
+		class="flex flex-col w-full m-16 bg-white dark:bg-surface-900 rounded-3xl border border-surface-300 dark:border-surface-600 p-[12px]"
 	>
 		<SettingsHeader />
 		<SettingsNew />

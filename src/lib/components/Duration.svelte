@@ -57,17 +57,17 @@
 </script>
 
 <div
-	class="justify-center items-stretch bg-black bg-opacity-30 flex w-full flex-col mt-3 p-4 rounded-2xl"
+	class="justify-center items-stretch bg-surface-400 dark:bg-black bg-opacity-50 flex w-full flex-col mt-3 p-4 rounded-2xl"
 >
 	<div
-		class="text-white text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
+		class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
 	>
 		DURATION
 	</div>
 	<div class="items-center flex gap-3 mt-2 pr-20 max-md:pr-5">
-		<div class="text-white text-base leading-5 my-auto">Allow</div>
+		<div class="text-black dark:text-white text-base leading-5 my-auto">Allow</div>
 		<button
-			class="btn background-surface-900"
+			class="btn bg-surface-400 dark:bg-surface-900 bg-opacity-30"
 			use:popup={durationDropdownMenu}
 			on:click={() => (durationDropdownMenuOpen = !durationDropdownMenuOpen)}
 		>

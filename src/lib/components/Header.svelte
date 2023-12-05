@@ -30,10 +30,10 @@
 {#if ready}
 	<div class="items-stretch flex w-full justify-between gap-3">
 		<div
-			class="justify-center items-stretch bg-black bg-opacity-50 flex grow basis-[0%] flex-col p-4 rounded-2xl"
+			class="justify-center items-stretch bg-surface-400 dark:bg-black bg-opacity-50 flex grow basis-[0%] flex-col p-4 rounded-2xl"
 		>
 			<div
-				class="text-white text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
+				class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
 			>
 				ACCOUNT
 			</div>
@@ -50,7 +50,7 @@
 							rounded="rounded-full"
 						/>
 						<div
-							class="text-white text-2xl font-semibold leading-7 self-center grow whitespace-nowrap my-auto"
+							class="text-black dark:text-white text-2xl font-semibold leading-7 self-center grow whitespace-nowrap my-auto"
 						>
 							Elisa Keys
 							<!-- {#if $userProfile?.name}
@@ -72,13 +72,14 @@
 		</div>
 		<div class="flex flex-col h-full justify-between space-y-3 w-14 items-center">
 			<button
-				class="justify-center bg-black bg-opacity-50 flex flex-col py-1.5 rounded-3xl 2xl h-11 w-16"
+				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex flex-col py-1.5 rounded-3xl 2xl h-11 w-16"
 				on:click={() => {
 					$theme = $theme === 'dark' ? 'light' : 'dark';
+					profileControlleur.switchTheme($theme);
 				}}
 			>
 				<div
-					class="justify-center bg-[#333333A8] bg-opacity-70 flex flex-col px-2 py-1.5 rounded-full h-8 w-8 transition-all"
+					class="justify-center bg-surface-500 dark:bg-[#333333A8] bg-opacity-70 flex flex-col px-2 py-1.5 rounded-full h-8 w-8 transition-all"
 					class:ml-1={$theme === 'dark'}
 					class:ml-7={$theme === 'light'}
 				>
@@ -86,8 +87,8 @@
 				</div>
 			</button>
 			<button
-				class="justify-center bg-black bg-opacity-50
-      flex items-center flex-col py-1.5 rounded-3xl h-11 w-16 hover:bg-surface-800
+				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50
+      flex items-center flex-col py-1.5 rounded-3xl h-11 w-16
       pressed:bg-surface-900
       aria-pressed:scale-95
       "
@@ -114,7 +115,9 @@
 										rounded="rounded-full"
 									/>
 
-									<div class="text-white text-base self-center my-auto">Elisa Keys</div>
+									<div class="text-black dark:text-white text-base self-center my-auto">
+										Elisa Keys
+									</div>
 									<Icon icon="mdi:check" width={22} class="text-teal-400" />
 								</a>
 							</div>

@@ -2,62 +2,59 @@ import { skeleton } from '@skeletonlabs/tw-plugin';
 import { join } from 'path';
 
 export default {
-	content: ["./src/**/*.{html,js,svelte,ts}", join(require.resolve(
-		'@skeletonlabs/skeleton'),
-		'../**/*.{html,js,svelte,ts}')],
+	content: [
+		'./src/**/*.{html,js,svelte,ts}',
+		join(require.resolve('@skeletonlabs/skeleton'), '../**/*.{html,js,svelte,ts}')
+	],
 
 	darkMode: 'class',
 	plugins: [
-		require("@tailwindcss/typography"),
+		require('@tailwindcss/typography'),
 		skeleton({
 			themes: {
 				preset: [
 					{
 						name: 'skeleton',
-						enhancements: true,
+						enhancements: true
 					},
 					{
 						name: 'wintry',
-						enhancements: true,
+						enhancements: true
 					},
 					{
 						name: 'modern',
-						enhancements: true,
+						enhancements: true
 					},
 					{
 						name: 'hamlindigo',
-						enhancements: true,
+						enhancements: true
 					},
 					{
 						name: 'rocket',
-						enhancements: true,
+						enhancements: true
 					},
 					{
 						name: 'sahara',
-						enhancements: true,
+						enhancements: true
 					},
 					{
 						name: 'gold-nouveau',
-						enhancements: true,
+						enhancements: true
 					},
 					{
 						name: 'vintage',
-						enhancements: true,
+						enhancements: true
 					},
 					{
 						name: 'seafoam',
-						enhancements: true,
+						enhancements: true
 					},
 					{
 						name: 'crimson',
-						enhancements: true,
-					},
-				],
-			},
-		}),
-	],
-	// daisyui: {
-	// 	themes: ["light", "dark", "cyberpunk", "lofi", "black", "forest", "dracula", "cupcake"],
-	// },
-}
-
+						enhancements: true
+					}
+				]
+			}
+		})
+	]
+};

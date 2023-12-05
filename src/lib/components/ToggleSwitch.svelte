@@ -12,8 +12,10 @@
 
 <button
 	class="justify-center flex flex-col rounded-3xl 2xl h-7 w-12"
-	class:bg-teal-400={isToggled}
-	class:bg-zinc-800={!isToggled}
+	class:bg-pink-400={isToggled}
+	class:bg-zinc-400={!isToggled}
+	class:dark:bg-teal-400={isToggled}
+	class:dark:bg-zinc-800={!isToggled}
 	on:click={toggle}
 >
 	<div
