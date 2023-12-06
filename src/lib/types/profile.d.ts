@@ -2,7 +2,13 @@
 export interface Profile {
     name?: string;
     id?: string;
+    metadata?: {
+        name?: string;
+        picture?: string;
+        nip05?: string;
+    }
     data?: {
+        pubkey?: string;
         privateKey?: string;
         webSites?: object;
         relays?: Relay[];
@@ -39,6 +45,7 @@ interface ProfileSetting {
     privateKey: string,
     profileName: string,
     webSites: object,
+    pubkey: string,
     relays: Relay[]
 }
 

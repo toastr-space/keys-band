@@ -45,7 +45,7 @@
 
 	loadWebSites()
 		.then(() => {
-			currentSite = $webSites[domainToUrl(_currentTab.url)];
+			currentSite = $webSites[domainToUrl(_currentTab?.url || "")];
 			if (currentSite === undefined) {
 				currentSite = { history: [] };
 			}
@@ -263,13 +263,13 @@
 							<!-- row 1 -->
 							{#each $relays as relay}
 								<tr>
-									<td>{relay.url}</td>
+									<td>{relay?.url}</td>
 									<td class="flex space-x-2">
 										<button
 											class="btn btn-xs h-8"
 											on:click={() => {
 												// copy
-												navigator.clipboard.writeText(relay.url);
+												navigator.clipboard.writeText(relay?.url);
 												showNotification('copied to clipboard');
 											}}
 										>
@@ -295,7 +295,7 @@
 											class="btn btn-xs h-8"
 											on:click={() => {
 												// remove
-												relays.set($relays.filter((r) => r.url !== relay.url));
+												relays.set($relays.filter((r) => r?.url !== relay?.url));
 												web?.storage?.local?.set({
 													relays: $relays
 												});

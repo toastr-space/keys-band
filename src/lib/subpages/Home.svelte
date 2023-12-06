@@ -68,8 +68,8 @@
 			if (_webSites === null || _webSites === undefined) {
 				_webSites = {};
 			}
-			if (Object.keys(_webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
-				webSite = _webSites[domainToUrl(currentTab.url)];
+			if (Object.keys(_webSites).indexOf(domainToUrl(currentTab?.url)) !== -1)
+				webSite = _webSites[domainToUrl(currentTab?.url)];
 
 			timerExpire = remainingTime(new Date(webSite.permission.authorizationStop));
 			const splitedTimerExpire = timerExpire.split(':');
@@ -88,15 +88,15 @@
 
 	{#if showAuthorization}
 		<Authorization
-			domain={domainToUrl(currentTab.url)}
+			domain={domainToUrl(currentTab?.url)}
 			isPopup={false}
 			parameter={null}
 			on:cancel={() => {
 				profileControlleur
 					.loadWebSites()
 					.then(() => {
-						if (Object.keys($webSites).indexOf(domainToUrl(currentTab.url)) !== -1)
-							webSite = $webSites[domainToUrl(currentTab.url)];
+						if (Object.keys($webSites).indexOf(domainToUrl(currentTab?.url)) !== -1)
+							webSite = $webSites[domainToUrl(currentTab?.url)];
 					})
 					.catch((err) => {
 						alert(err);
@@ -107,7 +107,7 @@
 	{:else}
 		<div class="w-full h-full flex flex-row flex-col p-10 pt-5 space-y-6">
 			<h1 class="text-center text-2xl font-bold font-sans">
-				{domainToUrl(currentTab.url)}
+				{domainToUrl(currentTab?.url)}
 			</h1>
 			{#if webSite.auth === true}
 				<div class="stats shadow-sm bg-base-200">

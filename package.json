@@ -8,7 +8,7 @@
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"nodemon": "nodemon --ext 'ts,js,svelte' --watch './src/**' --watch 'src/**' --watch 'src/**/*' --watch 'static/**' --exec \"vite build && npx esbuild ./src/lib/services/background.ts --bundle --outdir=build/ && npx esbuild ./src/lib/services/content.ts --bundle --outdir=build/\"",
+		"nodemon": "nodemon --ext '*' --watch 'src/' --exec \"vite build && npx esbuild ./src/lib/services/background.ts --bundle --outdir=build/ && npx esbuild ./src/lib/services/content.ts --bundle --outdir=build/\"",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write ."
 	},
@@ -26,6 +26,7 @@
 		"eslint": "^8.28.0",
 		"eslint-config-prettier": "^9.0.0",
 		"eslint-plugin-svelte": "^2.30.0",
+		"nodemon": "^3.0.2",
 		"postcss": "^8.4.24",
 		"postcss-load-config": "^4.0.1",
 		"prettier": "^3.0.0",

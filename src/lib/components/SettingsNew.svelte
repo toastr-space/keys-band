@@ -67,19 +67,9 @@
 	</div>
 	{#each $relays as relay}
 		<div class="justify-between items-stretch flex gap-5 mt-2">
-			<div class="text-black dark:text-white text-base leading-5 my-auto">{relay.url}</div>
+			<div class="text-black dark:text-white text-base leading-5 my-auto">{relay?.url}</div>
 			<div class="justify-center items-stretch">
-				<button
-					class="btn-icon btn-icon-sm bg-pink-400 dark:bg-teal-400"
-					on:click={() => {
-						// remove
-						// relays.set($relays.filter((r) => r.url !== relay.url));
-						// web?.storage?.local?.set({
-						// 	relays: $relays
-						// });
-						//showNotification('relay removed');
-					}}
-				>
+				<button class="btn-icon btn-icon-sm bg-pink-400 dark:bg-teal-400" on:click={() => {}}>
 					<Icon icon="mdi:delete" class="text-black" />
 				</button>
 			</div>

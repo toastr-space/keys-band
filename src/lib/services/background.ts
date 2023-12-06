@@ -121,7 +121,7 @@ async function makeResponse(type: string, data: any, domain: string) {
     case "getRelays":
       res = await loadRelays();
       res = res.map((relay) => {
-        return { url: relay.url };
+        return { url: relay?.url };
       });
       break;
     case "signEvent":

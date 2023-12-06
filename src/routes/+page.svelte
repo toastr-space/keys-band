@@ -26,21 +26,23 @@
 		try {
 			await profileControlleur.createProfile(name, key);
 		} catch (err) {
-			alert(err);
+			if (typeof document !== 'undefined') {
+				alert(err);
+			}
 		}
 	};
 
 	profileControlleur.loadPrivateKey();
-	profileControlleur.loadTheme();
-	profileControlleur.loadProfiles();
+	//profileControlleur.loadTheme();
+	profileControlleur.loadProfiles().then(function (rs) {});
 </script>
 
 {#if $keyStore !== '' && $keyStore !== undefined}
-	<div class="w-full h-full flex flex-wrap fixed-width bg-[#222222]">
+	<div class="w-full h-full flex flex-wrap fixed-width gap-2 bg-[#222222]">
 		<div class="w-full h-24 p-3">
 			<Header />
 		</div>
-		<div class="w-full h-full pt-2">
+		<div class="w-full h-full pt-2 gap-2">
 			{#if currentPage === Page.Home}
 				<Home />
 			{:else if currentPage === Page.Settings}

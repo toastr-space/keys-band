@@ -3,11 +3,19 @@
 	import { popup, Avatar } from '@skeletonlabs/skeleton';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
 
-	import { userProfile, theme } from '../stores/data';
+	import { userProfile, theme, profiles } from '../stores/data';
 	import { onMount } from 'svelte';
 	import { profileControlleur } from '$lib/stores/key-store';
+	import type { Profile } from '$lib/types/profile';
+	import { Writable, writable } from 'svelte/store';
 
 	let accountDropdownMenuOpen = false;
+
+	let profile: Writable<Profile> = writable();
+
+	userProfile.subscribe((value) => {
+		profile.set(value);
+	});
 
 	const accountDropdownMenu: PopupSettings = {
 		event: 'click',
@@ -17,6 +25,10 @@
 	};
 
 	let ready: boolean = false;
+
+	function loadThisProfile(profile: Profile) {
+		profileControlleur.loadProfile(profile);
+	}
 	onMount(async () => {
 		try {
 			await profileControlleur.loadProfiles();
@@ -28,49 +40,40 @@
 </script>
 
 {#if ready}
-	<div class="items-stretch flex w-full justify-between gap-3">
+	<div class="flex flex-row w-full justify-between gap-2">
 		<div
-			class="justify-center items-stretch bg-surface-400 dark:bg-black bg-opacity-50 flex grow basis-[0%] flex-col p-4 rounded-2xl"
+			class="bg-surface-400 dark:bg-black bg-opacity-50 flex flex-col p-4 pb-2 rounded-2xl flex-grow gap-1"
 		>
 			<div
 				class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
 			>
 				ACCOUNT
 			</div>
-			<div class="flex flex-row gap-3 mt-2 pr-0.5 items-center">
-				<div class="items-stretch flex justify-between gap-3">
-					<button
-						class="btn background-surface-900 pl-0 justify-between items-center flex gap-1"
-						use:popup={accountDropdownMenu}
-						on:click={() => (accountDropdownMenuOpen = !accountDropdownMenuOpen)}
+			<button
+				class="btn background-surface-700 pl-0 items-center"
+				use:popup={accountDropdownMenu}
+				on:click={() => (accountDropdownMenuOpen = !accountDropdownMenuOpen)}
+			>
+				<span class="flex flex-row gap-2 items-center justify-between w-[250px]">
+					<img
+						src={profile?.picture || 'https://toastr.space/images/toastr.png'}
+						alt="Avatar"
+						class="rounded-full avatar w-10"
+					/>
+					<div
+						class="text-black dark:text-white text-xl font-semibold leading-7 text-ellipsis overflow-hidden flex-grow my-auto"
 					>
-						<Avatar
-							src={$userProfile?.picture || 'https://toastr.space/images/toastr.png'}
-							width="w-10"
-							rounded="rounded-full"
-						/>
-						<div
-							class="text-black dark:text-white text-2xl font-semibold leading-7 self-center grow whitespace-nowrap my-auto"
-						>
-							Elisa Keys
-							<!-- {#if $userProfile?.name}
-						{$userProfile?.name?.length > 12
-							? $userProfile?.name.substr(0, 12) + '...'
-							: $userProfile?.name || getPublicKey($keyStore).substr(0, 16)}
-					{:else}
-						{getPublicKey($keyStore).substr(0, 10)}
-					{/if} -->
-						</div>
-						<Icon
-							icon={accountDropdownMenuOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
-							width={28}
-							class="ml-2 mt-1"
-						/>
-					</button>
-				</div>
-			</div>
+						{profile?.name || $userProfile.nip05 || ''}
+					</div>
+					<Icon
+						icon={accountDropdownMenuOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+						width={28}
+						class="ml-2 mt-1"
+					/>
+				</span>
+			</button>
 		</div>
-		<div class="flex flex-col h-full justify-between space-y-3 w-14 items-center">
+		<div class="flex flex-col h-full justify-between gap-3 w-36 items-center">
 			<button
 				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex flex-col py-1.5 rounded-3xl 2xl h-11 w-16"
 				on:click={() => {
@@ -104,13 +107,13 @@
 	>
 		<nav class="list-nav">
 			<ul>
-				{#each [] as account}
+				{#each $profiles as profile}
 					<li class="justify-center items-stretch self-stretch flex w-full flex-col">
 						<div class="justify-between items-stretch flex w-full gap-5">
 							<div class="items-stretch flex justify-between gap-3">
-								<a href="/">
+								<button on:click={() => loadThisProfile(profile)}>
 									<Avatar
-										src={$userProfile?.picture || 'https://toastr.space/images/toastr.png'}
+										src={'https://toastr.space/images/toastr.png'}
 										width="w-10"
 										rounded="rounded-full"
 									/>
@@ -118,15 +121,12 @@
 									<div
 										class="text-black dark:text-black dark:text-white text-base self-center my-auto"
 									>
-										Elisa Keys
+										{profile?.name}
 									</div>
 									<Icon icon="mdi:check" width={22} class="text-pink-400 dark:text-teal-400" />
-								</a>
+								</button>
 							</div>
-							<button
-								class="btn bg-surface-400 dark:bg-surface-900"
-								on:click={() => console.log('delete account')}
-							>
+							<button class="btn bg-transparent" on:click={() => console.log('delete account')}>
 								<Icon icon="mdi:trash-can-outline" width={22} />
 							</button>
 						</div>
