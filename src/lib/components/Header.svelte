@@ -1,21 +1,15 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
-	import { popup, Avatar } from '@skeletonlabs/skeleton';
+	import type { Profile } from '$lib/types/profile';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
 
-	import { userProfile, theme, profiles } from '../stores/data';
-	import { onMount } from 'svelte';
+	import Icon from '@iconify/svelte';
+
+	import { Page } from '$lib/types/page';
+	import { popup, Avatar } from '@skeletonlabs/skeleton';
 	import { profileControlleur } from '$lib/stores/key-store';
-	import type { Profile } from '$lib/types/profile';
-	import { Writable, writable } from 'svelte/store';
+	import { userProfile, theme, profiles, currentPage } from '../stores/data';
 
 	let accountDropdownMenuOpen = false;
-
-	let profile: Writable<Profile> = writable();
-
-	userProfile.subscribe((value) => {
-		profile.set(value);
-	});
 
 	const accountDropdownMenu: PopupSettings = {
 		event: 'click',
@@ -24,23 +18,11 @@
 		state: () => (accountDropdownMenuOpen = false)
 	};
 
-	let ready: boolean = false;
-
-	function loadThisProfile(profile: Profile) {
-		profileControlleur.loadProfile(profile);
-	}
-	onMount(async () => {
-		try {
-			await profileControlleur.loadProfiles();
-			ready = true;
-		} catch (err) {
-			alert(err);
-		}
-	});
+	const load = (profile: Profile) => profileControlleur.loadProfile(profile);
 </script>
 
-{#if ready}
-	<div class="flex flex-row w-full justify-between gap-2">
+<div class="flex flex-row w-full justify-between gap-2">
+	{#if $currentPage === Page.Home}
 		<div
 			class="bg-surface-400 dark:bg-black bg-opacity-50 flex flex-col p-4 pb-2 rounded-2xl flex-grow gap-1"
 		>
@@ -56,14 +38,14 @@
 			>
 				<span class="flex flex-row gap-2 items-center justify-between w-[250px]">
 					<img
-						src={profile?.picture || 'https://toastr.space/images/toastr.png'}
+						src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
 						alt="Avatar"
 						class="rounded-full avatar w-10"
 					/>
 					<div
 						class="text-black dark:text-white text-xl font-semibold leading-7 text-ellipsis overflow-hidden flex-grow my-auto"
 					>
-						{profile?.name || $userProfile.nip05 || ''}
+						{$userProfile?.metadata?.name || $userProfile?.name || 'Loading...'}
 					</div>
 					<Icon
 						icon={accountDropdownMenuOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
@@ -90,62 +72,83 @@
 				</div>
 			</button>
 			<button
-				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50
-      flex items-center flex-col py-1.5 rounded-3xl h-11 w-16
-      pressed:bg-surface-900
-      aria-pressed:scale-95
-      "
+				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex items-center flex-col py-1.5 rounded-3xl h-11 w-16 pressed:bg-surface-900 aria-pressed:scale-95"
+				on:click={() => {
+					$currentPage = Page.Settings;
+				}}
 			>
 				<Icon icon="mdi:cog-outline" width={22} />
 			</button>
 		</div>
-	</div>
+		<div
+			class="card w-72 shadow-xl backdrop-blur-xl bg-zinc-400 dark:bg-zinc-800 bg-opacity-70 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
+			data-popup="accountDropdownMenu"
+		>
+			<nav class="list-nav">
+				<ul>
+					{#each $profiles as profile}
+						<li class="justify-center items-stretch self-stretch flex w-full flex-col">
+							<div class="justify-between items-stretch flex w-full gap-5">
+								<div class="items-stretch flex justify-between gap-3">
+									<button on:click={() => load(profile)}>
+										<Avatar
+											src={profile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
+											width="w-10"
+											rounded="rounded-full"
+										/>
 
-	<div
-		class="card w-72 shadow-xl backdrop-blur-xl bg-zinc-400 dark:bg-zinc-800 bg-opacity-70 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
-		data-popup="accountDropdownMenu"
-	>
-		<nav class="list-nav">
-			<ul>
-				{#each $profiles as profile}
-					<li class="justify-center items-stretch self-stretch flex w-full flex-col">
-						<div class="justify-between items-stretch flex w-full gap-5">
-							<div class="items-stretch flex justify-between gap-3">
-								<button on:click={() => loadThisProfile(profile)}>
-									<Avatar
-										src={'https://toastr.space/images/toastr.png'}
-										width="w-10"
-										rounded="rounded-full"
-									/>
-
-									<div
-										class="text-black dark:text-black dark:text-white text-base self-center my-auto"
-									>
-										{profile?.name}
-									</div>
-									<Icon icon="mdi:check" width={22} class="text-pink-400 dark:text-teal-400" />
+										<div
+											class="text-black dark:text-black dark:text-white text-base self-center my-auto"
+										>
+											{profile?.name}
+										</div>
+										<Icon icon="mdi:check" width={22} class="text-pink-400 dark:text-teal-400" />
+									</button>
+								</div>
+								<button
+									class="btn bg-transparent"
+									on:click={() => profileControlleur.deleteProfile(profile)}
+								>
+									<Icon icon="mdi:trash-can-outline" width={22} />
 								</button>
 							</div>
-							<button class="btn bg-transparent" on:click={() => console.log('delete account')}>
-								<Icon icon="mdi:trash-can-outline" width={22} />
-							</button>
-						</div>
+						</li>
+					{/each}
+					<li
+						class="justify-center items-stretch self-stretch flex w-full flex-col py-3 border-t-[0.33px] border-t-white border-t-opacity-30 border-solid"
+					>
+						<button
+							on:click={() => {
+								currentPage.set(Page.CreateProfile);
+							}}
+							class="mx-2"
+						>
+							<span class="badge"><Icon icon="mdi:plus" width={22} /></span>
+							<span class="flex-auto">Add Account</span>
+						</button>
 					</li>
-				{/each}
-				<li
-					class="justify-center items-stretch self-stretch flex w-full flex-col py-3 border-t-[0.33px] border-t-white border-t-opacity-30 border-solid"
-				>
-					<a href="/">
-						<span class="badge"><Icon icon="mdi:plus" width={22} /></span>
-						<span class="flex-auto">Add Account</span>
-					</a>
-				</li>
-			</ul>
-		</nav>
-	</div>
-{:else}
-	<span class="loading mx-auto mt-12"></span>
-{/if}
+				</ul>
+			</nav>
+		</div>
+	{:else}
+		<div class="items-stretch self-stretch flex w-full justify-between gap-3">
+			<button
+				type="button"
+				class="btn-icon bg-surface-400 dark:bg-black pl-0"
+				on:click={() => {
+					$currentPage = Page.Home;
+				}}
+			>
+				<Icon icon="carbon:chevron-left" class="text-black dark:text-white" width={28} />
+			</button>
+			<div class="text-white text-2xl font-bold leading-7 self-center grow my-auto">
+				{$currentPage.slice(0, 1).toUpperCase() +
+					$currentPage.slice(1, $currentPage.length).replaceAll('-', ' ')}
+			</div>
+		</div>
+	{/if}
+</div>
+
 <!-- <div class="w-2/12 p-2">
   <div class="avatar">
     <div class="w-12 rounded-full bordered border-2 border-blue-200 shadow-lg">

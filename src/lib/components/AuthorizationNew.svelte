@@ -2,6 +2,9 @@
 	import Icon from '@iconify/svelte';
 	import Duration from './Duration.svelte';
 	import { tr } from '$lib/stores/utils';
+	import { createEventDispatcher } from 'svelte';
+
+	const dispatch = createEventDispatcher();
 
 	let durationChoice: number = 0;
 
@@ -46,6 +49,7 @@
 <div class="items-stretch flex w-full gap-3 mt-3">
 	<button
 		class="btn text-black dark:text-white bg-surface-400 font-medium leading-5 whitespace-nowrap justify-center bg-opacity-20 px-8 py-3 rounded-full"
+		on:click={() => dispatch('cancel')}
 	>
 		Reject
 	</button>

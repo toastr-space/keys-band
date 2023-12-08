@@ -14,9 +14,9 @@ import {
 import { get } from "svelte/store";
 import { escape } from "svelte/internal";
 
-const loadPrivateKey = profileControlleur.loadPrivateKey
-const loadWebSites = profileControlleur.loadWebSites
-const loadRelays = profileControlleur.loadRelays
+const loadPrivateKey = () => { }
+const loadWebSites = () => { }
+const loadRelays = () => { }
 const loadNotifications = profileControlleur.loadNotifications
 
 function injectInTab() {

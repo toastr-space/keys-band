@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getPublicKey, nip19 } from 'nostr-tools';
-	import { keyStore, relays, webNotifications, webSites } from '$lib/stores/data';
+	import { keyStore, relays, userProfile, webNotifications, webSites } from '$lib/stores/data';
 
 	import { profileControlleur } from '$lib/stores/key-store';
 	import { domainToUrl, reverseArray, timeAgo, tr, web } from '$lib/stores/utils';
@@ -8,17 +8,14 @@
 	const hexPubKey = getPublicKey($keyStore);
 	const nPubKey = nip19.npubEncode(hexPubKey);
 
-	const loadNotifications = profileControlleur.loadNotifications;
 	const updateNotification = profileControlleur.updateNotification;
-	const loadWebSites = profileControlleur.loadWebSites;
 
-	let notifications = [];
 	enum EchoMode {
 		Password,
 		Normal
 	}
 
-	let _currentTab = { url: '' };
+	let _currentTab: any = { url: '' };
 	web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
 		var activeTab = tabs[0];
 		_currentTab = activeTab;
@@ -29,31 +26,9 @@
 	let secretEchoMode: EchoMode = EchoMode.Password;
 	let currentTab = 0;
 
-	function showNotification(message) {
-		notifications = [
-			...notifications,
-			{
-				message
-			}
-		];
-		setTimeout(() => {
-			notifications = notifications.slice(1);
-		}, 3000);
-	}
-
-	let currentSite = { history: [] };
-
-	loadWebSites()
-		.then(() => {
-			currentSite = $webSites[domainToUrl(_currentTab?.url || "")];
-			if (currentSite === undefined) {
-				currentSite = { history: [] };
-			}
-		})
-		.catch((err) => {
-			alert(err);
-		});
-	loadNotifications();
+	$: currentSite = $userProfile.data?.webSites
+		? $userProfile.data.webSites[domainToUrl(_currentTab.url || '')]
+		: [];
 </script>
 
 <!-- tabs -->
@@ -140,7 +115,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each reverseArray(currentSite.history) as site, i}
+					{#each reverseArray(currentSite?.history) as site, i}
 						<tr>
 							<td
 								class="text fond-bold"

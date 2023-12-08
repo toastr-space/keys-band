@@ -3,9 +3,10 @@
 	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
 	import RecentActivity from '$lib/components/RecentActivity.svelte';
 	import AuthorizationNew from '$lib/components/AuthorizationNew.svelte';
-	import { domainToUrl } from '$lib/stores/utils';
-	import SettingsNew from '$lib/components/SettingsNew.svelte';
 	import AddAccount from '$lib/components/AddAccount.svelte';
+
+	import { domainToUrl } from '$lib/stores/utils';
+	import { PageSettings } from '$lib/Pages';
 
 	let parameter: any;
 	if (typeof window !== 'undefined') {
@@ -30,7 +31,7 @@
 	<div
 		class="flex flex-col w-full m-16 bg-white dark:bg-surface-900 rounded-3xl border border-surface-300 dark:border-surface-600 p-[12px]"
 	>
-		<SettingsNew />
+		<PageSettings />
 	</div>
 	<div
 		class="flex flex-col w-full m-16 bg-white dark:bg-surface-900 rounded-3xl border border-surface-300 dark:border-surface-600 p-[12px]"

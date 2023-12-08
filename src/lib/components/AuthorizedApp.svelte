@@ -1,8 +1,17 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 
-	export let timeLeft = 2;
+	import type { WebSite } from '$lib/types';
+
+	import { createEventDispatcher } from 'svelte';
+
+	const dispatcher = createEventDispatcher();
+	export let site: WebSite;
+	$: timeLeft =
+		(new Date().getTime() - new Date(site?.permission?.authorizationStop as Date).getTime()) /
+			(1000 * 60 * 60 * 24) || 0;
 	export let timeUnit = 'days';
+	export let domain = '';
 </script>
 
 <div
@@ -15,12 +24,17 @@
 			AUTHORIZED APP
 		</div>
 		<div class="text-pink-600 dark:text-teal-400 text-xs leading-4 whitespace-nowrap">
-			{timeLeft} more {timeUnit}
+			{parseInt(timeLeft.toString())} more {timeUnit}
 		</div>
 	</div>
 	<div class="justify-between items-stretch flex gap-5 mt-2">
-		<div class="text-black dark:text-white text-2xl font-semibold leading-7">coracle.social</div>
-		<button class="btn btn-sm btn-ghost px-0 py-0">
+		<div class="text-black dark:text-white text-2xl font-semibold leading-7">{domain}</div>
+		<button
+			class="btn btn-sm btn-ghost px-0 py-0"
+			on:click={() => {
+				dispatcher('showAuthorization', true);
+			}}
+		>
 			<Icon icon="mingcute:settings-2-line" width={26} class="opacity-40" />
 		</button>
 	</div>
