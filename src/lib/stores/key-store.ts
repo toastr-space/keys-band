@@ -8,7 +8,6 @@ import type { NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
 import { profiles, webNotifications, relays, userProfile, theme } from './data';
 import { NostrUtil } from '$lib/utility';
 
-
 function browserControlleur() {
 	const get = async (key: string): Promise<{ [key: string]: unknown }> => {
 		return new Promise(async (resolve, reject) => {
@@ -38,7 +37,6 @@ const browser: {
 	get: (key: string) => Promise<{ [key: string]: unknown }>;
 	set: (items: { [key: string]: unknown }) => Promise<void>;
 } = browserControlleur();
-
 
 export async function loadNotifications(): Promise<void> {
 	return new Promise((resolve) => {
@@ -116,11 +114,10 @@ export async function isProfileExist(name: string, key: string): Promise<boolean
 	try {
 		const _profiles = get(profiles);
 		const pkey = await checkNSEC(key);
-		return _profiles.findIndex(
-			(p: Profile) => p.name === name || p?.data?.privateKey === pkey
-		) !== -1
-			? true :
-			false
+		return _profiles.findIndex((p: Profile) => p.name === name || p?.data?.privateKey === pkey) !==
+			-1
+			? true
+			: false;
 	} catch (err) {
 		alert(err);
 	}
@@ -145,10 +142,9 @@ export async function loadProfile(profile: Profile): Promise<boolean | Profile |
 			if (profile.data?.pubkey === undefined || profile.id === undefined) {
 				profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
 				profile.id = profile.data.pubkey;
-
 			}
 			NostrUtil.getMetadata(profile.data.pubkey as string).then((metaData) => {
-				if (profile.id as string !== profile.id as string) {
+				if ((profile.id as string) !== (profile.id as string)) {
 					profile.metadata = metaData;
 					saveProfile(profile);
 					userProfile.set(profile);
@@ -159,7 +155,7 @@ export async function loadProfile(profile: Profile): Promise<boolean | Profile |
 			return profile;
 		}
 	} catch (err) {
-		alert(JSON.stringify(err))
+		alert(JSON.stringify(err));
 		return false;
 	}
 }
@@ -171,8 +167,8 @@ const saveProfile = async (profile: Profile): Promise<void> => {
 			let index;
 			if (profile.id) {
 				index = _profiles.findIndex((p) => p.id === profile.id);
-				if (index === -1) index = _profiles.findIndex((p) => p.data?.privateKey === profile.data?.privateKey);
-
+				if (index === -1)
+					index = _profiles.findIndex((p) => p.data?.privateKey === profile.data?.privateKey);
 			} else index = _profiles.findIndex((p) => p.data?.privateKey === profile.data?.privateKey);
 			_profiles[index] = profile;
 			await browser.set({ profiles: _profiles });
@@ -181,7 +177,7 @@ const saveProfile = async (profile: Profile): Promise<void> => {
 			reject(err);
 		}
 	});
-}
+};
 
 export async function deleteProfile(
 	profile: Profile,
@@ -209,7 +205,7 @@ export async function createProfile(name: string, key: string): Promise<boolean>
 		const privateKey = (await checkNSEC(key)) as string;
 
 		try {
-			if (await isProfileExist(name, privateKey) === true) {
+			if ((await isProfileExist(name, privateKey)) === true) {
 				reject('Name or key already exist');
 				return;
 			}
@@ -227,7 +223,7 @@ export async function createProfile(name: string, key: string): Promise<boolean>
 			saveProfiles();
 			NostrUtil.getMetadata(getPublicKey(privateKey)).then((metaData) => {
 				profile.metadata = metaData;
-				saveProfile(profile);
+				loadProfile(profile);
 			});
 
 			resolve(true);
@@ -236,7 +232,6 @@ export async function createProfile(name: string, key: string): Promise<boolean>
 		}
 	});
 }
-
 
 export async function loadProfiles(): Promise<Writable<Profile[]>> {
 	return new Promise(async (resolve, reject) => {
@@ -251,7 +246,10 @@ export async function loadProfiles(): Promise<Writable<Profile[]>> {
 			const data = await browser.get('currentProfile');
 
 			for (const profile of get(profiles)) {
-				if (profile.data !== undefined && (profile.data?.pubkey === undefined || profile.id === undefined)) {
+				if (
+					profile.data !== undefined &&
+					(profile.data?.pubkey === undefined || profile.id === undefined)
+				) {
 					profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
 					profile.id = profile.data.pubkey;
 				}
@@ -261,7 +259,7 @@ export async function loadProfiles(): Promise<Writable<Profile[]>> {
 				}
 
 				NostrUtil.getMetadata(profile?.data?.pubkey as string).then((metaData) => {
-					if (profile.id as string !== data.currentProfile as string) {
+					if ((profile.id as string) !== (data.currentProfile as string)) {
 						profile.metadata = metaData;
 						saveProfile(profile);
 					}
@@ -293,7 +291,7 @@ const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 				url: relayUrl,
 				enabled: true,
 				created_at: new Date()
-			}
+			};
 			_relays.push(relay);
 			userProfile.update((profile) => {
 				profile?.data?.relays?.push(relay);
@@ -305,7 +303,7 @@ const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 			reject(err);
 		}
 	});
-}
+};
 
 const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
@@ -324,7 +322,7 @@ const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 			reject(err);
 		}
 	});
-}
+};
 
 ///
 
@@ -353,5 +351,5 @@ export const profileControlleur: {
 	loadNotifications: loadNotifications,
 	addRelayToProfile: addRelayToProfile,
 	updateNotification: updateNotification,
-	removeRelayFromProfile: removeRelayFromProfile,
+	removeRelayFromProfile: removeRelayFromProfile
 };
