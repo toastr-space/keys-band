@@ -3,7 +3,7 @@
 	import { profileControlleur } from '$lib/stores/key-store';
 
 	import { AppPage } from '$lib/components/App';
-	import { PageSettings, PageHome, PageAddProfile } from '$lib/Pages/';
+	import { PageSettings, PageHome, PageAddProfile } from '$lib/pages';
 
 	let themeSelected = 'light';
 
