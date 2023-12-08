@@ -110,7 +110,7 @@ export async function checkNSEC(value: string): Promise<string> {
 	});
 }
 
-export async function isProfileExist(name: string, key: string): Promise<boolean> {
+export async function isExistingProfile(name: string, key: string): Promise<boolean> {
 	try {
 		const _profiles = get(profiles);
 		const pkey = await checkNSEC(key);
@@ -195,6 +195,7 @@ export async function deleteProfile(
 	});
 }
 
+// TODO: Save name to nostr profile (kind 0 event)
 export async function createProfile(name: string, key: string): Promise<boolean> {
 	return new Promise(async function (resolve, reject) {
 		if (name.length < 4) {
@@ -205,8 +206,8 @@ export async function createProfile(name: string, key: string): Promise<boolean>
 		const privateKey = (await checkNSEC(key)) as string;
 
 		try {
-			if ((await isProfileExist(name, privateKey)) === true) {
-				reject('Name or key already exist');
+			if ((await isExistingProfile(name, privateKey)) === true) {
+				reject('Name or key already exists');
 				return;
 			}
 			const profile: Profile = {
