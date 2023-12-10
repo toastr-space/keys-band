@@ -1,23 +1,18 @@
 <script lang="ts">
-	import { profiles, userProfile } from '$lib/stores/data';
 	import { profileControlleur } from '$lib/stores/key-store';
 
 	import { AppPage } from '$lib/components/App';
 	import { PageSettings, PageHome, PageCreateProfile } from '$lib/Pages/';
-
-	let themeSelected = 'light';
-
-	function updateTheme() {
-		profileControlleur.switchTheme(themeSelected);
-	}
+	import InputField from '$lib/components/InputField.svelte';
+	import { ProgressRadial } from '@skeletonlabs/skeleton';
 
 	const promise = profileControlleur.loadProfiles();
 </script>
 
-{#await promise}
-	<span class="loading">loading...</span>
-{:then res}
-	{#if $userProfile !== null}
+{#if typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id}
+	{#await promise}
+		<span class="loading">loading...</span>
+	{:then}
 		<div class="w-full h-full flex flex-wrap fixed-width gap-2 bg-[#222222]">
 			<div class="w-full h-24 p-3">
 				<AppPage>
@@ -27,68 +22,37 @@
 				</AppPage>
 			</div>
 		</div>
-	{:else}
-		<div class="w-full flex flex-row flex-wrap space-x-4 space-y-4 p-6 px-2 overflow-y-auto">
-			<div class="w-full">
-				<!-- <img src="/assets/logo.png" width="70" class="mx-auto" alt="" /> -->
-			</div>
+	{/await}
+{:else}
+	<div class="w-full flex flex-col p-12 bg-[#222222] h-full gap-4">
+		<h1>We are in vite</h1>
+		<br />
+		<button class="btn bg-slate-800"> Button </button>
+		<button class="mt-4 btn w-32 mx-auto bg-stone-900" disabled={false}> Save profile </button>
 
-			<span class="text-lg text-center w-full">keys.band</span>
+		<InputField placeholder="Enter your name" />
 
-			<div class="w-full pr-4">
-				<table class="table">
-					<!-- head -->
-					<thead>
-						<tr>
-							<th />
-							<th style="max-width: 60px;" />
-						</tr>
-					</thead>
-					<tbody>
-						{#each $profiles as profile}
-							<tr>
-								<td class="flex-grow text-lg">{profile.name}</td>
-								<td style="max-width: 60px">
-									<div class="flex space-x-2 float-right pt-2">
-										<!-- align right -->
-										<button
-											class="btn btn-sm btn-accent mb-2"
-											on:click={() => {
-												profileControlleur.loadProfile(profile);
-											}}>OPEN</button
-										>
-										<button
-											class="btn btn-square btn-sm btn-secondary"
-											on:click={() => {
-												profileControlleur.deleteProfile(profile);
-											}}
-										>
-											<svg
-												xmlns="http://www.w3.org/2000/svg"
-												width="24"
-												height="24"
-												viewBox="0 0 24 24"
-												><path
-													fill="currentColor"
-													d="M7 21q-.825 0-1.413-.588T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.588 1.413T17 21H7ZM17 6H7v13h10V6ZM9 17h2V8H9v9Zm4 0h2V8h-2v9ZM7 6v13V6Z"
-												/></svg
-											>
-										</button>
-									</div>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-			<div class="w-full flex justify-end pr-8">
-				<center>
-					<button class="link link-hover mx-auto text-lg"> + add profile </button>
-				</center>
+		<div class="flex flex-col items-center gap-2">
+			<ProgressRadial stroke={20} width="w-16 mx-auto" value={undefined} />
+			<p class="text-gray-400 font-light text-lg text-center">Loading account information</p>
+			<button class="btn btn-md w-20 outline-yellow-500 text-yellow-500 outline outline-1">
+				Cancel
+			</button>
+		</div>
+
+		<div class="w-full flex flex-col">
+			<span class="label-text">Private Key</span>
+			<div class="w-full relative">
+				<InputField placeholder="nsec" />
+				<button
+					class="btn btn-outline bg-stone-900 text-xs absolute top-[4px] right-[4px] h-10 mr-0"
+				>
+					Generate</button
+				>
 			</div>
 		</div>
-	{/if}
-{/await}
+	</div>
+{/if}
 
 <style>
 	.fixed-width {

@@ -199,7 +199,7 @@ export async function deleteProfile(
 	});
 }
 
-export async function createProfile(name: string, key: string): Promise<boolean> {
+export async function createProfile(name: string, key: string, metadata?: any): Promise<boolean> {
 	return new Promise(async function (resolve, reject) {
 		if (name.length < 4) {
 			reject('Name must be at least 4 characters');
@@ -216,6 +216,7 @@ export async function createProfile(name: string, key: string): Promise<boolean>
 			const profile: Profile = {
 				name: name,
 				id: getPublicKey(privateKey),
+				metadata: metadata,
 				data: {
 					pubkey: getPublicKey(privateKey),
 					privateKey,
@@ -338,7 +339,7 @@ export const profileControlleur: {
 	settingProfile: (profile: Profile) => Promise<void>;
 	addRelayToProfile: (relayUrl: string) => Promise<void>;
 	removeRelayFromProfile: (relay: Relay) => Promise<void>;
-	createProfile: (name: string, key: string) => Promise<boolean>;
+	createProfile: (name: string, key: string, metaData?: any) => Promise<boolean>;
 	loadProfile: (profile: Profile) => Promise<boolean | Profile | undefined>;
 	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
 } = {
