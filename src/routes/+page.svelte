@@ -2,7 +2,7 @@
 	import { profileControlleur } from '$lib/stores/key-store';
 
 	import { AppPage } from '$lib/components/App';
-	import { PageSettings, PageHome, PageCreateProfile } from '$lib/Pages/';
+	import { PageSettings, PageHome, PageAddProfile } from '$lib/Pages/';
 	import InputField from '$lib/components/InputField.svelte';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
 
@@ -18,7 +18,7 @@
 				<AppPage>
 					<PageHome />
 					<PageSettings />
-					<PageCreateProfile />
+					<PageAddProfile />
 				</AppPage>
 			</div>
 		</div>
