@@ -3,7 +3,19 @@
 	import { currentPage } from '$lib/stores/data';
 	import { AppPageItem } from '$lib/components/App';
 	import { profileControlleur } from '$lib/stores/key-store';
-	import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools';
+	import {
+		generatePrivateKey,
+		getPublicKey,
+		nip19,
+		type Event,
+		getEventHash,
+		verifySignature,
+		type EventTemplate,
+		getSignature,
+		validateEvent,
+		finishEvent,
+		type UnsignedEvent
+	} from 'nostr-tools';
 	import Icon from '@iconify/svelte';
 	import InputField from '$lib/components/InputField.svelte';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
@@ -21,42 +33,55 @@
 
 	const fetchProfile = async () => {
 		if (key) {
-			if (!generated)
-				profileControlleur.verifyKey(key).then(async (ok) => {
-					if (ok) {
-						fetchingProfile = true;
-						try {
-							const pk = await profileControlleur.verifyKey(key);
-							metadata = await NostrUtil.getMetadata(getPublicKey(pk));
-							console.log(metadata);
+			profileControlleur.verifyKey(key).then(async (ok) => {
+				if (ok) {
+					if (!generated) fetchingProfile = true;
+					try {
+						const pk = await profileControlleur.verifyKey(key);
+						metadata = await NostrUtil.getMetadata(getPublicKey(pk));
+						if (metadata?.name !== undefined) {
+							generated = false;
 							metadata = metadata;
 							name = metadata.name as string;
 							fetchingProfile = false;
-						} catch (err) {
-							metadata = undefined;
-							fetchingProfile = false;
-							error = true;
 						}
+						fetchingProfile = false;
+					} catch (err) {
+						metadata = undefined;
+						fetchingProfile = false;
+						error = true;
 					}
-				});
-			generated = false;
+				}
+			});
 		}
 	};
 
 	const save = async () => {
 		busy = true;
 		try {
-			const ok = await profileControlleur.createProfile(name, key, metadata);
-			if (ok) {
-				name = '';
-				key = '';
-				metadata = undefined;
-				busy = false;
-				fetchingProfile = false;
-				error = false;
-				generated = false;
-				currentPage.set(Page.Home);
+			await profileControlleur.createProfile(name, key, metadata);
+			if (generated === true) {
+				const pk = await profileControlleur.verifyKey(key);
+				let event: UnsignedEvent = {
+					kind: 0,
+					created_at: Math.floor(Date.now() / 1000),
+					tags: [],
+					content: JSON.stringify({
+						name: name
+					}),
+					pubkey: getPublicKey(pk)
+				};
+				const signedEvent = finishEvent(event, pk);
+				await NostrUtil.publish(signedEvent);
 			}
+			name = '';
+			key = '';
+			metadata = undefined;
+			busy = false;
+			fetchingProfile = false;
+			error = false;
+			generated = false;
+			currentPage.set(Page.Home);
 		} catch (err) {
 			busy = false;
 			if (typeof document !== 'undefined') {
@@ -75,17 +100,14 @@
 		>
 			CREDENTIALS
 		</div>
-		<div class="grid grid-flow-row auto-rows-max">
+		<div class="grid grid-flow-row auto-rows-max gap-2">
 			<div class="col-span-6 mt-4">
 				<InputField placeholder="Enter private key (nSec)" bind:value={key} />
 			</div>
 			{#if fetchingProfile}
-				<div class="col-span-6 flex w-full flex-col items-center gap-2">
+				<div class="col-span-6 flex w-full flex-col items-center gap-2 mt-2">
 					<ProgressRadial stroke={20} width="w-16 mx-auto" value={undefined} />
 					<p class="text-gray-400 font-light text-lg text-center">Loading account information</p>
-					<button class="btn btn-md w-20 outline-yellow-500 text-yellow-500 outline outline-1">
-						Cancel
-					</button>
 				</div>
 			{/if}
 			{#if key.length > 62 && key.startsWith('nsec')}
@@ -93,7 +115,7 @@
 					<InputField placeholder="Enter your name" bind:value={name} />
 				</div>
 			{/if}
-			{#if metadata !== undefined && metadata?.name !== undefined && key.length > 62 && key.startsWith('nsec')}
+			{#if metadata !== undefined && metadata?.name !== undefined && key.length > 62 && key.startsWith('nsec') && metadata?.picture !== undefined}
 				<div class="col-span-6 flex flex-col p-4 gap-3">
 					<img
 						src={metadata?.picture}

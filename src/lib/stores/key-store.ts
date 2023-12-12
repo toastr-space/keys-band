@@ -186,9 +186,13 @@ export async function deleteProfile(
 	return new Promise((resolve) => {
 		if (method === ProfileDeleteMethod.DEFAULT) {
 			const _profiles = get(profiles);
+
 			const index = _profiles.findIndex((p) => p.name === profile.name);
 			_profiles.splice(index, 1);
 			profiles.set(_profiles);
+			if (get(userProfile)?.id === profile.id) {
+				loadProfile(_profiles[0] ?? {});
+			}
 			saveProfiles();
 			resolve();
 		}

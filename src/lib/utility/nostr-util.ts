@@ -18,4 +18,11 @@ const getMetadata = async (pubkey: string): Promise<Profile> => {
     }
 }
 
-export { getMetadata }
+const publish = async (event: any): Promise<void> => {
+    return new Promise((resolve) => {
+        pool.publish(_relays, event)
+        resolve();
+    })
+}
+
+export { getMetadata, publish }

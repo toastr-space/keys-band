@@ -8,6 +8,7 @@
 	import { popup, Avatar } from '@skeletonlabs/skeleton';
 	import { profileControlleur } from '$lib/stores/key-store';
 	import { userProfile, theme, profiles, currentPage } from '../stores/data';
+	import { tick } from 'svelte';
 
 	let accountDropdownMenuOpen = false;
 
@@ -15,7 +16,9 @@
 		event: 'click',
 		target: 'accountDropdownMenu',
 		placement: 'bottom',
-		state: () => (accountDropdownMenuOpen = false)
+		state: async () => {
+			accountDropdownMenuOpen = false;
+		}
 	};
 
 	const load = (profile: Profile) => profileControlleur.loadProfile(profile);
@@ -107,7 +110,11 @@
 								</div>
 								<button
 									class="btn bg-transparent"
-									on:click={() => profileControlleur.deleteProfile(profile)}
+									on:click={async () => {
+										await profileControlleur.deleteProfile(profile);
+										await tick();
+										accountDropdownMenuOpen = true;
+									}}
 								>
 									<Icon icon="mdi:trash-can-outline" width={22} />
 								</button>

@@ -1,5 +1,5 @@
-import { getMetadata } from "./nostr-util";
+import { getMetadata, publish } from "./nostr-util";
 
 export const NostrUtil = {
-    getMetadata
+    getMetadata, publish
 }
