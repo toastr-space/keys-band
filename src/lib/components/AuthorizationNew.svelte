@@ -1,16 +1,17 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
 	import Duration from './Duration.svelte';
-	import { tr } from '$lib/stores/utils';
-	import { createEventDispatcher } from 'svelte';
+	import Icon from '@iconify/svelte';
+
 	import { accept } from '$lib/stores/authorization';
+	import { createEventDispatcher } from 'svelte';
+	import { tr } from '$lib/stores/utils';
 
 	const dispatch = createEventDispatcher();
 
 	let durationChoice: number = 0;
 
 	export let domain: string;
-	export let parameter: any;
+	export let popupType: string;
 	export let isPopup = false;
 
 	function handleDurationChange(event: { detail: { value: number } }) {
@@ -39,7 +40,7 @@
 				class="text-black dark:text-white text-base leading-5 self-stretch grow whitespace-nowrap"
 			>
 				{#if isPopup}
-					{tr(parameter?.get('type'))}
+					{tr(popupType)}
 				{:else}
 					{tr('permission')}
 				{/if}

@@ -18,7 +18,6 @@ export function domainToUrl(url: string) {
   return url?.split("/")[2];
 }
 
-// function that return remaining time from data display day only if it's more than 1 day and minute, complete with zero if one character
 export function remainingTime(datetime: Date) {
   const now: Date = new Date();
   const diff = datetime.getTime() - now.getTime();

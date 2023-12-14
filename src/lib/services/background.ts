@@ -12,46 +12,29 @@ import {
   webSites, webNotifications, keyStore, userProfile
 } from "$lib/stores/data"
 import { get } from "svelte/store";
-import { escape } from "svelte/internal";
+import type { Message, MessageSender, PopupParams } from "$lib/types";
+import { BrowserUtil, ProfileUtil } from "$lib/utility";
 
 const loadNotifications = profileControlleur.loadNotifications
 
-async function injectInTab() {
-  await profileControlleur.loadProfiles();
-  web.tabs.query({}, async (tabs) => {
-    for (const tab of tabs) {
-      try {
-        console.log(tab.id);
-        await web.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ["content.js"],
-        });
-        console.log("Injected Nostr Provider");
-      } catch (e) {
-        console.log("Error injecting Nostr Provider", e);
-      }
-    }
-  });
-}
-
 web.runtime.onInstalled.addListener(function () {
-  injectInTab();
+  BrowserUtil.injectJsinAllTabs("content.js");
 });
 
 web.runtime.onStartup.addListener(() => {
-  injectInTab();
+  BrowserUtil.injectJsinAllTabs("content.js");
 });
 
-const responders = {};
+// end of injection
 
-function createWindow(options: any) {
-  web.windows.create({
-    url: web.runtime.getURL(options.action),
-    width: 400,
-    height: 500,
-    type: "popup",
-  });
-}
+const responders: {
+  [key: string]: {
+    resolve: (value?: any) => void;
+    type: string;
+    data: any;
+    domain: string;
+  };
+} = {};
 
 async function updatePermission(
   duration: {
@@ -229,85 +212,49 @@ async function addHistory(
   }
 }
 
-async function manageResult(message: any, sender: any) {
-  if (message.response !== undefined && message.response !== null) {
-    const user = get(userProfile)
-    if (responders[message.requestId]) {
-      const responderData = responders[message.requestId];
-      const domain = responderData.domain;
-      let _webSites = user?.data?.webSites;
-      let site: WebSite;
-      if (_webSites === undefined || _webSites === null) {
-        site = {
-          auth: false,
-          permission: {
-            always: false,
-            accept: true,
-            reject: false,
-          },
-          history: [],
-        };
+async function manageResult(message: Message, sender: any) {
+  if (message.response === undefined) return
+  const responderData = responders[message.requestId as string];
+  if (!responderData) return
 
-        _webSites = {
-          [domain]: site,
-        };
-      }
+  const domain = responderData.domain;
+  const user = get(userProfile)
+  const site: WebSite = ProfileUtil.getWebSiteOrCreate(domain, user);
 
-      if (Object.keys(_webSites).indexOf(domain) === -1) {
-        site = {
-          auth: false,
-          permission: {
-            always: false,
-            accept: true,
-            reject: false,
-          },
-          history: [],
-        };
-      } else {
-        site = _webSites[domain];
-      }
+  await updatePermission(
+    message.response.permission,
+    site,
+    responderData.domain,
+    responderData.type
+  );
 
-      await updatePermission(
-        message.response.permission,
-        site,
-        responderData.domain,
-        responderData.type
-      );
-
-      if (message.response.error) {
-        responderData.resolve({
-          id: message.requestId,
-          type: responderData.type,
-          ext: "keys.band",
-          response: {
-            error: {
-              message: "User rejected the request",
-              stack: "User rejected the request",
-            },
-          },
-        });
-        web.windows.remove(sender.tab.windowId);
-        delete responders[message.requestId];
-        return;
-      }
-
-      let res = await makeResponse(
+  if (message.response.error) {
+    responderData.resolve({
+      id: message.requestId,
+      type: responderData.type,
+      ext: "keys.band",
+      response: {
+        error: {
+          message: "User rejected the request",
+          stack: "User rejected the request",
+        },
+      },
+    });
+  } else {
+    responderData.resolve({
+      id: message.requestId,
+      type: responderData.type,
+      ext: "keys.band",
+      response: await makeResponse(
         responderData.type,
-        responderData.data,
-        domain
-      );
-
-      responderData.resolve({
-        id: message.requestId,
-        type: responderData.type,
-        ext: "keys.band",
-        response: res,
-      });
-      web.windows.remove(sender.tab.windowId);
-      delete responders[message.requestId];
-    }
-    return;
+        responderData.data
+      )
+    });
   }
+
+  web.windows.remove(sender.tab.windowId);
+  delete responders[message.requestId as string];
+  return;
 }
 
 async function manageRequest(message: any) {
@@ -438,28 +385,22 @@ async function manageRequest(message: any) {
       domain: domainToUrl(message.url),
     };
 
-    let accept = await new Promise(async () => {
-      let options = {
-        action:
-          "popup.html?action=login&url=" +
-          message.url +
-          "&requestId=" +
-          message.id +
-          "&type=" +
-          message.type +
-          "&data=" +
-          escape(JSON.stringify(message.params.event || message.params) || ""),
-        id: message.id,
-      };
-      try {
-        let res = await createWindow(options);
-      } catch (e) { }
-    });
+    const data: PopupParams = {
+      action: "login",
+      url: message.url,
+      requestId: message.id,
+      type: message.type,
+      data: (message.params.event || message.params || "{}") || "",
+    };
+
+    await BrowserUtil.createWindow("popup.html?query=" + btoa(JSON.stringify(data)));
   });
 }
 
-web.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log(message);
+
+
+web.runtime.onMessage.addListener((message: Message, sender: MessageSender, sendResponse) => {
+
   if (message.prompt) {
     manageResult(message, sender);
     sendResponse({ message: true });
