@@ -1,15 +1,14 @@
-<script>
+<script lang="ts">
+	import { userProfile } from '$lib/stores/data';
 	import { reverseArray, timeAgo } from '$lib/stores/utils';
+	export let domain: string = '';
+	let history: any[] = [];
 
-	let currentSite = {
-		history: [
-			{ type: 'Note', created_at: new Date() },
-			{ type: 'Reply', created_at: new Date() },
-			{ type: 'Reaction', created_at: new Date() },
-			{ type: 'Note', created_at: new Date() },
-			{ type: 'Highlight', created_at: new Date() }
-		]
-	};
+	$: {
+		if ($userProfile.data?.webSites) {
+			history = $userProfile.data?.webSites[domain]?.history || [];
+		}
+	}
 </script>
 
 <div
@@ -20,7 +19,7 @@
 	>
 		RECENT ACTIVITY
 	</div>
-	{#each reverseArray(currentSite.history) as site, i}
+	{#each reverseArray(history).slice(0, 10) as site, i}
 		<div class="justify-between items-stretch flex gap-5 mt-2">
 			<div class="text-black dark:text-white text-base leading-5">{site.type}</div>
 			<div

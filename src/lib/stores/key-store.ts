@@ -332,6 +332,7 @@ const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 ///
 
 export const profileControlleur: {
+	saveProfile: (profile: Profile) => Promise<void>;
 	saveProfiles: () => Promise<void>;
 	loadNotifications: () => Promise<void>;
 	verifyKey: (value: string) => Promise<string>;
@@ -348,6 +349,7 @@ export const profileControlleur: {
 	verifyKey: checkNSEC,
 	loadProfile: loadProfile,
 	switchTheme: switchTheme,
+	saveProfile: saveProfile,
 	saveProfiles: saveProfiles,
 	loadProfiles: loadProfiles,
 	createProfile: createProfile,

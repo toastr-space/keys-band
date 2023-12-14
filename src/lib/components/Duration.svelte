@@ -38,7 +38,7 @@
 		}
 	];
 
-	let duration: Duration = durationOptions[0];
+	export let duration: Duration = durationOptions[0];
 
 	let durationDropdownMenuOpen = false;
 

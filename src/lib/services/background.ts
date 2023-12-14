@@ -9,20 +9,17 @@ import type {
 } from "$lib/types/profile"
 
 import {
-  webSites, webNotifications, keyStore
+  webSites, webNotifications, keyStore, userProfile
 } from "$lib/stores/data"
 import { get } from "svelte/store";
 import { escape } from "svelte/internal";
 
-const loadPrivateKey = () => { }
-const loadWebSites = () => { }
-const loadRelays = () => { }
 const loadNotifications = profileControlleur.loadNotifications
 
-function injectInTab() {
-  loadPrivateKey();
+async function injectInTab() {
+  await profileControlleur.loadProfiles();
   web.tabs.query({}, async (tabs) => {
-    for (let tab of tabs) {
+    for (const tab of tabs) {
       try {
         console.log(tab.id);
         await web.scripting.executeScript({
@@ -37,7 +34,7 @@ function injectInTab() {
   });
 }
 
-web.runtime.onInstalled.addListener(function (details) {
+web.runtime.onInstalled.addListener(function () {
   injectInTab();
 });
 
@@ -45,16 +42,14 @@ web.runtime.onStartup.addListener(() => {
   injectInTab();
 });
 
-let responders = {};
+const responders = {};
 
-function createWindow(options) {
-  return new Promise((resolve, reject) => {
-    web.windows.create({
-      url: web.runtime.getURL(options.action),
-      width: 400,
-      height: 500,
-      type: "popup",
-    });
+function createWindow(options: any) {
+  web.windows.create({
+    url: web.runtime.getURL(options.action),
+    width: 400,
+    height: 500,
+    type: "popup",
   });
 }
 
@@ -68,8 +63,9 @@ async function updatePermission(
   site: WebSite,
   domain: string,
   type: string,
-  data?: {}
 ) {
+  await profileControlleur.loadProfiles();
+  const user = get(userProfile)
   let _webSites = get(webSites);
   if (!_webSites) {
     _webSites = {};
@@ -84,7 +80,8 @@ async function updatePermission(
 
     _webSites[domain] = site;
 
-    await web?.storage?.local?.set({ webSites: _webSites });
+    user.data.webSites = _webSites;
+    await profileControlleur.saveProfile(user);
     return true;
   } else {
     site.auth = true;
@@ -97,7 +94,8 @@ async function updatePermission(
 
     _webSites[domain] = site;
 
-    await web?.storage?.local?.set({ webSites: _webSites });
+    user.data.webSites = _webSites;
+    await profileControlleur.saveProfile(user);
 
     await addHistory(
       {
@@ -111,23 +109,21 @@ async function updatePermission(
   }
 }
 
-async function makeResponse(type: string, data: any, domain: string) {
-  await loadPrivateKey();
+async function makeResponse(type: string, data: any) {
+  await profileControlleur.loadProfiles();
+  const user = get(userProfile)
   let res;
   switch (type) {
     case "getPublicKey":
-      res = getPublicKey(get(keyStore));
+      res = getPublicKey(user?.data?.privateKey || "");
       break;
     case "getRelays":
-      res = await loadRelays();
-      res = res.map((relay) => {
+      res = user.data?.relays?.map((relay) => {
         return { url: relay?.url };
       });
       break;
     case "signEvent":
       res = data;
-      console.log("signEvent");
-      console.log(res);
       if (res.pubkey == null) {
         const pk = getPublicKey(get(keyStore));
         res.pubkey = pk;
@@ -165,9 +161,9 @@ async function makeResponse(type: string, data: any, domain: string) {
   return res;
 }
 
-async function showNotification(type: string, accepted) {
+async function showNotification(type: string, accepted: boolean) {
   await loadNotifications();
-  let _notifications = get(webNotifications);
+  const _notifications = get(webNotifications);
   _notifications.forEach((notification) => {
     if (type.indexOf(notification.name) !== -1 && notification.state === true) {
       web.notifications.create({
@@ -187,7 +183,9 @@ async function addHistory(
   domain: string
 ) {
   await showNotification(info.type, info.acceptance);
-  let _webSites = await loadWebSites();
+  await profileControlleur.loadProfiles();
+  const user = get(userProfile)
+  let _webSites = user.data?.webSites;
   if (_webSites === undefined || _webSites === null) {
     _webSites = {};
   }
@@ -205,9 +203,11 @@ async function addHistory(
     });
     site["history"] = array;
     _webSites[domain] = site;
-    await web?.storage?.local?.set({ webSites: _webSites });
+
+    user.data.webSites = _webSites;
+    await profileControlleur.saveProfile(user);
   } else {
-    let site = {
+    const site = {
       auth: false,
       permission: {
         always: false,
@@ -224,16 +224,18 @@ async function addHistory(
     };
 
     _webSites[domain] = site;
-    await web?.storage?.local?.set({ webSites: _webSites });
+    user.data.webSites = _webSites;
+    await profileControlleur.saveProfile(user);
   }
 }
 
-async function manageResult(message, sender) {
+async function manageResult(message: any, sender: any) {
   if (message.response !== undefined && message.response !== null) {
+    const user = get(userProfile)
     if (responders[message.requestId]) {
-      let responderData = responders[message.requestId];
+      const responderData = responders[message.requestId];
       const domain = responderData.domain;
-      let _webSites = get(webSites);
+      let _webSites = user?.data?.webSites;
       let site: WebSite;
       if (_webSites === undefined || _webSites === null) {
         site = {
@@ -308,13 +310,13 @@ async function manageResult(message, sender) {
   }
 }
 
-async function manageRequest(message, sendResponse) {
-  return new Promise(async (resolve, reject) => {
-    await loadWebSites();
+async function manageRequest(message: any) {
+  return new Promise(async (resolve) => {
+    profileControlleur.loadProfiles();
+    const user = get(userProfile)
     let site;
     let resolved: boolean = false;
-    await loadPrivateKey();
-    if (get(keyStore) === "" || get(keyStore) === undefined) {
+    if (user.data?.privateKey === undefined) {
       resolved = true;
       resolve({
         id: message.id,
@@ -331,7 +333,7 @@ async function manageRequest(message, sendResponse) {
     }
 
     try {
-      site = get(webSites)[domainToUrl(message.url)];
+      site = (user?.data?.webSites as WebSite[])[domainToUrl(message.url)];
     } catch (e) {
       site = undefined;
     }
@@ -343,7 +345,7 @@ async function manageRequest(message, sendResponse) {
           site.permission.always !== undefined)
       ) {
         if (site.permission.accept && site.permission.always) {
-          let res = await makeResponse(
+          const res = await makeResponse(
             message.type,
             message.params.event || message.params,
             domainToUrl(message.url)
@@ -367,7 +369,7 @@ async function manageRequest(message, sendResponse) {
           return;
         } else if (site.permission.accept && !site.permission.always) {
           if (new Date(site.permission.authorizationStop) > new Date()) {
-            let res = await makeResponse(
+            const res = await makeResponse(
               message.type,
               message.params.event || message.params,
               domainToUrl(message.url)
@@ -457,15 +459,16 @@ async function manageRequest(message, sendResponse) {
 }
 
 web.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log(message);
   if (message.prompt) {
     manageResult(message, sender);
-    sendResponse({ message: true }); // Assumant que manageResult n'est pas asynchrone.
+    sendResponse({ message: true });
   } else {
-    manageRequest(message, sendResponse).then((data) => {
+    manageRequest(message).then((data) => {
       sendResponse(data);
     }).catch((err) => {
       alert(err);
     });
   }
-  return true; // Renvoie true pour indiquer une réponse asynchrone.
+  return true;
 });

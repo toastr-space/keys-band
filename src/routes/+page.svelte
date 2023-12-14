@@ -13,7 +13,7 @@
 	{#await promise}
 		<span class="loading">loading...</span>
 	{:then}
-		<div class="w-full h-full flex flex-wrap fixed-width gap-2 bg-[#222222]">
+		<div class="w-full h-full flex flex-wrap gap-2 bg-[#222222]">
 			<div class="w-full h-24 p-3">
 				<AppPage>
 					<PageHome />
@@ -53,10 +53,3 @@
 		</div>
 	</div>
 {/if}
-
-<style>
-	.fixed-width {
-		width: 400px;
-		max-width: 400px;
-	}
-</style>
