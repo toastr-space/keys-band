@@ -2,14 +2,12 @@
 	import Icon from '@iconify/svelte';
 	import ToggleSwitch from '../components/ToggleSwitch.svelte';
 	import { AppPageItem } from '$lib/components/App';
-	import { userProfile } from '$lib/stores/data';
+	import { showNotification, userProfile } from '$lib/stores/data';
 	import { profileControlleur } from '$lib/stores/key-store';
 	import type { Relay } from '$lib/types';
 
 	$: relays = $userProfile.data?.relays || [];
 	let relayInput: string = '';
-	let preferenceOne = true;
-	let preferenceTwo = false;
 
 	const addRelay = () => {
 		profileControlleur.addRelayToProfile(relayInput).then(() => {
@@ -20,12 +18,8 @@
 		profileControlleur.removeRelayFromProfile(relay);
 	};
 
-	function handleTogglePreferenceOne(event: CustomEvent) {
-		preferenceOne = event.detail;
-	}
-
-	function handleTogglePreferenceTwo(event: CustomEvent) {
-		preferenceTwo = event.detail;
+	function handleToggleNotification(event: CustomEvent) {
+		showNotification.set(event.detail);
 	}
 </script>
 
@@ -81,15 +75,11 @@
 		<div
 			class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
 		>
-			CATEGORY 2
+			General settings
 		</div>
 		<div class="justify-between items-stretch flex gap-5 mt-2">
-			<div class="text-black dark:text-white text-base leading-5 my-auto">A certain preference</div>
-			<ToggleSwitch bind:isToggled={preferenceOne} on:change={handleTogglePreferenceOne} />
-		</div>
-		<div class="justify-between items-stretch flex gap-5 mt-2">
-			<div class="text-black dark:text-white text-base leading-5 my-auto">Disabled something</div>
-			<ToggleSwitch bind:isToggled={preferenceTwo} on:change={handleTogglePreferenceTwo} />
+			<div class="text-black dark:text-white text-base leading-5 my-auto">Enable Notification</div>
+			<ToggleSwitch bind:isToggled={$showNotification} on:change={handleToggleNotification} />
 		</div>
 	</div>
 

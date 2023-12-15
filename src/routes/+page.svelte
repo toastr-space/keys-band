@@ -10,7 +10,7 @@
 {#await promise}
 	<span class="loading">loading...</span>
 {:then}
-	<div class="w-full h-full flex-grow flex-wrap gap-2 bg-[#222222]">
+	<div class="w-full h-full flex-grow flex-wrap gap-2 dark:bg-[#222222] bg-white">
 		<div class="w-full h-full flex-grow p-3">
 			<AppPage>
 				<PageHome />

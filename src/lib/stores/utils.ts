@@ -128,13 +128,13 @@ export function tr(name: string) {
     case "signEvent":
       return "Sign Event";
     case "permission":
-      return "Get Permission";
+      return "All Access";
     case "nip04":
       return "Message Encryption/Decription";
     case "nip04.encrypt":
-      return "Message Encryption/Decription";
+      return "Message Encryption";
     case "nip04.decrypt":
-      return "Message Encryption/Decription";
+      return "Message Decription";
     case "getPublicKey":
       return "Get Public Key";
     case "getRelays":

@@ -27,17 +27,18 @@ interface Authorization {
     authorizationStop?: string | undefined;
 }
 
+interface WebSiteHistory {
+    type: string;
+    data?: unknown;
+    created_at: string;
+    accepted: boolean;
+}
+
 interface WebSite {
     auth: boolean;
     permission?: Authorization;
-    history?: {
-        type: string;
-        data?: unknown;
-        created_at: string;
-        accepted: boolean;
-    }[];
+    history?: WebSiteHistory[];
 }
-
 
 interface ProfileSetting {
     profile: string,
@@ -65,4 +66,5 @@ enum ProfileDeleteMethod {
     BY_NAME,
     BY_PRIVATE_KEY
 }
-export { Profile, UserProfile, WebSite, ProfileSetting, Relay, NotificationSetting, ProfileDeleteMethod, Authorization }
+
+export { Profile, UserProfile, WebSite, WebSiteHistory, ProfileSetting, Relay, NotificationSetting, ProfileDeleteMethod, Authorization }
