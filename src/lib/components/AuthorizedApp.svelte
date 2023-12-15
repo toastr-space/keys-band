@@ -3,31 +3,15 @@
 	import TimeAgo from 'javascript-time-ago';
 	import en from 'javascript-time-ago/locale/en';
 
-	import { createEventDispatcher, onMount } from 'svelte';
-	import { userProfile } from '$lib/stores/data';
-	import { ProfileUtil } from '$lib/utility';
-	import { readable } from 'svelte/store';
+	import { createEventDispatcher } from 'svelte';
+	import { timeStop } from '$lib/stores/data';
 
-	import type { WebSite } from '$lib/types';
-
-	const dispatcher = createEventDispatcher();
-
-	TimeAgo.addDefaultLocale(en);
-	const timeAgo = new TimeAgo('en-US');
-
-	export let site: WebSite;
-	let time = new Date();
 	export let domain = '';
 
-	const t = readable(time, (set) => {
-		const interval = setInterval(() => {
-			site = ProfileUtil.getWebSiteOrCreate(domain, $userProfile);
-			set(new Date(site?.permission?.authorizationStop || '') || new Date());
-		}, 500);
-		return () => clearInterval(interval);
-	});
+	TimeAgo.addDefaultLocale(en);
 
-	onMount(() => (site = ProfileUtil.getWebSiteOrCreate(domain, $userProfile)));
+	const dispatcher = createEventDispatcher();
+	const timeAgo = new TimeAgo('en-US');
 </script>
 
 <div
@@ -40,8 +24,7 @@
 			AUTHORIZED APP
 		</div>
 		<div class="text-pink-600 dark:text-teal-400 text-xs leading-4 whitespace-nowrap">
-			<!-- {site?.permission?.authorizationStop} -->
-			{timeAgo.format($t)}
+			{timeAgo.format($timeStop).replace('in ', 'Expire in ')}
 		</div>
 	</div>
 	<div class="justify-between items-stretch flex gap-5 mt-2">

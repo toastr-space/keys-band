@@ -1,4 +1,4 @@
-import { getEventHash, getPublicKey, getSignature, nip04 } from "nostr-tools";
+import { finishEvent, getEventHash, getPublicKey, getSignature, nip04 } from "nostr-tools";
 import { domainToUrl, web } from "../stores/utils";
 import {
   profileControlleur
@@ -11,21 +11,17 @@ import type {
 } from "$lib/types/profile"
 
 import {
-  webSites, webNotifications, keyStore, userProfile
+  webNotifications, userProfile
 } from "$lib/stores/data"
 import { get } from "svelte/store";
 import type { Message, MessageSender, PopupParams } from "$lib/types";
+import { AllowKind } from "$lib/types";
 import { BrowserUtil, ProfileUtil } from "$lib/utility";
 
 const loadNotifications = profileControlleur.loadNotifications
 
-web.runtime.onInstalled.addListener(function () {
-  BrowserUtil.injectJsinAllTabs("content.js");
-});
-
-web.runtime.onStartup.addListener(() => {
-  BrowserUtil.injectJsinAllTabs("content.js");
-});
+web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs("content.js"));
+web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs("content.js"));
 
 
 const getUserProfile = async (): Promise<Profile> => {
@@ -56,7 +52,7 @@ async function updatePermission(
 ) {
   await profileControlleur.loadProfiles();
   const user = get(userProfile)
-  let _webSites = get(webSites);
+  let _webSites = get(userProfile).data?.webSites;
   if (!_webSites) {
     _webSites = {};
   }
@@ -102,10 +98,11 @@ async function updatePermission(
 async function makeResponse(type: string, data: any) {
   await profileControlleur.loadProfiles();
   const user = get(userProfile)
+  const privateKey: string = user.data?.privateKey || '';
   let res;
   switch (type) {
     case "getPublicKey":
-      res = getPublicKey(user?.data?.privateKey || "");
+      res = getPublicKey(privateKey);
       break;
     case "getRelays":
       res = user.data?.relays?.map((relay) => {
@@ -114,16 +111,15 @@ async function makeResponse(type: string, data: any) {
       break;
     case "signEvent":
       res = data;
-      if (res.pubkey == null) {
-        const pk = getPublicKey(get(keyStore));
+      if (res?.pubkey == null || res?.pubkey === undefined || res?.pubkey === "") {
+        const pk = getPublicKey(privateKey);
         res.pubkey = pk;
       }
-      res.id = getEventHash(res);
-      res.sig = getSignature(res, get(keyStore));
+      res = finishEvent(res, privateKey);
       break;
     case "nip04.decrypt":
       try {
-        res = await nip04.decrypt(get(keyStore), data.peer, data.ciphertext);
+        res = await nip04.decrypt(privateKey, data.peer, data.ciphertext);
       } catch (e) {
         res = {
           error: {
@@ -135,7 +131,7 @@ async function makeResponse(type: string, data: any) {
       break;
     case "nip04.encrypt":
       try {
-        res = await nip04.encrypt(get(keyStore), data.peer, data.plaintext);
+        res = await nip04.encrypt(privateKey, data.peer, data.plaintext);
       } catch (e) {
         res = {
           error: {
@@ -148,6 +144,7 @@ async function makeResponse(type: string, data: any) {
     default:
       res = null;
   }
+  console.log(res)
   return res;
 }
 
@@ -219,11 +216,8 @@ async function addHistory(
   }
 }
 
-
-
 async function manageResult(message: Message, sender: any) {
   try {
-    console.log(message.response, responders, message.requestId)
     if (message.response === undefined) return
     const responderData = responders[message.requestId as string];
     if (!responderData) return
@@ -271,14 +265,6 @@ async function manageResult(message: Message, sender: any) {
   return;
 }
 
-enum AllowKind {
-  AlWaysAllow,
-  AlwaysReject,
-  AllowForSession,
-  RejectForSession,
-  Nothing
-}
-
 const pushHistory = async (yes: boolean, message: Message) => {
   const domain = domainToUrl(message.url || "");
   await addHistory(
@@ -294,11 +280,13 @@ const isAllow = async (domain: string): Promise<AllowKind> => {
   const user = await getUserProfile();
   const site: WebSite = ProfileUtil.getWebSiteOrCreate(domain, user);
   const permission: Authorization = site.permission as Authorization;
-
+  console.log(permission)
   if (permission.accept === true) {
     if (permission.always === true) return Promise.resolve(AllowKind.AlWaysAllow);
     else {
-      if (new Date(permission.authorizationStop || "") > new Date()) return Promise.resolve(AllowKind.AllowForSession);
+      if (new Date(permission.authorizationStop || "") > new Date()) {
+        return Promise.resolve(AllowKind.AllowForSession)
+      }
       else return Promise.resolve(AllowKind.Nothing);
     }
   } else if (permission.reject === true) {
@@ -315,7 +303,7 @@ const buildResponseMessage = (message: Message, response: any): any => {
     id: message.id,
     type: message.type,
     ext: "keys.band",
-    response: response ?? {
+    response: response || {
       error: {
         message: "User rejected the request",
         stack: "User rejected the request",
@@ -340,18 +328,19 @@ async function manageRequest(message: Message): Promise<any> {
         },
       }));
 
+
     const access: AllowKind = await isAllow(domain);
 
     switch (access) {
       case AllowKind.AlWaysAllow:
         pushHistory(true, message);
-        return Promise.resolve(buildResponseMessage(message, await makeResponse(
+        return resolve(buildResponseMessage(message, await makeResponse(
           message.type,
           message.params.event || message.params,
         )));
       case AllowKind.AlwaysReject:
         pushHistory(false, message);
-        return Promise.resolve(buildResponseMessage(message, {
+        return resolve(buildResponseMessage(message, {
           error: {
             message: "User rejected the request",
             stack: "User rejected the request",
@@ -359,13 +348,13 @@ async function manageRequest(message: Message): Promise<any> {
         }));
       case AllowKind.AllowForSession:
         pushHistory(true, message);
-        return Promise.resolve(buildResponseMessage(message, await makeResponse(
+        return resolve(buildResponseMessage(message, await makeResponse(
           message.type,
-          message.params.event || message.params,
+          message.params?.event || message.params,
         )));
       case AllowKind.RejectForSession:
         pushHistory(false, message);
-        return Promise.resolve(buildResponseMessage(message, {
+        return resolve(buildResponseMessage(message, {
           error: {
             message: "User rejected the request",
             stack: "User rejected the request",
@@ -394,10 +383,7 @@ async function manageRequest(message: Message): Promise<any> {
   });
 }
 
-
-
 web.runtime.onMessage.addListener((message: Message, sender: MessageSender, sendResponse) => {
-  console.log(message, sender)
   if (message.prompt) {
     manageResult(message, sender);
     sendResponse({ message: true });

@@ -33,4 +33,12 @@ interface PopupParams {
     permissions?: string[];
 }
 
-export { Message, MessageSender, MessageType, PopupParams }
+enum AllowKind {
+    AlWaysAllow,
+    AlwaysReject,
+    AllowForSession,
+    RejectForSession,
+    Nothing
+}
+
+export { Message, MessageSender, MessageType, PopupParams, AllowKind }

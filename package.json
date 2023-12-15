@@ -48,6 +48,7 @@
 		"@sveltejs/vite-plugin-svelte": "^3.0.1",
 		"@types/chrome": "^0.0.253",
 		"esbuild": "^0.19.8",
+		"javascript-time-ago": "^2.5.9",
 		"nostr-tools": "^1.17.0",
 		"qrcode": "^1.5.3",
 		"vite-plugin-singlefile": "^0.13.5"

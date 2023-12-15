@@ -5,7 +5,7 @@ import { get, type Writable } from 'svelte/store';
 import { defaultWebNotificationSettings, web } from './utils';
 import { getPublicKey, nip19 } from 'nostr-tools';
 import type { NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
-import { profiles, webNotifications, relays, userProfile, theme } from './data';
+import { profiles, webNotifications, userProfile, theme } from './data';
 import { NostrUtil } from '$lib/utility';
 
 function browserControlleur() {
@@ -289,7 +289,7 @@ export async function saveProfiles(): Promise<void> {
 const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const _relays = get(relays);
+			const _relays = get(userProfile).data?.relays as Relay[];
 			const relay: Relay = {
 				url: relayUrl,
 				enabled: true,
@@ -311,7 +311,7 @@ const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const _relays = get(relays);
+			const _relays = get(userProfile).data?.relays as Relay[];
 			const index = _relays.findIndex((r) => r.url === relay.url);
 			_relays.splice(index, 1);
 			userProfile.update((profile) => {
