@@ -14,7 +14,7 @@ export function getBrowser() {
 }
 export const web: typeof chrome = getBrowser();
 
-export function domainToUrl(url: string) {
+export function urlToDomain(url: string) {
   return url?.split("/")[2];
 }
 

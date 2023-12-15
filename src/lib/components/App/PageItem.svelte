@@ -5,7 +5,7 @@
 </script>
 
 {#if $currentPage.toString() === name}
-	<div class="w-full">
+	<div class="w-full h-full flex flex-col flex-grow">
 		<slot />
 	</div>
 {/if}

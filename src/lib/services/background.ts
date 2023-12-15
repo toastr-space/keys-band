@@ -1,5 +1,5 @@
 import { finishEvent, getEventHash, getPublicKey, getSignature, nip04 } from "nostr-tools";
-import { domainToUrl, web } from "../stores/utils";
+import { urlToDomain, web } from "../stores/utils";
 import {
   profileControlleur
 } from "../stores/key-store";
@@ -266,7 +266,7 @@ async function manageResult(message: Message, sender: any) {
 }
 
 const pushHistory = async (yes: boolean, message: Message) => {
-  const domain = domainToUrl(message.url || "");
+  const domain = urlToDomain(message.url || "");
   await addHistory(
     {
       acceptance: yes,
@@ -318,7 +318,7 @@ async function manageRequest(message: Message): Promise<any> {
   return new Promise(async (resolve) => {
     await profileControlleur.loadProfiles();
     const user = get(userProfile)
-    const domain = domainToUrl(message.url || "");
+    const domain = urlToDomain(message.url || "");
 
     if (user.data?.privateKey === undefined)
       return Promise.resolve(buildResponseMessage(message, {

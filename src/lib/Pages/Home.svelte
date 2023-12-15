@@ -1,41 +1,37 @@
 <script lang="ts">
-	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
-	import RecentActivity from '$lib/components/RecentActivity.svelte';
 	import AuthorizationNew from '$lib/components/Authorization.svelte';
+	import RecentActivity from '$lib/components/RecentActivity.svelte';
+	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
 
-	import { onMount } from 'svelte';
-	import { userProfile } from '$lib/stores/data';
-	import { domainToUrl } from '$lib/stores/utils';
 	import { AppPageItem } from '$lib/components/App';
-	import { BrowserUtil, ProfileUtil } from '$lib/utility';
-
-	import type { WebSite } from '$lib/types';
+	import { urlToDomain } from '$lib/stores/utils';
+	import { BrowserUtil } from '$lib/utility';
+	import { onMount } from 'svelte';
 
 	let currentTab: chrome.tabs.Tab;
-	let site: WebSite;
 
 	let showAuthorization = false;
-	onMount(() => {
+	onMount(() =>
 		BrowserUtil.getCurrentTab().then((tab) => {
 			currentTab = tab;
-			site = ProfileUtil.getWebSiteOrCreate(domainToUrl(currentTab?.url || ''), $userProfile);
-		});
-	});
+		})
+	);
 </script>
 
 <AppPageItem name="home">
-	<div class="w-full">
-		<AuthorizedApp
-			domain={domainToUrl(currentTab?.url || '')}
-			on:showAuthorization={() => {
-				showAuthorization = !showAuthorization;
-			}}
-		/>
-
-		{#if showAuthorization}
+	<div class="w-full h-full flex flex-col">
+		{#if !showAuthorization}
+			<AuthorizedApp
+				domain={urlToDomain(currentTab?.url || '')}
+				on:showAuthorization={() => {
+					showAuthorization = !showAuthorization;
+				}}
+			/>
+			<RecentActivity domain={urlToDomain(currentTab?.url || '')} />
+		{:else}
 			<br />
 			<AuthorizationNew
-				domain={domainToUrl(currentTab?.url || '')}
+				domain={urlToDomain(currentTab?.url || '')}
 				isPopup={false}
 				popupType={'permission'}
 				on:cancel={() => {
@@ -45,8 +41,6 @@
 					showAuthorization = false;
 				}}
 			/>
-		{:else}
-			<RecentActivity domain={domainToUrl(currentTab?.url || '')} />
 		{/if}
 	</div>
 </AppPageItem>

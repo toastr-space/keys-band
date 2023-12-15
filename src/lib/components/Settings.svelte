@@ -3,7 +3,7 @@
 	import { keyStore, relays, userProfile, webNotifications, webSites } from '$lib/stores/data';
 
 	import { profileControlleur } from '$lib/stores/key-store';
-	import { domainToUrl, reverseArray, timeAgo, tr, web } from '$lib/stores/utils';
+	import { urlToDomain, reverseArray, timeAgo, tr, web } from '$lib/stores/utils';
 
 	const hexPubKey = getPublicKey($keyStore);
 	const nPubKey = nip19.npubEncode(hexPubKey);
@@ -27,7 +27,7 @@
 	let currentTab = 0;
 
 	$: currentSite = $userProfile.data?.webSites
-		? $userProfile.data.webSites[domainToUrl(_currentTab.url || '')]
+		? $userProfile.data.webSites[urlToDomain(_currentTab.url || '')]
 		: [];
 </script>
 

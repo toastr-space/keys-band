@@ -19,12 +19,12 @@
 	}
 </script>
 
-<div class="w-full h-full mx-auto flex flex-col justify-between">
+<div class="w-full h-full mx-auto flex flex-col flex-grow justify-between">
 	<div
 		class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex w-full flex-col p-4 rounded-2xl mx-auto flex-grow"
 	>
 		<div
-			class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
+			class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[3px]"
 		>
 			AUTHORIZATION
 		</div>

@@ -5,7 +5,7 @@
 
 	import { sendAuthorizationResponse } from '$lib/utility/browser-utils';
 	import { profileControlleur } from '$lib/stores/key-store';
-	import { domainToUrl } from '$lib/stores/utils';
+	import { urlToDomain } from '$lib/stores/utils';
 	import { onMount } from 'svelte';
 
 	let parameter: PopupParams;
@@ -26,7 +26,7 @@
 		<Authorization
 			popupType={parameter.type}
 			isPopup={true}
-			domain={domainToUrl(parameter.url || '')}
+			domain={urlToDomain(parameter.url || '')}
 			on:cancel={(event) =>
 				sendAuthorizationResponse(false, event.detail.duration, parameter.url, parameter.requestId)}
 			on:accepted={(event) =>

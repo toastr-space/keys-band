@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Footer from './Footer.svelte';
-	import { domainToUrl } from '$lib/stores/utils';
+	import { urlToDomain } from '$lib/stores/utils';
 	import QRCode from 'qrcode';
 	import { keyStore } from '$lib/stores/data';
 	import { getPublicKey } from 'nostr-tools';

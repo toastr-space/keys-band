@@ -1,7 +1,13 @@
 <script>
+	import en from 'javascript-time-ago/locale/en';
+	import TimeAgo from 'javascript-time-ago';
+
 	import { computePosition, autoUpdate, offset, shift, flip, arrow } from '@floating-ui/dom';
 	import { storePopup } from '@skeletonlabs/skeleton';
+
 	import './styles.css';
+
+	TimeAgo.addDefaultLocale(en);
 
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 </script>

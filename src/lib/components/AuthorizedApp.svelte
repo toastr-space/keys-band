@@ -1,14 +1,11 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import TimeAgo from 'javascript-time-ago';
-	import en from 'javascript-time-ago/locale/en';
 
 	import { createEventDispatcher } from 'svelte';
 	import { timeStop } from '$lib/stores/data';
 
 	export let domain = '';
-
-	TimeAgo.addDefaultLocale(en);
 
 	const dispatcher = createEventDispatcher();
 	const timeAgo = new TimeAgo('en-US');
