@@ -6,7 +6,8 @@ const createNewWebSite = (): WebSite => {
         permission: {
             always: false,
             accept: false,
-            reject: false
+            reject: false,
+            authorizationStop: new Date().toString()
         },
         history: []
     }
@@ -14,6 +15,7 @@ const createNewWebSite = (): WebSite => {
 
 const getWebSiteOrCreate = (domain: string, profile: Profile): WebSite => {
     let site;
+    console.log("getWebSiteOrCreate", domain, profile.data?.webSites);
     if (profile.data?.webSites) {
         site = profile.data?.webSites[domain] || createNewWebSite();
     } else {

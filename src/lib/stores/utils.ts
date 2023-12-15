@@ -48,7 +48,7 @@ export function remainingTime(datetime: Date) {
   return _hours + ":" + _minutes + ":" + _seconds + "";
 }
 
-export function getDuration(choice: number): Date | undefined {
+export function getDuration(choice: number): Date {
   const duration = new Date();
   switch (choice) {
     case 0:
@@ -64,6 +64,7 @@ export function getDuration(choice: number): Date | undefined {
     case 5:
       return new Date(duration.getTime() + 5 * 24 * 60 * 60 * 1000);
   }
+  return new Date();
 }
 
 export function reverseArray(arr: unknown[]) {

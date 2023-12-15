@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AuthorizationNew from '$lib/components/AuthorizationNew.svelte';
+	import Authorization from '$lib/components/Authorization.svelte';
 
 	import type { PopupParams } from '$lib/types';
 
@@ -23,7 +23,7 @@
 
 <div class="w-full h-full flex flex-col p-4 mx-auto items-center bg-[#222222]">
 	{#if parameter?.url}
-		<AuthorizationNew
+		<Authorization
 			popupType={parameter.type}
 			isPopup={true}
 			domain={domainToUrl(parameter.url || '')}

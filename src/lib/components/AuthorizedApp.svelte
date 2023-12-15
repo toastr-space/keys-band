@@ -1,17 +1,33 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import TimeAgo from 'javascript-time-ago';
+	import en from 'javascript-time-ago/locale/en';
+
+	import { createEventDispatcher, onMount } from 'svelte';
+	import { userProfile } from '$lib/stores/data';
+	import { ProfileUtil } from '$lib/utility';
+	import { readable } from 'svelte/store';
 
 	import type { WebSite } from '$lib/types';
 
-	import { createEventDispatcher } from 'svelte';
-
 	const dispatcher = createEventDispatcher();
+
+	TimeAgo.addDefaultLocale(en);
+	const timeAgo = new TimeAgo('en-US');
+
 	export let site: WebSite;
-	$: timeLeft =
-		(new Date().getTime() - new Date(site?.permission?.authorizationStop as Date).getTime()) /
-			(1000 * 60 * 60 * 24) || 0;
-	export let timeUnit = 'days';
+	let time = new Date();
 	export let domain = '';
+
+	const t = readable(time, (set) => {
+		const interval = setInterval(() => {
+			site = ProfileUtil.getWebSiteOrCreate(domain, $userProfile);
+			set(new Date(site?.permission?.authorizationStop || '') || new Date());
+		}, 500);
+		return () => clearInterval(interval);
+	});
+
+	onMount(() => (site = ProfileUtil.getWebSiteOrCreate(domain, $userProfile)));
 </script>
 
 <div
@@ -24,7 +40,8 @@
 			AUTHORIZED APP
 		</div>
 		<div class="text-pink-600 dark:text-teal-400 text-xs leading-4 whitespace-nowrap">
-			{parseInt(timeLeft.toString())} more {timeUnit}
+			<!-- {site?.permission?.authorizationStop} -->
+			{timeAgo.format($t)}
 		</div>
 	</div>
 	<div class="justify-between items-stretch flex gap-5 mt-2">

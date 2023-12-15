@@ -17,7 +17,7 @@ const injectJsInTab = async (tab: chrome.tabs.Tab, jsFileName: string): Promise<
         });
         return Promise.resolve()
     } catch (e) {
-        console.log("Error injecting Nostr Provider", e);
+        console.error("Error injecting Nostr Provider", e);
         return Promise.reject(e)
     }
 }
@@ -37,24 +37,6 @@ const injectJsinAllTabs = async (jsFileName: string): Promise<void> => {
     });
 }
 
-
-// web.runtime.sendMessage({
-// 				prompt: true,
-// 				response: {
-// 					status: 'error',
-// 					error: true,
-// 					permission: {
-// 						always: event.detail.duration === 1,
-// 						duration: getDuration(event.detail.duration),
-// 						accept: false,
-// 						reject: true
-// 					}
-// 				},
-// 				ext: 'keys.band',
-// 				url: parameter.url,
-// 				requestId: parameter.requestId
-// 			});
-
 const createWindow = async (url: string): Promise<chrome.windows.Window> => {
     return web.windows.create({
         url: web.runtime.getURL(url),
@@ -64,8 +46,7 @@ const createWindow = async (url: string): Promise<chrome.windows.Window> => {
     });
 }
 
-const sendAuthorizationResponse = (yes: boolean, choice: number, url: string | undefined, requestedId: string | number | undefined) => {
-    console.log("sendAuthorizationResponse", yes, choice, url, requestedId)
+const sendAuthorizationResponse = (yes: boolean, choice: number, url: string | undefined, requestId: string | undefined) => {
     return web.runtime.sendMessage({
         prompt: true,
         response: {
@@ -80,7 +61,7 @@ const sendAuthorizationResponse = (yes: boolean, choice: number, url: string | u
         },
         ext: "keys.band",
         url,
-        requestedId
+        requestId
     });
 }
 

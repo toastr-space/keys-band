@@ -1,209 +1,75 @@
 <script lang="ts">
-	import { domainToUrl, getDuration, web } from '$lib/stores/utils';
-	import { profileControlleur } from '$lib/stores/key-store';
-	import { webSites } from '$lib/stores/data';
+	import Duration from './Duration.svelte';
+	import Icon from '@iconify/svelte';
+
+	import { accept } from '$lib/stores/authorization';
 	import { createEventDispatcher } from 'svelte';
 	import { tr } from '$lib/stores/utils';
-	let login = false;
-
-	let loadPrivateKey = profileControlleur.loadPrivateKey;
-	let loadWebSites = profileControlleur.loadWebSites;
-
-	export let parameter;
-	export let isPopup = false;
-	export let domain: string;
-	if (isPopup) {
-		domain = domainToUrl(parameter?.get('url'));
-		if (parameter?.get('action') === 'login') {
-			login = true;
-		} else {
-			parameter?.set('action', 'register');
-		}
-	} else {
-		login = true;
-	}
 
 	const dispatch = createEventDispatcher();
-	function cancel() {
-		dispatch('cancel', {});
-	}
 
-	let choice: number = 0;
+	let durationChoice: number = 0;
 
-	function accept(accept: boolean, duration: Date = new Date()) {
-		if (typeof document === 'undefined') {
-			return;
-		}
-		if (isPopup) {
-			loadPrivateKey()
-				.then(() => {
-					web.runtime.sendMessage({
-						prompt: true,
-						response: {
-							status: 'success',
-							error: accept ? false : true,
-							permission: {
-								always: choice === 1,
-								duration: getDuration(choice),
-								accept: accept,
-								reject: !accept
-							}
-						},
-						ext: 'keys.band',
-						url: parameter?.get('url'),
-						requestId: parameter?.get('requestId')
-					});
-				})
-				.catch((err) => {
-					alert(err);
-				});
-		} else {
-			loadPrivateKey()
-				.then(async () => {
-					try {
-						let _webSites = await loadWebSites();
-						if (_webSites === undefined || _webSites === null) {
-							_webSites = {};
-						}
-						if (Object.keys(_webSites).indexOf(domain) !== -1) {
-							let site = $webSites;
-							if (site === undefined || site === null) {
-								site = {};
-							}
-							let st = site[domain];
-							st.permission = {
-								always: choice === 1,
-								authorizationStop: getDuration(choice).toString(),
-								accept: accept,
-								reject: !accept
-							};
-							let array = st.history || [];
-							array.push({
-								accepted: accept,
-								type: 'permission',
-								created_at: new Date().toString(),
-								data: undefined
-							});
-							st['history'] = array;
-							site[domain] = st;
-							_webSites[domain] = st;
-							await web?.storage?.local?.set({ webSites: _webSites });
-							await loadWebSites();
-						} else {
-							let site = $webSites;
-							if (site === undefined || site === null) {
-								site = {};
-							}
-							let st = {
-								auth: true,
-								history: [
-									{
-										accepted: accept,
-										type: 'permission',
-										created_at: new Date().toString(),
-										data: undefined
-									}
-								],
-								permission: {
-									always: choice === 1,
-									authorizationStop: getDuration(choice).toString(),
-									accept: accept,
-									reject: !accept
-								}
-							};
+	export let domain: string;
+	export let popupType: string;
+	export let isPopup = false;
 
-							site[domain] = st;
-							await web?.storage?.local?.set({ webSites: site });
-							await loadWebSites();
-						}
-
-						cancel();
-					} catch (err) {
-						alert(err);
-					}
-				})
-				.catch((err) => {
-					alert(err);
-				});
-		}
+	function handleDurationChange(event: { detail: { value: number } }) {
+		durationChoice = event.detail.value;
 	}
 </script>
 
-<div class="w-full h-full flex flex-wrap fixed-width">
-	{#if login}
-		<p class="w-full text-center p-10 pt-4 pb-6">
-			<span class="text-center text-xl prose prose-lg">
-				<span class="text-primary-content font-sans font-italic italic">{domain} </span>
-				<br />
-				<span class="badge p-4 mt-2 badge-secondary">
-					{#if isPopup}
-						{tr(parameter?.get('type'))}
-					{:else}
-						{tr('permission')}
-					{/if}
-				</span>
-			</span>
-		</p>
-		<div class="w-full p-4 pt-2 flex flex-row flex-wrap justify-center space-x-2">
-			<div class="form-control">
-				<label class="cursor-pointer label">
-					<span class="label-text mr-2">One Time</span>
-					<input type="radio" bind:group={choice} class="radio" value={0} />
-				</label>
-			</div>
-			<div class="form-control">
-				<label class="cursor-pointer label">
-					<span class="label-text mr-2">Always</span>
-					<input type="radio" bind:group={choice} class="radio" value={1} />
-				</label>
-			</div>
-			<div class="form-control">
-				<label class="cursor-pointer label">
-					<span class="label-text mr-2">Next 5 minutes</span>
-					<input type="radio" bind:group={choice} class="radio" value={2} />
-				</label>
-			</div>
-			<div class="form-control">
-				<label class="cursor-pointer label">
-					<span class="label-text mr-2">Next hour</span>
-					<input type="radio" bind:group={choice} class="radio" value={3} />
-				</label>
-			</div>
-
-			<div class="form-control">
-				<label class="cursor-pointer label">
-					<span class="label-text mr-2">Next 5 hours</span>
-					<input type="radio" bind:group={choice} class="radio" value={4} />
-				</label>
-			</div>
-
-			<div class="form-control">
-				<label class="cursor-pointer label">
-					<span class="label-text mr-2">Next 5 days</span>
-					<input type="radio" bind:group={choice} class="radio" value={5} />
-				</label>
+<div class="w-full h-full mx-auto flex flex-col justify-between">
+	<div
+		class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex w-full flex-col p-4 rounded-2xl mx-auto flex-grow"
+	>
+		<div
+			class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
+		>
+			AUTHORIZATION
+		</div>
+		<div class="text-black dark:text-white text-2xl font-semibold leading-7 whitespace-nowrap mt-2">
+			{domain}
+		</div>
+		<div class="text-black dark:text-white text-base leading-5 whitespace-nowrap mt-2">
+			would like to:
+		</div>
+		<div class="items-center flex justify-between gap-3 mt-2">
+			<Icon icon="mdi:check" width={16} class="text-teal-400" />
+			<div
+				class="text-black dark:text-white text-base leading-5 self-stretch grow whitespace-nowrap"
+			>
+				{#if isPopup}
+					{tr(popupType)}
+				{:else}
+					{tr('permission')}
+				{/if}
 			</div>
 		</div>
-		<div class="w-full flex flex-col justify-center items-center p-10 pt-0">
-			<button class="w-full btn btn-accent mb-2" on:click={() => accept(true, new Date())}>
-				Accept
-			</button>
-			<button class="w-full btn btn-secondary mb-2" on:click={() => accept(false, new Date())}>
-				Reject
-			</button>
+		<div class="flex-grow"></div>
+	</div>
 
-			{#if !isPopup}
-				<button class="w-full btn btn-neutral" on:click={() => cancel()}> Cancel </button>
-			{/if}
+	<Duration on:durationChange={handleDurationChange} />
 
-			{#if isPopup}
-				<div class="mockup-code justify-center mt-4 w-11/12 mx-2">
-					<code class="prose break-words p-4">{unescape(parameter?.get('data'))}</code>
-				</div>
-			{/if}
-		</div>
-	{/if}
+	<div class="items-stretch flex w-full gap-3 mt-3">
+		<button
+			class="btn text-black dark:text-white bg-surface-400 font-medium leading-5 whitespace-nowrap justify-center bg-opacity-20 px-8 py-3 rounded-full"
+			on:click={async () => {
+				await accept(false, domain, durationChoice);
+				dispatch('cancel', { duration: durationChoice });
+			}}
+		>
+			Reject
+		</button>
+		<button
+			class="btn bg-pink-400 dark:bg-teal-400 flex gap-2 px-20 py-3 rounded-full w-full place-content-center max-md:px-5"
+			on:click={async () => {
+				await accept(true, domain, durationChoice);
+				dispatch('accepted', { duration: durationChoice });
+			}}
+		>
+			<div class="text-black text-base font-medium leading-5">Confirm</div>
+			<Icon icon="mdi:check" width={20} class="text-black" />
+		</button>
+	</div>
 </div>
-
-<style>
-</style>

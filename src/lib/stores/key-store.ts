@@ -161,22 +161,20 @@ export async function loadProfile(profile: Profile): Promise<boolean | Profile |
 }
 
 const saveProfile = async (profile: Profile): Promise<void> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const _profiles = get(profiles);
-			let index;
-			if (profile.id) {
-				index = _profiles.findIndex((p) => p.id === profile.id);
-				if (index === -1)
-					index = _profiles.findIndex((p) => p.data?.privateKey === profile.data?.privateKey);
-			} else index = _profiles.findIndex((p) => p.data?.privateKey === profile.data?.privateKey);
-			_profiles[index] = profile;
-			await browser.set({ profiles: _profiles });
-			resolve();
-		} catch (err) {
-			reject(err);
-		}
-	});
+	try {
+		const _profiles = get(profiles);
+		let index;
+		if (profile.id) {
+			index = _profiles.findIndex((p) => p.id === profile.id);
+			if (index === -1)
+				index = _profiles.findIndex((p) => p.data?.privateKey === profile.data?.privateKey);
+		} else index = _profiles.findIndex((p) => p.data?.privateKey === profile.data?.privateKey);
+		_profiles[index] = profile;
+		await browser.set({ profiles: _profiles });
+		Promise.resolve();
+	} catch (err) {
+		Promise.reject(err);
+	}
 };
 
 export async function deleteProfile(
@@ -242,12 +240,12 @@ export async function loadProfiles(): Promise<Writable<Profile[]>> {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const value = await browser.get('profiles');
-			if (value?.profiles) {
-				profiles.set((value?.profiles as Profile[]) || []);
-			} else {
+			if (value?.profiles) profiles.set((value?.profiles as Profile[]) || []);
+			else {
 				browser.set({ profiles: [] });
 				profiles.set([]);
 			}
+
 			const data = await browser.get('currentProfile');
 
 			for (const profile of get(profiles)) {
@@ -260,7 +258,7 @@ export async function loadProfiles(): Promise<Writable<Profile[]>> {
 				}
 				if (profile.id === data?.currentProfile) {
 					userProfile.set(profile);
-					loadProfile(profile);
+					await loadProfile(profile);
 				}
 
 				NostrUtil.getMetadata(profile?.data?.pubkey as string).then((metaData) => {

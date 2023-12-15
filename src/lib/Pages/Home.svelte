@@ -1,24 +1,24 @@
 <script lang="ts">
 	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
 	import RecentActivity from '$lib/components/RecentActivity.svelte';
-	import AuthorizationNew from '$lib/components/AuthorizationNew.svelte';
+	import AuthorizationNew from '$lib/components/Authorization.svelte';
 
 	import { onMount } from 'svelte';
-	import { BrowserUtil } from '$lib/utility';
 	import { userProfile } from '$lib/stores/data';
-	import { AppPageItem } from '$lib/components/App';
 	import { domainToUrl } from '$lib/stores/utils';
+	import { AppPageItem } from '$lib/components/App';
+	import { BrowserUtil, ProfileUtil } from '$lib/utility';
+
 	import type { WebSite } from '$lib/types';
 
 	let currentTab: chrome.tabs.Tab;
-	let webSite: WebSite;
+	let site: WebSite;
 
 	let showAuthorization = false;
 	onMount(() => {
 		BrowserUtil.getCurrentTab().then((tab) => {
 			currentTab = tab;
-			let webSites = $userProfile?.data?.webSites || {};
-			webSite = webSites[domainToUrl(currentTab?.url || '')] || webSite;
+			site = ProfileUtil.getWebSiteOrCreate(domainToUrl(currentTab?.url || ''), $userProfile);
 		});
 	});
 </script>
@@ -26,7 +26,7 @@
 <AppPageItem name="home">
 	<div class="w-full">
 		<AuthorizedApp
-			site={webSite}
+			{site}
 			domain={domainToUrl(currentTab?.url || '')}
 			on:showAuthorization={() => {
 				showAuthorization = !showAuthorization;
@@ -38,7 +38,7 @@
 			<AuthorizationNew
 				domain={domainToUrl(currentTab?.url || '')}
 				isPopup={false}
-				parameter={null}
+				popupType={'permission'}
 				on:cancel={() => {
 					showAuthorization = false;
 				}}

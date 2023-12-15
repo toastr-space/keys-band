@@ -1,15 +1,16 @@
-import { userProfile } from '$lib/stores/data';
 import { get } from 'svelte/store';
 import { getDuration } from './utils';
+import { userProfile } from '$lib/stores/data';
 import { profileControlleur } from './key-store';
+import { ProfileUtil } from '$lib/utility';
 
 const accept = async (accept: boolean, domain: string, choice: number = 0) => {
     try {
         const webSites = get(userProfile)?.data?.webSites || {};
-        const site = webSites[domain] || {};
+        const site = ProfileUtil.getWebSiteOrCreate(domain, get(userProfile));
         site.permission = {
             always: choice === 1,
-            authorizationStop: getDuration(choice),
+            authorizationStop: getDuration(choice)?.toString(),
             accept: accept,
             reject: !accept
         };

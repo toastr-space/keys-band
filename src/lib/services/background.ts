@@ -5,7 +5,9 @@ import {
 } from "../stores/key-store";
 
 import type {
-  WebSite
+  Profile,
+  WebSite,
+  Authorization,
 } from "$lib/types/profile"
 
 import {
@@ -25,7 +27,12 @@ web.runtime.onStartup.addListener(() => {
   BrowserUtil.injectJsinAllTabs("content.js");
 });
 
-// end of injection
+
+const getUserProfile = async (): Promise<Profile> => {
+  await profileControlleur.loadProfiles();
+  const user = get(userProfile)
+  return Promise.resolve(user);
+}
 
 const responders: {
   [key: string]: {
@@ -212,44 +219,51 @@ async function addHistory(
   }
 }
 
+
+
 async function manageResult(message: Message, sender: any) {
-  if (message.response === undefined) return
-  const responderData = responders[message.requestId as string];
-  if (!responderData) return
+  try {
+    console.log(message.response, responders, message.requestId)
+    if (message.response === undefined) return
+    const responderData = responders[message.requestId as string];
+    if (!responderData) return
 
-  const domain = responderData.domain;
-  const user = get(userProfile)
-  const site: WebSite = ProfileUtil.getWebSiteOrCreate(domain, user);
+    const domain = responderData.domain;
+    const user = get(userProfile)
+    const site: WebSite = ProfileUtil.getWebSiteOrCreate(domain, user);
 
-  await updatePermission(
-    message.response.permission,
-    site,
-    responderData.domain,
-    responderData.type
-  );
+    await updatePermission(
+      message.response.permission,
+      site,
+      responderData.domain,
+      responderData.type
+    );
 
-  if (message.response.error) {
-    responderData.resolve({
-      id: message.requestId,
-      type: responderData.type,
-      ext: "keys.band",
-      response: {
-        error: {
-          message: "User rejected the request",
-          stack: "User rejected the request",
+    if (message.response.error) {
+      responderData.resolve({
+        id: message.requestId,
+        type: responderData.type,
+        ext: "keys.band",
+        response: {
+          error: {
+            message: "User rejected the request",
+            stack: "User rejected the request",
+          },
         },
-      },
-    });
-  } else {
-    responderData.resolve({
-      id: message.requestId,
-      type: responderData.type,
-      ext: "keys.band",
-      response: await makeResponse(
-        responderData.type,
-        responderData.data
-      )
-    });
+      });
+    } else {
+      responderData.resolve({
+        id: message.requestId,
+        type: responderData.type,
+        ext: "keys.band",
+        response: await makeResponse(
+          responderData.type,
+          responderData.data
+        )
+      });
+    }
+  } catch (e) {
+    console.error(e);
   }
 
   web.windows.remove(sender.tab.windowId);
@@ -257,132 +271,115 @@ async function manageResult(message: Message, sender: any) {
   return;
 }
 
-async function manageRequest(message: any) {
+enum AllowKind {
+  AlWaysAllow,
+  AlwaysReject,
+  AllowForSession,
+  RejectForSession,
+  Nothing
+}
+
+const pushHistory = async (yes: boolean, message: Message) => {
+  const domain = domainToUrl(message.url || "");
+  await addHistory(
+    {
+      acceptance: yes,
+      type: message.type,
+    },
+    domain
+  );
+}
+
+const isAllow = async (domain: string): Promise<AllowKind> => {
+  const user = await getUserProfile();
+  const site: WebSite = ProfileUtil.getWebSiteOrCreate(domain, user);
+  const permission: Authorization = site.permission as Authorization;
+
+  if (permission.accept === true) {
+    if (permission.always === true) return Promise.resolve(AllowKind.AlWaysAllow);
+    else {
+      if (new Date(permission.authorizationStop || "") > new Date()) return Promise.resolve(AllowKind.AllowForSession);
+      else return Promise.resolve(AllowKind.Nothing);
+    }
+  } else if (permission.reject === true) {
+    if (permission.always === true) return Promise.resolve(AllowKind.AlwaysReject);
+    else {
+      if (new Date(permission.authorizationStop || "") > new Date()) return Promise.resolve(AllowKind.RejectForSession);
+      else return Promise.resolve(AllowKind.Nothing);
+    }
+  } else return Promise.resolve(AllowKind.Nothing);
+}
+
+const buildResponseMessage = (message: Message, response: any): any => {
+  return {
+    id: message.id,
+    type: message.type,
+    ext: "keys.band",
+    response: response ?? {
+      error: {
+        message: "User rejected the request",
+        stack: "User rejected the request",
+      },
+    },
+    url: message.url,
+  }
+}
+
+/*eslint no-async-promise-executor: 0*/
+async function manageRequest(message: Message): Promise<any> {
   return new Promise(async (resolve) => {
-    profileControlleur.loadProfiles();
+    await profileControlleur.loadProfiles();
     const user = get(userProfile)
-    let site;
-    let resolved: boolean = false;
-    if (user.data?.privateKey === undefined) {
-      resolved = true;
-      resolve({
-        id: message.id,
-        type: message.type,
-        ext: "keys.band",
-        response: {
-          error: {
-            message: "No private key found",
-            stack: "No private key found",
-          },
+    const domain = domainToUrl(message.url || "");
+
+    if (user.data?.privateKey === undefined)
+      return Promise.resolve(buildResponseMessage(message, {
+        error: {
+          message: "User rejected the request",
+          stack: "User rejected the request",
         },
-      });
-      return;
+      }));
+
+    const access: AllowKind = await isAllow(domain);
+
+    switch (access) {
+      case AllowKind.AlWaysAllow:
+        pushHistory(true, message);
+        return Promise.resolve(buildResponseMessage(message, await makeResponse(
+          message.type,
+          message.params.event || message.params,
+        )));
+      case AllowKind.AlwaysReject:
+        pushHistory(false, message);
+        return Promise.resolve(buildResponseMessage(message, {
+          error: {
+            message: "User rejected the request",
+            stack: "User rejected the request",
+          },
+        }));
+      case AllowKind.AllowForSession:
+        pushHistory(true, message);
+        return Promise.resolve(buildResponseMessage(message, await makeResponse(
+          message.type,
+          message.params.event || message.params,
+        )));
+      case AllowKind.RejectForSession:
+        pushHistory(false, message);
+        return Promise.resolve(buildResponseMessage(message, {
+          error: {
+            message: "User rejected the request",
+            stack: "User rejected the request",
+          },
+        }));
+      case AllowKind.Nothing:
+        break;
     }
-
-    try {
-      site = (user?.data?.webSites as WebSite[])[domainToUrl(message.url)];
-    } catch (e) {
-      site = undefined;
-    }
-
-    if (site) {
-      if (
-        site.auth &&
-        (site.permission.accept !== undefined ||
-          site.permission.always !== undefined)
-      ) {
-        if (site.permission.accept && site.permission.always) {
-          const res = await makeResponse(
-            message.type,
-            message.params.event || message.params,
-            domainToUrl(message.url)
-          );
-
-          addHistory(
-            {
-              acceptance: true,
-              type: message.type,
-            },
-            domainToUrl(message.url)
-          );
-
-          resolved = true;
-          resolve({
-            id: message.id,
-            type: message.type,
-            ext: "keys.band",
-            response: res,
-          });
-          return;
-        } else if (site.permission.accept && !site.permission.always) {
-          if (new Date(site.permission.authorizationStop) > new Date()) {
-            const res = await makeResponse(
-              message.type,
-              message.params.event || message.params,
-              domainToUrl(message.url)
-            );
-
-            addHistory(
-              {
-                acceptance: true,
-                type: message.type,
-              },
-              domainToUrl(message.url)
-            );
-
-            resolved = true;
-            resolve({
-              id: message.id,
-              type: message.type,
-              ext: "keys.band",
-              response: res,
-            });
-            return;
-          }
-        } else {
-          if (site.permission.reject) {
-            if (
-              new Date(site.permission.authorizationStop) < new Date() &&
-              !site.permission.always
-            ) {
-              site.permission.reject = false;
-              site.permission.accept = true;
-              site.permission.always = false;
-            } else {
-              resolved = true;
-
-              addHistory(
-                {
-                  acceptance: false,
-                  type: message.type,
-                },
-                domainToUrl(message.url)
-              );
-
-              resolve({
-                id: message.id,
-                type: message.type,
-                ext: "keys.band",
-                response: {
-                  error: {
-                    message: "User rejected the request",
-                    stack: "User rejected the request",
-                  },
-                },
-              });
-              return;
-            }
-          }
-        }
-      }
-    }
-    if (resolved) return;
 
     responders[message.id] = {
-      resolve: resolve,
+      resolve,
+      domain,
       type: message.type,
       data: message.params.event || message.params,
-      domain: domainToUrl(message.url),
     };
 
     const data: PopupParams = {
@@ -400,7 +397,7 @@ async function manageRequest(message: any) {
 
 
 web.runtime.onMessage.addListener((message: Message, sender: MessageSender, sendResponse) => {
-
+  console.log(message, sender)
   if (message.prompt) {
     manageResult(message, sender);
     sendResponse({ message: true });

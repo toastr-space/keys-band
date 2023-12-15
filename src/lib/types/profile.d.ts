@@ -24,7 +24,7 @@ interface Authorization {
     always: boolean;
     accept: boolean;
     reject: boolean;
-    authorizationStop?: Date;
+    authorizationStop?: string | undefined;
 }
 
 interface WebSite {
@@ -65,4 +65,4 @@ enum ProfileDeleteMethod {
     BY_NAME,
     BY_PRIVATE_KEY
 }
-export { Profile, UserProfile, WebSite, ProfileSetting, Relay, NotificationSetting, ProfileDeleteMethod }
+export { Profile, UserProfile, WebSite, ProfileSetting, Relay, NotificationSetting, ProfileDeleteMethod, Authorization }

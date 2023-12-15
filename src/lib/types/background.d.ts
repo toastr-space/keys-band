@@ -28,7 +28,7 @@ interface PopupParams {
     type: string;
     data?: any;
     url?: string | undefined;
-    requestId?: string | number | undefined;
+    requestId?: string | undefined;
     origin?: string;
     permissions?: string[];
 }
