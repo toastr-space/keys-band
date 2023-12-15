@@ -26,7 +26,6 @@
 <AppPageItem name="home">
 	<div class="w-full">
 		<AuthorizedApp
-			{site}
 			domain={domainToUrl(currentTab?.url || '')}
 			on:showAuthorization={() => {
 				showAuthorization = !showAuthorization;

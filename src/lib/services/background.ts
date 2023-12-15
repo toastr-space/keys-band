@@ -280,17 +280,17 @@ const isAllow = async (domain: string): Promise<AllowKind> => {
   const user = await getUserProfile();
   const site: WebSite = ProfileUtil.getWebSiteOrCreate(domain, user);
   const permission: Authorization = site.permission as Authorization;
-  console.log(permission)
-  if (permission.accept === true) {
-    if (permission.always === true) return Promise.resolve(AllowKind.AlWaysAllow);
+
+  if (permission.accept) {
+    if (permission.always) return Promise.resolve(AllowKind.AlWaysAllow);
     else {
       if (new Date(permission.authorizationStop || "") > new Date()) {
         return Promise.resolve(AllowKind.AllowForSession)
       }
       else return Promise.resolve(AllowKind.Nothing);
     }
-  } else if (permission.reject === true) {
-    if (permission.always === true) return Promise.resolve(AllowKind.AlwaysReject);
+  } else if (permission.reject) {
+    if (permission.always) return Promise.resolve(AllowKind.AlwaysReject);
     else {
       if (new Date(permission.authorizationStop || "") > new Date()) return Promise.resolve(AllowKind.RejectForSession);
       else return Promise.resolve(AllowKind.Nothing);

@@ -9,8 +9,8 @@ enum MessageType {
 interface Message {
     id: string;
     requestId?: string | number | undefined;
-    prompt?: boolean | undefined;
-    response?: boolean | undefined | any;
+    prompt?: boolean | undefined;  // popup message
+    response?: boolean | undefined | any; // only when its reply
     type: MessageType | string;
     params: any | undefined;
     url: string | undefined;
