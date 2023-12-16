@@ -9,6 +9,7 @@
 	import { profileControlleur } from '$lib/stores/key-store';
 	import { userProfile, theme, profiles, currentPage } from '../stores/data';
 	import { tick } from 'svelte';
+	import { derived } from 'svelte/store';
 
 	let accountDropdownMenuOpen = false;
 
@@ -20,6 +21,11 @@
 			accountDropdownMenuOpen = false;
 		}
 	};
+
+	const displayName = derived(userProfile, ($userProfile) => {
+		const name = $userProfile?.metadata?.name || $userProfile?.name || 'Click to select account';
+		return name.length > 12 ? name.slice(0, 12) + '...' : name;
+	});
 
 	const load = (profile: Profile) => profileControlleur.loadProfile(profile);
 </script>
@@ -40,15 +46,15 @@
 				on:click={() => (accountDropdownMenuOpen = !accountDropdownMenuOpen)}
 			>
 				<span class="flex flex-row gap-2 items-center justify-between w-[250px]">
-					<img
+					<Avatar
 						src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
-						alt="Avatar"
-						class="rounded-full avatar w-10"
+						width="w-10"
+						rounded="rounded-full"
 					/>
 					<div
 						class="text-black dark:text-white text-xl font-semibold leading-7 text-ellipsis overflow-hidden flex-grow my-auto"
 					>
-						{$userProfile?.metadata?.name || $userProfile?.name || 'Loading...'}
+						{$displayName}
 					</div>
 					<Icon
 						icon={accountDropdownMenuOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
@@ -67,24 +73,32 @@
 				}}
 			>
 				<div
-					class="justify-center bg-surface-500 dark:bg-[#333333A8] bg-opacity-70 flex flex-col px-2 py-1.5 rounded-full h-8 w-8 transition-all"
+					class="justify-center bg-zinc-400 dark:bg-zinc-800 flex flex-col px-2 py-1.5 rounded-full h-8 w-8 transition-all"
 					class:ml-1={$theme === 'dark'}
 					class:ml-7={$theme === 'light'}
 				>
-					<Icon icon={$theme === 'dark' ? 'bi:moon-fill' : 'bi:sun-fill'} rotate={32} />
+					<Icon
+						class="text-white dark:text-gray-400"
+						icon={$theme === 'dark' ? 'bi:moon-fill' : 'bi:sun-fill'}
+						rotate={32}
+					/>
 				</div>
 			</button>
-			<button
-				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex items-center flex-col py-1.5 rounded-3xl h-11 w-16 pressed:bg-surface-900 aria-pressed:scale-95"
-				on:click={() => {
-					$currentPage = Page.Settings;
-				}}
+			<div
+				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex items-center flex-col py-1.5 rounded-3xl h-11 w-16"
 			>
-				<Icon icon="mdi:cog-outline" width={22} />
-			</button>
+				<button
+					class="btn btn-sm text-gray-500 px-0 py-0"
+					on:click={() => {
+						$currentPage = Page.Settings;
+					}}
+				>
+					<Icon icon="mdi:cog-outline" width={22} />
+				</button>
+			</div>
 		</div>
 		<div
-			class="card w-72 shadow-xl backdrop-blur-xl bg-zinc-400 dark:bg-zinc-800 bg-opacity-70 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
+			class="card w-72 shadow-xl backdrop-blur-xl bg-zinc-400 dark:bg-zinc-800 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
 			data-popup="accountDropdownMenu"
 		>
 			<nav class="list-nav">
@@ -92,24 +106,28 @@
 					{#each $profiles as profile}
 						<li class="justify-center items-stretch self-stretch flex w-full flex-col">
 							<div class="justify-between items-stretch flex w-full gap-5">
-								<div class="items-stretch flex justify-between gap-3">
-									<button on:click={() => load(profile)}>
+								<div class="items-stretch flex justify-between gap-1">
+									<button class="btn px-0 py-0" on:click={() => load(profile)}>
 										<Avatar
 											src={profile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
 											width="w-10"
 											rounded="rounded-full"
 										/>
 
-										<div
-											class="text-black dark:text-black dark:text-white text-base self-center my-auto"
-										>
-											{profile?.name}
+										<div class="text-white text-base self-center my-auto">
+											{#if profile.name}
+												{profile.name.length > 10
+													? profile.name.slice(0, 10) + '...'
+													: profile.name}
+											{/if}
 										</div>
-										<Icon icon="mdi:check" width={22} class="text-pink-400 dark:text-teal-400" />
+										{#if $userProfile?.name === profile?.name}
+											<Icon icon="mdi:check" width={22} class="text-pink-600 dark:text-teal-400" />
+										{/if}
 									</button>
 								</div>
 								<button
-									class="btn bg-transparent"
+									class="btn btn-sm text-gray-500 px-0 py-0"
 									on:click={async () => {
 										await profileControlleur.deleteProfile(profile);
 										await tick();
@@ -122,7 +140,7 @@
 						</li>
 					{/each}
 					<li
-						class="justify-center items-stretch self-stretch flex w-full flex-col py-3 border-t-[0.33px] border-t-white border-t-opacity-30 border-solid"
+						class="add-account-button justify-center items-stretch self-stretch flex w-full flex-col py-3 border-t-[0.33px] border-t-white border-solid"
 					>
 						<button
 							on:click={() => {
@@ -130,8 +148,8 @@
 							}}
 							class="mx-2"
 						>
-							<span class="badge"><Icon icon="mdi:plus" width={22} /></span>
-							<span class="flex-auto">Add Account</span>
+							<span class="badge text-white"><Icon icon="mdi:plus" width={22} /></span>
+							<span class="flex-auto text-white">Add Account</span>
 						</button>
 					</li>
 				</ul>
@@ -155,3 +173,10 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	li.add-account-button {
+		opacity: 1; /* or background-opacity: 1; */
+		z-index: 100000;
+	}
+</style>

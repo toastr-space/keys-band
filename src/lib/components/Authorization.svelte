@@ -35,7 +35,7 @@
 			would like to:
 		</div>
 		<div class="items-center flex justify-between gap-3 mt-2">
-			<Icon icon="mdi:check" width={16} class="text-teal-400" />
+			<Icon icon="mdi:check" width={16} class="text-pink-600 dark:text-teal-400" />
 			<div
 				class="text-black dark:text-white text-base leading-5 self-stretch grow whitespace-nowrap"
 			>

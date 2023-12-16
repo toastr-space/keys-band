@@ -27,23 +27,23 @@
 		<div class="justify-between flex gap-5 mt-2">
 			<div class="text-black dark:text-white text-base leading-5 flex flex-row items-center gap-2">
 				{#if siteHistory.accepted}
-					<Icon icon="bx:check" class="text-success-600" />
+					<Icon icon="bx:check" class="text-pink-600 dark:text-teal-400" />
 				{:else}
-					<Icon icon="mdi:close" class="text-error-600" />
+					<Icon icon="mdi:close" class="text-gray-800 dark:text-gray-400" />
 				{/if}
-				<span class="text-sm dark:text-white opacity-30">
+				<span class="text-sm text-black dark:text-white opacity-70">
 					{tr(siteHistory.type)}
 				</span>
 			</div>
 			<div
-				class="text-black dark:text-white text-xs leading-4 self-center whitespace-nowrap my-auto"
+				class="text-black dark:text-white opacity-30 text-xs leading-4 self-center whitespace-nowrap my-auto"
 			>
 				{timeAgo(new Date(siteHistory.created_at))}
 			</div>
 		</div>
 	{/each}
 	<span class="divider" />
-	<span class="text-right dark:text-white font-medium text-sm mt-2">
-		Total {history_count} activities
+	<span class="text-right text-black dark:text-white opacity-50 font-medium text-sm mt-2">
+		Total activities: {history_count}
 	</span>
 </div>

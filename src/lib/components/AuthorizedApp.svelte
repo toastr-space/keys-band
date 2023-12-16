@@ -27,21 +27,25 @@
 		</div>
 		<div
 			class="text-xs leading-4 whitespace-nowrap"
+			class:text-pink-600={$isAccepted}
+			class:text-gray-400={!$isAccepted}
 			class:dark:text-teal-400={$isAccepted}
-			class:dark:text-red-400={!$isAccepted}
+			class:dark:text-gray-600={!$isAccepted}
 		>
 			{time}
 		</div>
 	</div>
 	<div class="justify-between items-stretch flex gap-5 mt-2">
 		<div class="text-black dark:text-white text-2xl font-semibold leading-7">{domain}</div>
-		<button
-			class="btn btn-sm btn-ghost px-0 py-0"
-			on:click={() => {
-				dispatcher('showAuthorization', true);
-			}}
-		>
-			<Icon icon="mingcute:settings-2-line" width={26} class="opacity-40" />
-		</button>
+		<div class="bg-opacity-50">
+			<button
+				class="btn btn-sm text-gray-500 px-0 py-0"
+				on:click={() => {
+					dispatcher('showAuthorization', true);
+				}}
+			>
+				<Icon icon="mingcute:settings-2-line" width={26} />
+			</button>
+		</div>
 	</div>
 </div>

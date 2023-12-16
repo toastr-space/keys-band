@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AuthorizationNew from '$lib/components/Authorization.svelte';
+	import Authorization from '$lib/components/Authorization.svelte';
 	import RecentActivity from '$lib/components/RecentActivity.svelte';
 	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
 
@@ -30,7 +30,7 @@
 			<RecentActivity domain={urlToDomain(currentTab?.url || '')} />
 		{:else}
 			<br />
-			<AuthorizationNew
+			<Authorization
 				domain={urlToDomain(currentTab?.url || '')}
 				isPopup={false}
 				popupType={'permission'}

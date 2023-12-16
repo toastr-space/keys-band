@@ -127,7 +127,7 @@
 			<div class="col-span-2 mt-6">
 				<button
 					type="button"
-					class="btn bg-stone-600 text-gray-2"
+					class="btn bg-stone-400 text-white dark:bg-stone-600 dark:text-gray-2"
 					on:click={() => {
 						let sk = generatePrivateKey();
 						key = nip19.nsecEncode(sk);
@@ -142,13 +142,13 @@
 			<div class="col-start-6 col-span-1 mt-6 justify-self-end">
 				<button
 					type="button"
-					class="btn outline outline-1 outline-success-400 text-success-400 gap-2 items-center"
+					class="btn bg-pink-400 dark:bg-teal-400 text-black"
 					disabled={busy || !name || !key}
 					on:click={save}
 				>
 					<Icon icon="carbon:save" width={20} />
 					<span>
-						{busy ? 'Saving...' : 'Save Profile'}
+						{busy ? 'Adding...' : 'Add Account'}
 					</span>
 				</button>
 			</div>
