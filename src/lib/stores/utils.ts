@@ -54,7 +54,7 @@ export function getDuration(choice: number): Date {
     case 0:
       return new Date();
     case 1:
-      return new Date(duration.getTime() + 100 * 365 * 24 * 60 * 60 * 1000);
+      return new Date(duration.getTime() + 100 * 365 * 24 * 60 * 60 * 100);
     case 2:
       return new Date(duration.getTime() + 5 * 60 * 1000);
     case 3:
