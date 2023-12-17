@@ -7,12 +7,6 @@
 		generatePrivateKey,
 		getPublicKey,
 		nip19,
-		type Event,
-		getEventHash,
-		verifySignature,
-		type EventTemplate,
-		getSignature,
-		validateEvent,
 		finishEvent,
 		type UnsignedEvent
 	} from 'nostr-tools';

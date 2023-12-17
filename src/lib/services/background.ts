@@ -1,4 +1,4 @@
-import { finishEvent, getEventHash, getPublicKey, getSignature, nip04 } from "nostr-tools";
+import { finishEvent, getPublicKey, nip04 } from "nostr-tools";
 import { urlToDomain, web } from "../stores/utils";
 import {
   profileControlleur
@@ -23,11 +23,10 @@ const loadNotifications = profileControlleur.loadNotifications
 web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs("content.js"));
 web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs("content.js"));
 
-
 const getUserProfile = async (): Promise<Profile> => {
-  await profileControlleur.loadProfiles();
+  await profileControlleur.loadProfiles()
   const user = get(userProfile)
-  return Promise.resolve(user);
+  return Promise.resolve(user)
 }
 
 const responders: {
@@ -36,7 +35,7 @@ const responders: {
     type: string;
     data: any;
     domain: string;
-  };
+  }
 } = {};
 
 async function updatePermission(

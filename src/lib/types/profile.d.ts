@@ -49,7 +49,26 @@ interface ProfileSetting {
     relays: Relay[]
 }
 
+interface RelayMetadata {
+    name: string,
+    description: string,
+    pubkey: string,
+    contact?: string,
+    supported_nips?: object,
+    software?: string,
+    version?: string
+}
+
+interface RelayAccess {
+    READ,
+    WRITE,
+    READ_WRITE
+}
+
 interface Relay {
+    name?: string;
+    metadata?: RelayMetadata;
+    access?: RelayAccess;
     url: string;
     enabled: boolean;
     created_at: Date;
