@@ -45,6 +45,25 @@ export async function updateNotification(name: string): Promise<void> {
 	});
 }
 
+export async function loadTheme(): Promise<void> {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const value = await browser.get('theme');
+			if (value?.theme) {
+				theme.set(value?.theme as string);
+				document.documentElement.classList.remove('dark');
+			} else {
+				browser.set({ theme: 'dark' });
+				theme.set('dark');
+				document.documentElement.classList.add('dark');
+			}
+			resolve();
+		} catch (err) {
+			reject(err);
+		}
+	});
+}
+
 export async function switchTheme(themeName: string): Promise<void> {
 	return new Promise((resolve) => {
 		browser.set({ theme: themeName });
@@ -52,6 +71,7 @@ export async function switchTheme(themeName: string): Promise<void> {
 		if (typeof document === 'undefined') return;
 		if (themeName === 'dark') document.documentElement.classList.add('dark');
 		else document.documentElement.classList.remove('dark');
+		browser.set({ theme: themeName });
 		resolve();
 	});
 }
@@ -255,10 +275,6 @@ export async function saveProfiles(): Promise<void> {
 	});
 }
 
-/// END PROFILE MANAGEMENT
-
-// PROFILE OPTION
-
 const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -309,6 +325,7 @@ export const profileControlleur: {
 	loadNotifications: () => Promise<void>;
 	verifyKey: (value: string) => Promise<string>;
 	loadProfiles: () => Promise<Writable<Profile[]>>;
+	loadTheme: () => Promise<void>;
 	switchTheme: (themeName: string) => Promise<void>;
 	updateNotification: (name: string) => Promise<void>;
 	settingProfile: (profile: Profile) => Promise<void>;
@@ -320,6 +337,7 @@ export const profileControlleur: {
 } = {
 	verifyKey: checkNSEC,
 	loadProfile: loadProfile,
+	loadTheme: loadTheme,
 	switchTheme: switchTheme,
 	saveProfile: saveProfile,
 	saveProfiles: saveProfiles,

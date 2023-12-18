@@ -15,9 +15,7 @@
 	}
 </script>
 
-<div
-	class="bg-surface-400 dark:bg-black bg-opacity-50 flex w-full flex-col mt-3 p-4 flex-grow rounded-2xl"
->
+<div class="bg-surface-400 dark:bg-black flex w-full flex-col mt-3 p-4 flex-grow rounded-2xl">
 	<div
 		class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[3px]"
 	>
