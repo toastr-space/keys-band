@@ -5,7 +5,7 @@
 	import { PageSettings, PageHome, PageAddProfile } from '$lib/Pages/';
 
 	// Set theme based on local storage
-	// profileControlleur.loadTheme();
+	if (typeof document !== 'undefined') profileControlleur.loadTheme();
 
 	const promise = profileControlleur.loadProfiles();
 </script>

@@ -49,7 +49,7 @@ export async function loadTheme(): Promise<void> {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const value = await browser.get('theme');
-			if (value?.theme) {
+			if (value?.theme !== 'dark') {
 				theme.set(value?.theme as string);
 				document.documentElement.classList.remove('dark');
 			} else {
