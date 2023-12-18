@@ -4,39 +4,12 @@ import { ProfileDeleteMethod } from '$lib/types/profile.d';
 import { get, type Writable } from 'svelte/store';
 import { defaultWebNotificationSettings, web } from './utils';
 import { getPublicKey, nip19 } from 'nostr-tools';
-import type { NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
+import type { Browser, NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
 import { profiles, webNotifications, userProfile, theme } from './data';
 import { NostrUtil } from '$lib/utility';
+import { browserControlleur } from '$lib/utility/browser-utils';
 
-function browserControlleur() {
-	const get = async (key: string): Promise<{ [key: string]: unknown }> => {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const result = await web?.storage?.local?.get(key);
-				resolve(result);
-			} catch (err) {
-				reject(err);
-			}
-		});
-	};
-	const set = async (items: { [key: string]: unknown }): Promise<void> => {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const result = await web?.storage?.local?.set(items);
-				resolve(result);
-			} catch (err) {
-				reject(err);
-			}
-		});
-	};
-
-	return { get, set };
-}
-
-const browser: {
-	get: (key: string) => Promise<{ [key: string]: unknown }>;
-	set: (items: { [key: string]: unknown }) => Promise<void>;
-} = browserControlleur();
+const browser: Browser = browserControlleur();
 
 export async function loadNotifications(): Promise<void> {
 	return new Promise((resolve) => {
@@ -136,7 +109,7 @@ export async function settingProfile(profile: Profile): Promise<void> {
 }
 
 // PROFILE MANAGEMENT
-export async function loadProfile(profile: Profile): Promise<boolean | Profile | undefined> {
+const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefined> => {
 	try {
 		if (profile.data !== undefined) {
 			if (profile.data?.pubkey === undefined || profile.id === undefined) {
@@ -177,10 +150,10 @@ const saveProfile = async (profile: Profile): Promise<void> => {
 	}
 };
 
-export async function deleteProfile(
+const deleteProfile = async (
 	profile: Profile,
 	method: ProfileDeleteMethod = ProfileDeleteMethod.DEFAULT
-): Promise<void> {
+): Promise<void> => {
 	return new Promise((resolve) => {
 		if (method === ProfileDeleteMethod.DEFAULT) {
 			const _profiles = get(profiles);
@@ -301,6 +274,7 @@ const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 				return profile;
 			});
 			await saveProfile(get(userProfile));
+			NostrUtil.pushRelays(_relays, get(userProfile))
 			resolve();
 		} catch (err) {
 			reject(err);

@@ -33,6 +33,9 @@
 					try {
 						const pk = await profileControlleur.verifyKey(key);
 						metadata = await NostrUtil.getMetadata(getPublicKey(pk));
+						const relays = await NostrUtil.getRelays(getPublicKey(pk));
+						//console.log(relays);
+						//return Promise.reject('Nostr account not found');
 						if (metadata?.name !== undefined) {
 							generated = false;
 							metadata = metadata;

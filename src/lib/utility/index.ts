@@ -1,7 +1,7 @@
-import { getMetadata, publish } from "./nostr-util";
 import { getCurrentTab, injectJsinAllTabs, createWindow, sendAuthorizationResponse } from "./browser-utils";
+import { getMetadata, publish, getRelays } from "./nostr-util";
 import { getWebSiteOrCreate } from "./profile-utils";
 
-export const NostrUtil = { getMetadata, publish }
 export const BrowserUtil = { getCurrentTab, injectJsinAllTabs, createWindow, sendAuthorizationResponse }
+export const NostrUtil = { getMetadata, publish, getRelays }
 export const ProfileUtil = { getWebSiteOrCreate }

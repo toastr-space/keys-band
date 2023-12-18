@@ -11,7 +11,6 @@ const profiles: Writable<Profile[]> = writable([]);
 const theme: Writable<string> = writable('dark');
 const currentPage: Writable<Page> = writable(Page.Home);
 
-
 const isAlways: Writable<boolean> = writable(false);
 const isAccepted: Writable<boolean> = writable(false);
 

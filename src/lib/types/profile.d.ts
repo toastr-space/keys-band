@@ -80,10 +80,16 @@ interface NotificationSetting {
     state: boolean;
 }
 
+interface Browser {
+    get: (key: string) => Promise<{ [key: string]: unknown }>;
+    set: (items: { [key: string]: unknown }) => Promise<void>;
+}
+
 enum ProfileDeleteMethod {
     DEFAULT,
     BY_NAME,
     BY_PRIVATE_KEY
 }
 
-export { Profile, UserProfile, WebSite, WebSiteHistory, ProfileSetting, Relay, NotificationSetting, ProfileDeleteMethod, Authorization }
+
+export { Profile, UserProfile, WebSite, WebSiteHistory, ProfileSetting, Relay, NotificationSetting, ProfileDeleteMethod, Authorization, Browser }
