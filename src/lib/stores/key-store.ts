@@ -161,11 +161,12 @@ const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefi
 					saveProfile(profile);
 				})
 			}
-			const metaData = await NostrUtil.getMetadata(profile.data.pubkey as string)
-			profile.metadata = metaData;
-			saveProfile(profile);
-			if (profile.id === get(userProfile).id)
-				userProfile.set(profile);
+			NostrUtil.getMetadata(profile.data.pubkey as string).then((metaData) => {
+				profile.metadata = metaData;
+				saveProfile(profile);
+				if (profile.id === get(userProfile).id)
+					userProfile.set(profile);
+			})
 			return profile;
 		}
 	} catch (err) {
