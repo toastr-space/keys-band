@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { profileControlleur } from '$lib/stores/key-store';
 	import Icon from '@iconify/svelte';
 	import { popup } from '@skeletonlabs/skeleton';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
 	import { createEventDispatcher } from 'svelte';
+
+	import { duration } from '$lib/stores/data';
 
 	const dispatch = createEventDispatcher();
 
@@ -38,7 +41,7 @@
 		}
 	];
 
-	export let duration: Duration = durationOptions[0];
+	// export let duration: Duration = durationOptions[0];
 
 	let durationDropdownMenuOpen = false;
 
@@ -49,10 +52,15 @@
 		state: () => (durationDropdownMenuOpen = false)
 	};
 
+	// const selectDuration = (selectedDuration: Duration) => {
+	// 	duration = selectedDuration;
+	// 	durationDropdownMenuOpen = false;
+	// 	dispatch('durationChange', { value: duration.value });
+	// };
 	const selectDuration = (selectedDuration: Duration) => {
-		duration = selectedDuration;
+		profileControlleur.changeDuration(selectedDuration);
 		durationDropdownMenuOpen = false;
-		dispatch('durationChange', { value: duration.value });
+		dispatch('durationChange', { value: selectedDuration });
 	};
 </script>
 
@@ -71,7 +79,7 @@
 			use:popup={durationDropdownMenu}
 			on:click={() => (durationDropdownMenuOpen = !durationDropdownMenuOpen)}
 		>
-			{duration.name}
+			{$duration.name}
 			<Icon
 				icon={durationDropdownMenuOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
 				width={28}
@@ -100,7 +108,7 @@
 									>
 										{option.name}
 									</div>
-									{#if duration.name === option.name}
+									{#if $duration.name === option.name}
 										<Icon icon="mdi:check" width={22} class="text-pink-600 dark:text-teal-400" />
 									{/if}
 								</button>

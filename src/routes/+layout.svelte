@@ -8,12 +8,16 @@
 	import './styles.css';
 	import { onMount } from 'svelte';
 	import { NostrUtil } from '$lib/utility';
+	import { profileControlleur } from '$lib/stores/key-store';
 
 	TimeAgo.addDefaultLocale(en);
 
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 
 	onMount(() => {
+		// Set duration based on local storage
+		profileControlleur.loadDuration();
+
 		NostrUtil.prepareRelayPool();
 	});
 </script>
