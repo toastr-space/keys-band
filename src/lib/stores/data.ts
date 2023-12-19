@@ -2,6 +2,7 @@ import type { NotificationSetting, Profile } from '$lib/types/profile';
 import { Page } from '$lib/types/page';
 import { get, readable, writable, type Writable } from 'svelte/store';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
+import type { Duration } from '$lib/types';
 import { urlToDomain } from './utils';
 
 export const webNotifications: Writable<NotificationSetting[]> = writable([]);
@@ -9,6 +10,10 @@ const showNotification: Writable<boolean> = writable(false);
 const userProfile: Writable<Profile> = writable({});
 const loadingProfile: Writable<boolean> = writable(false);
 const profiles: Writable<Profile[]> = writable([]);
+const duration: Writable<Duration> = writable({
+	name: 'One time',
+	value: 0
+});
 const theme: Writable<string> = writable('dark');
 const currentPage: Writable<Page> = writable(Page.Home);
 
@@ -44,13 +49,14 @@ const timeStop = readable(new Date(), (set) => {
 });
 
 export {
-	userProfile,
-	profiles,
-	theme,
 	currentPage,
-	timeStop,
-	isAlways,
+	duration,
 	isAccepted,
+	isAlways,
+	loadingProfile,
+	profiles,
 	showNotification,
-	loadingProfile
+	timeStop,
+	theme,
+	userProfile
 };

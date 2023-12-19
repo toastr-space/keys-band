@@ -7,6 +7,8 @@
 
 	// Set theme based on local storage
 	if (typeof document !== 'undefined') profileControlleur.loadTheme();
+	// Set duration based on local storage
+	if (typeof document !== 'undefined') profileControlleur.loadDuration();
 
 	const promise = profileControlleur.loadProfiles();
 </script>

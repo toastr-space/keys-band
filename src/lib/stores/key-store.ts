@@ -5,11 +5,48 @@ import { get, type Writable } from 'svelte/store';
 import { defaultWebNotificationSettings, web } from './utils';
 import { getPublicKey, nip19 } from 'nostr-tools';
 import type { Browser, NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
-import { profiles, webNotifications, userProfile, theme, loadingProfile } from './data';
+import { duration, profiles, webNotifications, userProfile, theme, loadingProfile } from './data';
 import { NostrUtil } from '$lib/utility';
 import { browserControlleur } from '$lib/utility/browser-utils';
+import type { Duration } from '$lib/types/duration';
 
 const browser: Browser = browserControlleur();
+
+export async function loadDuration(): Promise<void> {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const value = await browser.get('duration');
+			if (value?.duration) duration.set(value?.duration as Duration);
+			else {
+				browser.set({
+					duration: {
+						name: 'One time',
+						value: 0
+					}
+				});
+				duration.set({
+					name: 'One time',
+					value: 0
+				});
+			}
+			resolve();
+		} catch (err) {
+			reject(err);
+		}
+	});
+}
+
+export async function changeDuration(newDuration: Duration): Promise<void> {
+	return new Promise((resolve, reject) => {
+		try {
+			browser.set({ duration: newDuration });
+			duration.set(newDuration);
+			resolve();
+		} catch (err) {
+			reject(err);
+		}
+	});
+}
 
 export async function loadNotifications(): Promise<void> {
 	return new Promise((resolve) => {
@@ -149,24 +186,22 @@ const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefi
 									url: relay[1],
 									enabled: true,
 									created_at: new Date(),
-									access: relay.length > 2 ? (relay[2] === 'read' ? 0 : relay[2] === 'write' ? 1 : 2) : 2
+									access:
+										relay.length > 2 ? (relay[2] === 'read' ? 0 : relay[2] === 'write' ? 1 : 2) : 2
 								});
 							});
-						if (profile.data)
-							profile.data.relays = relays_list;
-						if (profile.id === get(userProfile).id)
-							userProfile.set(profile);
+						if (profile.data) profile.data.relays = relays_list;
+						if (profile.id === get(userProfile).id) userProfile.set(profile);
 						saveProfile(profile);
 					}
 					saveProfile(profile);
-				})
+				});
 			}
 			NostrUtil.getMetadata(profile.data.pubkey as string).then((metaData) => {
 				profile.metadata = metaData;
 				saveProfile(profile);
-				if (profile.id === get(userProfile).id)
-					userProfile.set(profile);
-			})
+				if (profile.id === get(userProfile).id) userProfile.set(profile);
+			});
 			return profile;
 		}
 	} catch (err) {
@@ -175,7 +210,7 @@ const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefi
 	} finally {
 		loadingProfile.set(false);
 	}
-}
+};
 
 const saveProfile = async (profile: Profile): Promise<void> => {
 	try {
@@ -212,9 +247,14 @@ const deleteProfile = async (
 			resolve();
 		}
 	});
-}
+};
 
-export async function createProfile(name: string, key: string, metadata?: any, relays?: any): Promise<boolean> {
+export async function createProfile(
+	name: string,
+	key: string,
+	metadata?: any,
+	relays?: any
+): Promise<boolean> {
 	return new Promise(async function (resolve, reject) {
 		if (name.length < 4) {
 			reject('Name must be at least 4 characters');
@@ -229,7 +269,7 @@ export async function createProfile(name: string, key: string, metadata?: any, r
 				return;
 			}
 
-			console.log(relays)
+			console.log(relays);
 
 			const profile: Profile = {
 				name: name,
@@ -239,12 +279,12 @@ export async function createProfile(name: string, key: string, metadata?: any, r
 					pubkey: getPublicKey(privateKey),
 					privateKey,
 					webSites: {},
-					relays,
+					relays
 				}
 			};
 			profiles.update((profiles) => [...profiles, profile]);
 			saveProfiles();
-			const metaData = await NostrUtil.getMetadata(getPublicKey(privateKey))
+			const metaData = await NostrUtil.getMetadata(getPublicKey(privateKey));
 			profile.metadata = metaData;
 			await loadProfile(profile);
 
@@ -315,7 +355,7 @@ const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 				return profile;
 			});
 			await saveProfile(get(userProfile));
-			NostrUtil.pushRelays(get(userProfile))
+			NostrUtil.pushRelays(get(userProfile));
 			resolve();
 		} catch (err) {
 			reject(err);
@@ -332,7 +372,7 @@ const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 				return profile;
 			});
 			await saveProfile(get(userProfile));
-			NostrUtil.pushRelays(get(userProfile))
+			NostrUtil.pushRelays(get(userProfile));
 			resolve();
 		} catch (err) {
 			reject(err);
@@ -340,36 +380,36 @@ const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 	});
 };
 
-///
-
 export const profileControlleur: {
-	saveProfile: (profile: Profile) => Promise<void>;
-	saveProfiles: () => Promise<void>;
+	addRelayToProfile: (relayUrl: string) => Promise<void>;
+	changeDuration: (newDuration: Duration) => Promise<void>;
+	createProfile: (name: string, key: string, metaData?: any) => Promise<boolean>;
+	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
+	loadDuration: () => Promise<void>;
 	loadNotifications: () => Promise<void>;
-	verifyKey: (value: string) => Promise<string>;
+	loadProfile: (profile: Profile) => Promise<boolean | Profile | undefined>;
 	loadProfiles: () => Promise<Writable<Profile[]>>;
 	loadTheme: () => Promise<void>;
+	removeRelayFromProfile: (relay: Relay) => Promise<void>;
+	saveProfile: (profile: Profile) => Promise<void>;
+	saveProfiles: () => Promise<void>;
+	settingProfile: (profile: Profile) => Promise<void>;
 	switchTheme: (themeName: string) => Promise<void>;
 	updateNotification: (name: string) => Promise<void>;
-	settingProfile: (profile: Profile) => Promise<void>;
-	addRelayToProfile: (relayUrl: string) => Promise<void>;
-	removeRelayFromProfile: (relay: Relay) => Promise<void>;
-	createProfile: (name: string, key: string, metaData?: any, relays?: any) => Promise<boolean>;
-	loadProfile: (profile: Profile) => Promise<boolean | Profile | undefined>;
-	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
 } = {
-	verifyKey: checkNSEC,
-	loadProfile: loadProfile,
-	loadTheme: loadTheme,
-	switchTheme: switchTheme,
-	saveProfile: saveProfile,
-	saveProfiles: saveProfiles,
-	loadProfiles: loadProfiles,
+	addRelayToProfile: addRelayToProfile,
+	changeDuration: changeDuration,
 	createProfile: createProfile,
 	deleteProfile: deleteProfile,
-	settingProfile: settingProfile,
+	loadDuration: loadDuration,
 	loadNotifications: loadNotifications,
-	addRelayToProfile: addRelayToProfile,
-	updateNotification: updateNotification,
-	removeRelayFromProfile: removeRelayFromProfile
+	loadProfile: loadProfile,
+	loadProfiles: loadProfiles,
+	loadTheme: loadTheme,
+	removeRelayFromProfile: removeRelayFromProfile,
+	saveProfile: saveProfile,
+	saveProfiles: saveProfiles,
+	settingProfile: settingProfile,
+	switchTheme: switchTheme,
+	updateNotification: updateNotification
 };
