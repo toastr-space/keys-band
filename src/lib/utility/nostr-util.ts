@@ -13,15 +13,11 @@ const default_relays = [
 const available_default_relays: Writable<string[]> = writable([])
 const available_profile_relays: Writable<string[]> = writable([])
 
-available_default_relays.subscribe((relays) => console.log("default relays", relays))
-available_profile_relays.subscribe((relays) => console.log("profile relays", relays))
-
 const pool = new SimplePool();
 
 const checkRelays = async (url: string, isProfile: boolean = false) => {
     if (url) {
         try {
-            console.log("Checking relay", url)
             await pool.ensureRelay(url);
             const available_relays = isProfile ? available_profile_relays : available_default_relays;
             if (!get(available_relays).includes(url)) isProfile ? available_profile_relays.set([...get(available_profile_relays), url]) : available_default_relays.set([...get(available_default_relays), url])
@@ -55,13 +51,12 @@ const getRelaysList = (all: boolean = false): string[] => {
         if (profile_relays) relays = relays.concat(profile_relays.map((relay) => relay.url));
     }
 
-    if (relays.length === 0) relays = get(available_default_relays);
+    if (relays.length === 0) relays = default_relays;
     return relays;
 }
 
-const getMetadata = async (pubkey: string, all = false): Promise<Profile> => {
+const getMetadata = async (pubkey: string): Promise<Profile> => {
     const relays = getRelaysList();
-    console.log("get metadata", relays)
     try {
         const event = await pool
             .get(relays, {
@@ -69,7 +64,6 @@ const getMetadata = async (pubkey: string, all = false): Promise<Profile> => {
                 kinds: [0]
             })
         const metaData = JSON.parse(event?.content || '{}');
-        console.log("metadata", metaData)
         return metaData;
     } catch (error: any) {
         return {}
@@ -77,7 +71,6 @@ const getMetadata = async (pubkey: string, all = false): Promise<Profile> => {
 }
 
 const getRelays = async (pubkey: string, all = false): Promise<Event | null> => {
-    console.log("get relays", getRelaysList(all))
     try {
         const event = await pool
             .get(getRelaysList(all), {

@@ -139,6 +139,28 @@ const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefi
 			}
 			await settingProfile(profile);
 			userProfile.set(profile);
+			if (profile.data?.relays?.length || 1 > 0) {
+				NostrUtil.getRelays(profile.data?.pubkey as string, true).then((event) => {
+					if (event?.tags) {
+						const relays_list: Relay[] = [];
+						if (event.tags.length > 0)
+							event.tags.forEach((relay) => {
+								relays_list.push({
+									url: relay[1],
+									enabled: true,
+									created_at: new Date(),
+									access: relay.length > 2 ? (relay[2] === 'read' ? 0 : relay[2] === 'write' ? 1 : 2) : 2
+								});
+							});
+						if (profile.data)
+							profile.data.relays = relays_list;
+						if (profile.id === get(userProfile).id)
+							userProfile.set(profile);
+						saveProfile(profile);
+					}
+					saveProfile(profile);
+				})
+			}
 			const metaData = await NostrUtil.getMetadata(profile.data.pubkey as string)
 			profile.metadata = metaData;
 			saveProfile(profile);
@@ -221,7 +243,7 @@ export async function createProfile(name: string, key: string, metadata?: any, r
 			};
 			profiles.update((profiles) => [...profiles, profile]);
 			saveProfiles();
-			const metaData = await NostrUtil.getMetadata(getPublicKey(privateKey), true)
+			const metaData = await NostrUtil.getMetadata(getPublicKey(privateKey))
 			profile.metadata = metaData;
 			await loadProfile(profile);
 

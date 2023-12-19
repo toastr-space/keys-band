@@ -12,8 +12,8 @@
 </script>
 
 {#await promise}
-	<div class="w-full h-full flex flex-col gap-3 p-12 items-center dark:bg-[#222222] bg-white">
-		<span class="loading">loading...</span>
+	<div class="w-full h-full flex flex-col gap-10 p-12 items-center dark:bg-[#222222] bg-white">
+		<span class="loading text-lg">loading...</span>
 		<ProgressRadial stroke={20} width="w-16 mx-auto" value={undefined} />
 	</div>
 {:then}
