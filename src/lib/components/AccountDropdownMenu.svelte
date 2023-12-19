@@ -15,7 +15,7 @@
 
 <div data-popup="accountDropdownMenu">
 	<div
-		class="menu-modal card w-72 shadow-xl backdrop-blur-xl bg-zinc-400 dark:bg-zinc-800 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
+		class="menu-modal card w-72 shadow-xl backdrop-blur-xl bg-surface-200 dark:bg-zinc-800 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
 	>
 		<nav class="list-nav">
 			<ul>
@@ -29,7 +29,7 @@
 									rounded="rounded-full"
 								/>
 
-								<div class="text-white text-base self-center my-auto">
+								<div class="text-black dark:text-white text-base self-center my-auto">
 									{#if profile.name}
 										{profile.name.length > 10 ? profile.name.slice(0, 10) + '...' : profile.name}
 									{/if}
@@ -55,7 +55,7 @@
 					</li>
 				{/each}
 				<li
-					class="justify-center items-stretch self-stretch flex w-full flex-col py-3 border-t-[0.33px] border-t-white border-solid"
+					class="justify-center items-stretch self-stretch flex w-full flex-col py-3 border-t-[0.33px] border-t-black dark:border-t-white border-solid"
 				>
 					<button
 						on:click={() => {
@@ -63,8 +63,9 @@
 						}}
 						class="mx-2"
 					>
-						<span class="badge text-white"><Icon icon="mdi:plus" width={22} /></span>
-						<span class="flex-auto text-white">Add Account</span>
+						<span class="badge text-black dark:text-white"><Icon icon="mdi:plus" width={22} /></span
+						>
+						<span class="flex-auto text-black dark:text-white">Add Account</span>
 					</button>
 				</li>
 			</ul>

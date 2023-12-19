@@ -19,7 +19,7 @@
 	}
 </script>
 
-<div class="w-full h-full mx-auto flex flex-col flex-grow justify-between">
+<div class="w-full h-full mx-auto flex flex-col flex-grow justify-between mt-3">
 	<div
 		class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex w-full flex-col p-4 rounded-2xl mx-auto flex-grow"
 	>

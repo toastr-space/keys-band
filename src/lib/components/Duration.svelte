@@ -67,7 +67,7 @@
 	<div class="items-center flex gap-3 mt-2 pr-20 max-md:pr-5">
 		<div class="text-black dark:text-white text-base leading-5 my-auto">Allow</div>
 		<button
-			class="btn text-white bg-surface-400 dark:bg-zinc-800"
+			class="btn text-black dark:text-white bg-surface-200 dark:bg-zinc-800"
 			use:popup={durationDropdownMenu}
 			on:click={() => (durationDropdownMenuOpen = !durationDropdownMenuOpen)}
 		>
@@ -75,36 +75,40 @@
 			<Icon
 				icon={durationDropdownMenuOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
 				width={28}
-				class="text-white ml-2 mt-1"
+				class="text-black dark:text-white ml-2 mt-1"
 			/>
 		</button>
 	</div>
 </div>
 
-<div
-	class="card w-42 shadow-xl backdrop-blur-xl bg-zinc-400 dark:bg-zinc-800 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
-	data-popup="durationDropdownMenu"
->
-	<nav class="list-nav">
-		<ul>
-			{#each durationOptions as option}
-				<li
-					class="justify-center items-stretch self-stretch flex w-full flex-col mt-3 border-t-[0.33px] border-t-white border-t-opacity-30 border-solid"
-				>
-					<div class="justify-between items-stretch flex w-full gap-5">
-						<div class="items-stretch flex justify-between gap-3">
-							<button on:click={() => selectDuration(option)}>
-								<div class="text-white dark:text-white text-base self-center my-auto">
-									{option.name}
-								</div>
-								{#if duration.name === option.name}
-									<Icon icon="mdi:check" width={22} class="text-pink-600 dark:text-teal-400" />
-								{/if}
-							</button>
+<div data-popup="durationDropdownMenu">
+	<div
+		class="card w-42 shadow-xl backdrop-blur-xl bg-surface-200 dark:bg-zinc-800 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
+	>
+		<nav class="list-nav">
+			<ul>
+				{#each durationOptions as option, i}
+					<li
+						class="justify-center items-stretch self-stretch flex w-full flex-col mt-3 border-t-black dark:border-t-white border-t-opacity-30 border-solid"
+						class:border-t-[0.33px]={i !== 0}
+					>
+						<div class="justify-between items-stretch flex w-full gap-5">
+							<div class="items-stretch flex justify-between gap-3">
+								<button on:click={() => selectDuration(option)}>
+									<div
+										class="text-black dark:text-white dark:text-white text-base self-center my-auto"
+									>
+										{option.name}
+									</div>
+									{#if duration.name === option.name}
+										<Icon icon="mdi:check" width={22} class="text-pink-600 dark:text-teal-400" />
+									{/if}
+								</button>
+							</div>
 						</div>
-					</div>
-				</li>
-			{/each}
-		</ul>
-	</nav>
+					</li>
+				{/each}
+			</ul>
+		</nav>
+	</div>
 </div>

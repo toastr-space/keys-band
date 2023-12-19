@@ -118,34 +118,31 @@
 					/>
 				</div>
 			{/if}
-			<div class="col-span-2 mt-6">
-				<button
-					type="button"
-					class="btn bg-stone-400 text-white dark:bg-stone-600 dark:text-gray-2"
-					on:click={() => {
-						let sk = generatePrivateKey();
-						key = nip19.nsecEncode(sk);
-						generated = true;
-						name = '';
-						metadata = undefined;
-					}}
-				>
-					Generate Key
-				</button>
-			</div>
-			<div class="col-start-6 col-span-1 mt-6 justify-self-end">
-				<button
-					type="button"
-					class="btn bg-pink-400 dark:bg-teal-400 text-black"
-					disabled={busy || !name || !key}
-					on:click={save}
-				>
-					<Icon icon="carbon:save" width={20} />
-					<span>
-						{busy ? 'Adding...' : 'Add Account'}
-					</span>
-				</button>
-			</div>
 		</div>
+	</div>
+	<div class="items-stretch flex w-full gap-3 mt-3">
+		<button
+			class="btn text-black dark:text-white bg-surface-400 font-medium leading-5 whitespace-nowrap justify-center bg-opacity-20 px-8 py-3 rounded-full"
+			on:click={() => {
+				let sk = generatePrivateKey();
+				key = nip19.nsecEncode(sk);
+				generated = true;
+				name = '';
+				metadata = undefined;
+			}}
+		>
+			Generate Key
+		</button>
+		<button
+			type="button"
+			class="btn bg-pink-400 dark:bg-teal-400 text-black flex gap-2 px-20 py-3 rounded-full w-full place-content-center max-md:px-5"
+			disabled={busy || !name || !key}
+			on:click={save}
+		>
+			<Icon icon="carbon:save" width={20} />
+			<span>
+				{busy ? 'Adding...' : 'Add Account'}
+			</span>
+		</button>
 	</div>
 </AppPageItem>

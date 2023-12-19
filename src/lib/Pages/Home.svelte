@@ -29,7 +29,6 @@
 			/>
 			<RecentActivity domain={urlToDomain(currentTab?.url || '')} />
 		{:else}
-			<br />
 			<Authorization
 				domain={urlToDomain(currentTab?.url || '')}
 				isPopup={false}
