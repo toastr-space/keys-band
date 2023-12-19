@@ -7,6 +7,7 @@ import { urlToDomain } from './utils';
 export const webNotifications: Writable<NotificationSetting[]> = writable([]);
 const showNotification: Writable<boolean> = writable(false);
 const userProfile: Writable<Profile> = writable({});
+const loadingProfile: Writable<boolean> = writable(false);
 const profiles: Writable<Profile[]> = writable([]);
 const theme: Writable<string> = writable('dark');
 const currentPage: Writable<Page> = writable(Page.Home);
@@ -50,5 +51,6 @@ export {
 	timeStop,
 	isAlways,
 	isAccepted,
-	showNotification
+	showNotification,
+	loadingProfile
 };

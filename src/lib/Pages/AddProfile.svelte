@@ -1,15 +1,9 @@
 <script lang="ts">
-	import { Page } from '$lib/types';
+	import { Page, type Relay } from '$lib/types';
 	import { currentPage } from '$lib/stores/data';
 	import { AppPageItem } from '$lib/components/App';
 	import { profileControlleur } from '$lib/stores/key-store';
-	import {
-		generatePrivateKey,
-		getPublicKey,
-		nip19,
-		finishEvent,
-		type UnsignedEvent
-	} from 'nostr-tools';
+	import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools';
 	import Icon from '@iconify/svelte';
 	import InputField from '$lib/components/InputField.svelte';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
@@ -21,6 +15,7 @@
 	let fetchingProfile = false;
 	let error = false;
 	let generated = false;
+	let relays: any[] = [];
 	let metadata: any;
 
 	$: if (key) fetchProfile();
@@ -33,7 +28,10 @@
 					try {
 						const pk = await profileControlleur.verifyKey(key);
 						metadata = await NostrUtil.getMetadata(getPublicKey(pk));
-						const relays = await NostrUtil.getRelays(getPublicKey(pk));
+						const _relays = await NostrUtil.getRelays(getPublicKey(pk), true);
+						if (_relays) relays = _relays.tags;
+						else relays = [];
+
 						//console.log(relays);
 						//return Promise.reject('Nostr account not found');
 						if (metadata?.name !== undefined) {
@@ -47,6 +45,7 @@
 						metadata = undefined;
 						fetchingProfile = false;
 						error = true;
+						relays = [];
 					}
 				}
 			});
@@ -56,34 +55,32 @@
 	const save = async () => {
 		busy = true;
 		try {
-			await profileControlleur.createProfile(name, key, metadata);
-			if (generated === true) {
-				const pk = await profileControlleur.verifyKey(key);
-				let event: UnsignedEvent = {
-					kind: 0,
-					created_at: Math.floor(Date.now() / 1000),
-					tags: [],
-					content: JSON.stringify({
-						name: name
-					}),
-					pubkey: getPublicKey(pk)
-				};
-				const signedEvent = finishEvent(event, pk);
-				await NostrUtil.publish(signedEvent);
-			}
+			let relays_list: Relay[] = [];
+			if (relays.length > 0)
+				relays.forEach((relay) => {
+					relays_list.push({
+						url: relay[1],
+						enabled: true,
+						created_at: new Date(),
+						access: relay.length > 2 ? (relay[2] === 'read' ? 0 : relay[2] === 'write' ? 1 : 2) : 2
+					});
+				});
+
+			await profileControlleur.createProfile(name, key, metadata, relays_list);
+			if (generated === true) await NostrUtil.createProfileMetadata(name, key);
+
 			name = '';
 			key = '';
 			metadata = undefined;
-			busy = false;
 			fetchingProfile = false;
 			error = false;
 			generated = false;
+			relays = [];
 			currentPage.set(Page.Home);
 		} catch (err) {
+			if (typeof document !== 'undefined') alert(err);
+		} finally {
 			busy = false;
-			if (typeof document !== 'undefined') {
-				alert(err);
-			}
 		}
 	};
 </script>

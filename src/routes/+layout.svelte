@@ -6,10 +6,16 @@
 	import { storePopup } from '@skeletonlabs/skeleton';
 
 	import './styles.css';
+	import { onMount } from 'svelte';
+	import { NostrUtil } from '$lib/utility';
 
 	TimeAgo.addDefaultLocale(en);
 
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
+
+	onMount(() => {
+		NostrUtil.prepareRelayPool();
+	});
 </script>
 
 <div class="flex flex-col h-screen w-full">

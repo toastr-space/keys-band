@@ -59,10 +59,10 @@ interface RelayMetadata {
     version?: string
 }
 
-interface RelayAccess {
-    READ,
-    WRITE,
-    READ_WRITE
+enum RelayAccess {
+    READ = 0,
+    WRITE = 1,
+    READ_WRITE = 2
 }
 
 interface Relay {
@@ -92,4 +92,4 @@ enum ProfileDeleteMethod {
 }
 
 
-export { Profile, UserProfile, WebSite, WebSiteHistory, ProfileSetting, Relay, NotificationSetting, ProfileDeleteMethod, Authorization, Browser }
+export { Profile, UserProfile, WebSite, WebSiteHistory, ProfileSetting, Relay, RelayAccess, NotificationSetting, ProfileDeleteMethod, Authorization, Browser }

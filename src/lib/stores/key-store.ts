@@ -5,7 +5,7 @@ import { get, type Writable } from 'svelte/store';
 import { defaultWebNotificationSettings, web } from './utils';
 import { getPublicKey, nip19 } from 'nostr-tools';
 import type { Browser, NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
-import { profiles, webNotifications, userProfile, theme } from './data';
+import { profiles, webNotifications, userProfile, theme, loadingProfile } from './data';
 import { NostrUtil } from '$lib/utility';
 import { browserControlleur } from '$lib/utility/browser-utils';
 
@@ -131,25 +131,26 @@ export async function settingProfile(profile: Profile): Promise<void> {
 // PROFILE MANAGEMENT
 const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefined> => {
 	try {
+		loadingProfile.set(true);
 		if (profile.data !== undefined) {
 			if (profile.data?.pubkey === undefined || profile.id === undefined) {
 				profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
 				profile.id = profile.data.pubkey;
 			}
-			NostrUtil.getMetadata(profile.data.pubkey as string).then((metaData) => {
-				if ((profile.id as string) !== (profile.id as string)) {
-					profile.metadata = metaData;
-					saveProfile(profile);
-					userProfile.set(profile);
-				}
-			});
 			await settingProfile(profile);
 			userProfile.set(profile);
+			const metaData = await NostrUtil.getMetadata(profile.data.pubkey as string)
+			profile.metadata = metaData;
+			saveProfile(profile);
+			if (profile.id === get(userProfile).id)
+				userProfile.set(profile);
 			return profile;
 		}
 	} catch (err) {
 		alert(JSON.stringify(err));
 		return false;
+	} finally {
+		loadingProfile.set(false);
 	}
 }
 
@@ -190,7 +191,7 @@ const deleteProfile = async (
 	});
 }
 
-export async function createProfile(name: string, key: string, metadata?: any): Promise<boolean> {
+export async function createProfile(name: string, key: string, metadata?: any, relays?: any): Promise<boolean> {
 	return new Promise(async function (resolve, reject) {
 		if (name.length < 4) {
 			reject('Name must be at least 4 characters');
@@ -204,6 +205,9 @@ export async function createProfile(name: string, key: string, metadata?: any): 
 				reject('Name or key already exists');
 				return;
 			}
+
+			console.log(relays)
+
 			const profile: Profile = {
 				name: name,
 				id: getPublicKey(privateKey),
@@ -212,15 +216,14 @@ export async function createProfile(name: string, key: string, metadata?: any): 
 					pubkey: getPublicKey(privateKey),
 					privateKey,
 					webSites: {},
-					relays: []
+					relays,
 				}
 			};
 			profiles.update((profiles) => [...profiles, profile]);
 			saveProfiles();
-			NostrUtil.getMetadata(getPublicKey(privateKey)).then((metaData) => {
-				profile.metadata = metaData;
-				loadProfile(profile);
-			});
+			const metaData = await NostrUtil.getMetadata(getPublicKey(privateKey), true)
+			profile.metadata = metaData;
+			await loadProfile(profile);
 
 			resolve(true);
 		} catch (error) {
@@ -251,6 +254,7 @@ export async function loadProfiles(): Promise<Writable<Profile[]>> {
 				}
 				if (profile.id === data?.currentProfile) {
 					userProfile.set(profile);
+					await NostrUtil.prepareRelayPool();
 					await loadProfile(profile);
 				}
 
@@ -278,19 +282,17 @@ export async function saveProfiles(): Promise<void> {
 const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const _relays = get(userProfile).data?.relays as Relay[];
 			const relay: Relay = {
 				url: relayUrl,
 				enabled: true,
 				created_at: new Date()
 			};
-			_relays.push(relay);
 			userProfile.update((profile) => {
 				profile?.data?.relays?.push(relay);
 				return profile;
 			});
 			await saveProfile(get(userProfile));
-			NostrUtil.pushRelays(_relays, get(userProfile))
+			NostrUtil.pushRelays(get(userProfile))
 			resolve();
 		} catch (err) {
 			reject(err);
@@ -301,15 +303,13 @@ const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const _relays = get(userProfile).data?.relays as Relay[];
-			const index = _relays.findIndex((r) => r.url === relay.url);
-			_relays.splice(index, 1);
 			userProfile.update((profile) => {
 				const index = profile?.data?.relays?.findIndex((r) => r.url === relay.url) as number;
 				profile?.data?.relays?.splice(index, 1);
 				return profile;
 			});
 			await saveProfile(get(userProfile));
+			NostrUtil.pushRelays(get(userProfile))
 			resolve();
 		} catch (err) {
 			reject(err);
@@ -331,7 +331,7 @@ export const profileControlleur: {
 	settingProfile: (profile: Profile) => Promise<void>;
 	addRelayToProfile: (relayUrl: string) => Promise<void>;
 	removeRelayFromProfile: (relay: Relay) => Promise<void>;
-	createProfile: (name: string, key: string, metaData?: any) => Promise<boolean>;
+	createProfile: (name: string, key: string, metaData?: any, relays?: any) => Promise<boolean>;
 	loadProfile: (profile: Profile) => Promise<boolean | Profile | undefined>;
 	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
 } = {
