@@ -1,27 +1,22 @@
-
 import { getDuration, web } from "$lib/utility/utils"
 import type { Browser } from "$lib/types";
 
 function browserControlleur(): Browser {
     const get = async (key: string): Promise<{ [key: string]: unknown }> => {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const result = await web?.storage?.local?.get(key);
-                resolve(result);
-            } catch (err) {
-                reject(err);
-            }
-        });
+        try {
+            const result = await web?.storage?.local?.get(key);
+            return result;
+        } catch (err) {
+            return Promise.reject(err)
+        }
     };
     const set = async (items: { [key: string]: unknown }): Promise<void> => {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const result = await web?.storage?.local?.set(items);
-                resolve(result);
-            } catch (err) {
-                reject(err);
-            }
-        });
+        try {
+            const result = await web?.storage?.local?.set(items);
+            return result;
+        } catch (err) {
+            return Promise.reject(err)
+        }
     };
 
     return { get, set };
@@ -29,9 +24,7 @@ function browserControlleur(): Browser {
 
 const getCurrentTab = async (): Promise<chrome.tabs.Tab> => {
     return new Promise((resolve) => {
-        web.tabs.query({ active: true, currentWindow: true }, function (tabs: chrome.tabs.Tab[]) {
-            resolve(tabs[0])
-        });
+        web.tabs.query({ active: true, currentWindow: true }, (tabs: chrome.tabs.Tab[]) => resolve(tabs[0]));
     });
 }
 
@@ -41,7 +34,7 @@ const injectJsInTab = async (tab: chrome.tabs.Tab, jsFileName: string): Promise<
             target: { tabId: tab.id as number },
             files: [jsFileName],
         });
-        return Promise.resolve()
+        return
     } catch (e) {
         console.error("Error injecting Nostr Provider", e);
         return Promise.reject(e)
