@@ -53,6 +53,7 @@ const injectJsinAllTabs = async (jsFileName: string): Promise<void> => {
         web.tabs.query({}, function (tabs: chrome.tabs.Tab[]) {
             tabs.forEach(async tab => {
                 try {
+                    if (tab.url?.startsWith("chrome://") || tab.url?.startsWith("chrome-extension://")) return
                     await injectJsInTab(tab, jsFileName)
                 } catch (e) {
                     console.log("Error injecting Nostr Provider", e);

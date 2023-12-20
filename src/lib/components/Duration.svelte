@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { profileControlleur } from '$lib/stores/key-store';
+	import { profileControlleur } from '$lib/stores';
 	import Icon from '@iconify/svelte';
 	import { popup } from '@skeletonlabs/skeleton';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';

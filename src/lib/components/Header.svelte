@@ -5,7 +5,7 @@
 
 	import { Page } from '$lib/types/page';
 	import { popup, Avatar } from '@skeletonlabs/skeleton';
-	import { profileControlleur } from '$lib/stores/key-store';
+	import { profileControlleur } from '$lib/stores';
 	import { userProfile, theme, currentPage } from '../stores/data';
 	import AccountDropdownMenu from './AccountDropdownMenu.svelte';
 	import { derived } from 'svelte/store';

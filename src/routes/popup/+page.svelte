@@ -4,20 +4,25 @@
 	import type { PopupParams } from '$lib/types';
 
 	import { sendAuthorizationResponse } from '$lib/utility/browser-utils';
-	import { profileControlleur } from '$lib/stores/key-store';
+	import { profileControlleur } from '$lib/stores/controlleur';
 	import { urlToDomain } from '$lib/stores/utils';
 	import { onMount } from 'svelte';
+	import { sessionData } from '$lib/stores/data';
 
 	let parameter: PopupParams;
+
+	async function handleData() {
+		profileControlleur.loadProfiles();
+		const urlParams = new URLSearchParams(document.location.search);
+		const dataId = atob(urlParams?.get('query') as string);
+		parameter = (await sessionData.getById(dataId)) || {};
+	}
 
 	onMount(() => {
 		document.body.style.width = '383px';
 		document.body.style.height = '460px';
 		document.title = 'Keys.Band - Authorization';
-		profileControlleur.loadProfiles();
-
-		const urlParams = new URLSearchParams(document.location.search);
-		parameter = JSON.parse(atob(urlParams?.get('query') as string)) || {};
+		handleData();
 	});
 </script>
 

@@ -1,5 +1,5 @@
 import { userProfile } from "$lib/stores/data";
-import { profileControlleur } from "$lib/stores/key-store";
+import { profileControlleur } from "$lib/stores/controlleur";
 import { RelayAccess, type Profile, type Relay } from "$lib/types/profile.d";
 import { SimplePool, type Event, type UnsignedEvent, finishEvent, getPublicKey } from "nostr-tools";
 import { get, writable, type Writable } from "svelte/store";

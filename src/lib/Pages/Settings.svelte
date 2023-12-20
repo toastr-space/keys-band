@@ -3,7 +3,7 @@
 	import ToggleSwitch from '../components/ToggleSwitch.svelte';
 	import { AppPageItem } from '$lib/components/App';
 	import { showNotification, userProfile } from '$lib/stores/data';
-	import { profileControlleur } from '$lib/stores/key-store';
+	import { profileControlleur } from '$lib/stores';
 	import type { Relay } from '$lib/types';
 
 	$: relays = $userProfile.data?.relays || [];

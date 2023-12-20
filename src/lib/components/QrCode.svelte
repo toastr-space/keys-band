@@ -1,19 +1,13 @@
 <script lang="ts">
 	import Footer from './Footer.svelte';
-	import { urlToDomain } from '$lib/stores/utils';
 	import QRCode from 'qrcode';
-	import { keyStore } from '$lib/stores/data';
-	import { getPublicKey } from 'nostr-tools';
-	import { web } from '$lib/stores/utils';
+
+	import { userProfile } from '$lib/stores/data';
 
 	let currentTab = { url: '' };
-	web.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-		var activeTab = tabs[0];
-		currentTab = activeTab;
-	});
 
 	let qrcodeUrl: string = '';
-	QRCode.toDataURL(getPublicKey($keyStore))
+	QRCode.toDataURL($userProfile.data?.pubkey)
 		.then((url) => {
 			console.log(url);
 			qrcodeUrl = url;

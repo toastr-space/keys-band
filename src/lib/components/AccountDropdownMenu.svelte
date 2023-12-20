@@ -4,7 +4,7 @@
 	import { Avatar } from '@skeletonlabs/skeleton';
 	import { tick } from 'svelte';
 
-	import { profileControlleur } from '$lib/stores/key-store';
+	import { profileControlleur } from '$lib/stores';
 	import { userProfile, profiles, currentPage } from '../stores/data';
 	import { Page } from '$lib/types/page';
 

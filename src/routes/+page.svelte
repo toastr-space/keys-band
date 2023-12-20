@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { profileControlleur } from '$lib/stores/key-store';
+	import { profileControlleur } from '$lib/stores/';
 
 	import { AppPage } from '$lib/components/App';
 	import { PageSettings, PageHome, PageAddProfile } from '$lib/Pages/';

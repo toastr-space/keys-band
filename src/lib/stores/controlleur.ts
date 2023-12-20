@@ -1,16 +1,55 @@
 /*eslint no-async-promise-executor: 0*/
 
 import { ProfileDeleteMethod } from '$lib/types/profile.d';
-import { get, type Writable } from 'svelte/store';
+import { get, writable, type Writable } from 'svelte/store';
 import { defaultWebNotificationSettings, web } from './utils';
 import { getPublicKey, nip19 } from 'nostr-tools';
-import type { Browser, NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
-import { duration, profiles, webNotifications, userProfile, theme, loadingProfile } from './data';
+import type { NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
+import { duration, profiles, webNotifications, userProfile, theme, loadingProfile, browser } from './data';
 import { NostrUtil } from '$lib/utility';
-import { browserControlleur } from '$lib/utility/browser-utils';
 import type { Duration } from '$lib/types/duration';
 
-const browser: Browser = browserControlleur();
+
+const sessionControlleur = () => {
+	const { subscribe, update, set } = writable({});
+
+	const loadData = async () => {
+		await browser.get('sessionData').then((datas) => {
+			if (datas?.sessionData) set(datas?.sessionData);
+			else browser.set({ sessionData: {} });
+		})
+	}
+
+	const add = async (event: any): Promise<string> => {
+		const randomId = Math.random().toString(36).substring(7);
+		update((x: any) => {
+			x[randomId] = event;
+			return x;
+		});
+		browser.set({ sessionData: get({ subscribe }) });
+		return Promise.resolve(randomId);
+	};
+
+	const remove = async (id: string): Promise<void> => {
+		update((x: any) => {
+			delete x[id];
+			return x;
+		});
+		browser.set({ sessionData: get({ subscribe }) });
+	};
+
+	const getById = async (id: string): Promise<any> => {
+		await loadData();
+		const data = get({ subscribe }) as { [key: string]: any };
+		return Promise.resolve(data[id]);
+	}
+
+	return {
+		add,
+		remove,
+		getById
+	}
+};
 
 export async function loadDuration(): Promise<void> {
 	return new Promise(async (resolve, reject) => {
@@ -269,8 +308,6 @@ export async function createProfile(
 				return;
 			}
 
-			console.log(relays);
-
 			const profile: Profile = {
 				name: name,
 				id: getPublicKey(privateKey),
@@ -413,3 +450,5 @@ export const profileControlleur: {
 	switchTheme: switchTheme,
 	updateNotification: updateNotification
 };
+
+export const controlleur = { sessionControlleur };

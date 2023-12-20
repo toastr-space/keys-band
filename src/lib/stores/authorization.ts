@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { getDuration } from './utils';
 import { userProfile } from '$lib/stores/data';
-import { profileControlleur } from './key-store';
+import { profileControlleur } from './controlleur';
 import { ProfileUtil } from '$lib/utility';
 
 const accept = async (accept: boolean, domain: string, choice: number = 0) => {

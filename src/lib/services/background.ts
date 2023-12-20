@@ -1,6 +1,6 @@
 import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
 import { urlToDomain, web } from '../stores/utils';
-import { profileControlleur } from '../stores/key-store';
+import { controlleur, profileControlleur } from '../stores/controlleur';
 
 import type { Profile, WebSite, Authorization } from '$lib/types/profile';
 
@@ -11,6 +11,8 @@ import { AllowKind } from '$lib/types';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
 
 const loadNotifications = profileControlleur.loadNotifications;
+
+const sessionManager = controlleur.sessionControlleur();
 
 web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
@@ -135,7 +137,6 @@ async function makeResponse(type: string, data: any) {
 		default:
 			res = null;
 	}
-	console.log(res);
 	return res;
 }
 
@@ -372,12 +373,13 @@ async function manageRequest(message: Message): Promise<any> {
 			data: message.params.event || message.params || '{}' || ''
 		};
 
-		await BrowserUtil.createWindow('popup.html?query=' + btoa(JSON.stringify(data)));
+		const dataId = await sessionManager.add(data)
+
+		await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
 	});
 }
 
 web.runtime.onMessage.addListener((message: Message, sender: MessageSender, sendResponse) => {
-	console.log('message', message);
 	if (message.prompt) {
 		manageResult(message, sender);
 		sendResponse({ message: true });

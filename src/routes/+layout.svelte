@@ -8,7 +8,7 @@
 	import './styles.css';
 	import { onMount } from 'svelte';
 	import { NostrUtil } from '$lib/utility';
-	import { profileControlleur } from '$lib/stores/key-store';
+	import { profileControlleur } from '$lib/stores';
 
 	TimeAgo.addDefaultLocale(en);
 

@@ -11,6 +11,6 @@ export type {
 	ProfileDeleteMethod,
 	Browser
 } from './profile';
-export type { Message, MessageSender, MessageType, PopupParams } from './background';
+export type { Message, MessageSender, MessageType, PopupParams, SessionManager } from './background';
 export { AllowKind } from './background.d';
 export type { Duration } from './duration';

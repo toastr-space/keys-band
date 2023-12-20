@@ -33,6 +33,12 @@ interface PopupParams {
     permissions?: string[];
 }
 
+interface SessionManager {
+    add?: (data: any) => Promise<string>;
+    remove?: (id: string) => Promise<void>;
+    getById: (id: string) => Promise<any>;
+}
+
 enum AllowKind {
     AlWaysAllow,
     AlwaysReject,
@@ -41,4 +47,4 @@ enum AllowKind {
     Nothing
 }
 
-export { Message, MessageSender, MessageType, PopupParams, AllowKind }
+export { Message, MessageSender, MessageType, PopupParams, AllowKind, SessionManager }

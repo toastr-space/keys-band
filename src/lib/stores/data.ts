@@ -1,9 +1,11 @@
-import type { NotificationSetting, Profile } from '$lib/types/profile';
+import type { Browser, NotificationSetting, Profile } from '$lib/types/profile';
 import { Page } from '$lib/types/page';
 import { get, readable, writable, type Writable } from 'svelte/store';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
-import type { Duration } from '$lib/types';
+import type { Duration, SessionManager } from '$lib/types';
 import { urlToDomain } from './utils';
+import { browserControlleur } from '$lib/utility/browser-utils';
+import { controlleur } from '$lib/stores/controlleur';
 
 export const webNotifications: Writable<NotificationSetting[]> = writable([]);
 const showNotification: Writable<boolean> = writable(false);
@@ -48,6 +50,13 @@ const timeStop = readable(new Date(), (set) => {
 	});
 });
 
+const browser: Browser = browserControlleur();
+
+let sessionData: SessionManager;
+if (typeof document !== 'undefined')
+	sessionData = controlleur.sessionControlleur();
+else sessionData = { getById: async () => Promise.resolve({}) };
+
 export {
 	currentPage,
 	duration,
@@ -58,5 +67,7 @@ export {
 	showNotification,
 	timeStop,
 	theme,
-	userProfile
+	userProfile,
+	browser,
+	sessionData
 };

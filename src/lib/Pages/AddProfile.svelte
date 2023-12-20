@@ -2,7 +2,7 @@
 	import { Page, type Relay } from '$lib/types';
 	import { currentPage } from '$lib/stores/data';
 	import { AppPageItem } from '$lib/components/App';
-	import { profileControlleur } from '$lib/stores/key-store';
+	import { profileControlleur } from '$lib/stores';
 	import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools';
 	import Icon from '@iconify/svelte';
 	import InputField from '$lib/components/InputField.svelte';
