@@ -1,4 +1,4 @@
-import type { Profile, WebSite } from "$lib/types";
+import type { PermissionDuration, Profile, WebSite } from "$lib/types";
 
 const createNewWebSite = (): WebSite => {
     return {
@@ -23,4 +23,15 @@ const getWebSiteOrCreate = (domain: string, profile: Profile): WebSite => {
     return site;
 }
 
-export { getWebSiteOrCreate }
+const getNewWebSitePermission = (duration: PermissionDuration, site: WebSite): WebSite => {
+    const newSite = { ...site };
+    newSite.permission = {
+        always: duration.always,
+        accept: duration.accept,
+        reject: duration.reject,
+        authorizationStop: duration.duration.toString()
+    }
+    return newSite;
+}
+
+export { getWebSiteOrCreate, getNewWebSitePermission }

@@ -2,26 +2,20 @@ import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
 import { urlToDomain, web } from '../stores/utils';
 import { controlleur, profileControlleur } from '../stores/controlleur';
 
-import type { Profile, WebSite, Authorization } from '$lib/types/profile';
+import type { WebSite, Authorization } from '$lib/types/profile';
 
-import { webNotifications, userProfile } from '$lib/stores/data';
+import { userProfile } from '$lib/stores/data';
 import { get } from 'svelte/store';
 import type { Message, MessageSender, PopupParams } from '$lib/types';
 import { AllowKind } from '$lib/types';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
 
-const loadNotifications = profileControlleur.loadNotifications;
 
 const sessionManager = controlleur.sessionControlleur();
+const bgControlleur = controlleur.backgroundControlleur();
 
 web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
-
-const getUserProfile = async (): Promise<Profile> => {
-	await profileControlleur.loadProfiles();
-	const user = get(userProfile);
-	return Promise.resolve(user);
-};
 
 const responders: {
 	[key: string]: {
@@ -31,62 +25,6 @@ const responders: {
 		domain: string;
 	};
 } = {};
-
-async function updatePermission(
-	duration: {
-		always: boolean;
-		accept: boolean;
-		reject: boolean;
-		duration: Date;
-	},
-	site: WebSite,
-	domain: string,
-	type: string
-) {
-	await profileControlleur.loadProfiles();
-	const user = get(userProfile);
-	let _webSites = get(userProfile).data?.webSites;
-	if (!_webSites) {
-		_webSites = {};
-	}
-	if (duration.always === true) {
-		site.auth = true;
-		site.permission = {
-			always: true,
-			accept: duration.accept,
-			reject: duration.reject
-		};
-
-		_webSites[domain] = site;
-
-		user.data.webSites = _webSites;
-		await profileControlleur.saveProfile(user);
-		return true;
-	} else {
-		site.auth = true;
-		site.permission = {
-			always: false,
-			accept: duration.accept,
-			reject: duration.reject,
-			authorizationStop: duration.duration
-		};
-
-		_webSites[domain] = site;
-
-		user.data.webSites = _webSites;
-		await profileControlleur.saveProfile(user);
-
-		await addHistory(
-			{
-				acceptance: duration.accept,
-				type: type
-			},
-			domain
-		);
-
-		return true;
-	}
-}
 
 async function makeResponse(type: string, data: any) {
 	await profileControlleur.loadProfiles();
@@ -140,69 +78,21 @@ async function makeResponse(type: string, data: any) {
 	return res;
 }
 
-async function showNotification(type: string, accepted: boolean) {
-	await loadNotifications();
-	const _notifications = get(webNotifications);
-	_notifications.forEach((notification) => {
-		if (type.indexOf(notification.name) !== -1 && notification.state === true) {
-			web.notifications.create({
-				type: 'basic',
-				iconUrl: 'https://toastr.space/images/toastr/body.png',
-				title: type + ' permission requested',
-				message: 'Permission ' + (accepted ? 'accepted' : 'rejected') + ' for ' + type,
-				priority: 0
-			});
-		}
-	});
-}
-
-async function addHistory(info: { acceptance: boolean; type: string }, domain: string) {
-	await showNotification(info.type, info.acceptance);
-	await profileControlleur.loadProfiles();
-	const user = get(userProfile);
-	let _webSites = user.data?.webSites;
-	if (_webSites === undefined || _webSites === null) {
-		_webSites = {};
-	}
-	if (Object.keys(_webSites).indexOf(domain) !== -1) {
-		let site = _webSites[domain];
-		if (site === undefined || site === null) {
-			site = {};
-		}
-		let array = site.history || [];
-		array.push({
-			accepted: info.acceptance,
-			type: info.type,
-			created_at: new Date().toString(),
-			data: undefined
-		});
-		site['history'] = array;
-		_webSites[domain] = site;
-
-		user.data.webSites = _webSites;
-		await profileControlleur.saveProfile(user);
-	} else {
-		const site = {
-			auth: false,
-			permission: {
-				always: false,
-				accept: true,
-				reject: false
-			},
-			history: [
-				{
-					accepted: info.acceptance,
-					type: info.type,
-					created_at: new Date().toString()
-				}
-			]
-		};
-
-		_webSites[domain] = site;
-		user.data.webSites = _webSites;
-		await profileControlleur.saveProfile(user);
-	}
-}
+// async function showNotification(type: string, accepted: boolean) {
+// 	await loadNotifications();
+// 	const _notifications = get(webNotifications);
+// 	_notifications.forEach((notification) => {
+// 		if (type.indexOf(notification.name) !== -1 && notification.state === true) {
+// 			web.notifications.create({
+// 				type: 'basic',
+// 				iconUrl: 'https://toastr.space/images/toastr/body.png',
+// 				title: type + ' permission requested',
+// 				message: 'Permission ' + (accepted ? 'accepted' : 'rejected') + ' for ' + type,
+// 				priority: 0
+// 			});
+// 		}
+// 	});
+// }
 
 async function manageResult(message: Message, sender: any) {
 	try {
@@ -214,33 +104,31 @@ async function manageResult(message: Message, sender: any) {
 		const user = get(userProfile);
 		const site: WebSite = ProfileUtil.getWebSiteOrCreate(domain, user);
 
-		await updatePermission(
+		await bgControlleur.updatePermisison(
 			message.response.permission,
 			site,
 			responderData.domain,
 			responderData.type
 		);
 
-		if (message.response.error) {
-			responderData.resolve({
-				id: message.requestId,
-				type: responderData.type,
-				ext: 'keys.band',
-				response: {
-					error: {
-						message: 'User rejected the request',
-						stack: 'User rejected the request'
-					}
+		if (message.response.error) responderData.resolve({
+			id: message.requestId,
+			type: responderData.type,
+			ext: 'keys.band',
+			response: {
+				error: {
+					message: 'User rejected the request',
+					stack: 'User rejected the request'
 				}
-			});
-		} else {
-			responderData.resolve({
-				id: message.requestId,
-				type: responderData.type,
-				ext: 'keys.band',
-				response: await makeResponse(responderData.type, responderData.data)
-			});
-		}
+			}
+		});
+		else responderData.resolve({
+			id: message.requestId,
+			type: responderData.type,
+			ext: 'keys.band',
+			response: await makeResponse(responderData.type, responderData.data)
+		});
+
 	} catch (e) {
 		console.error(e);
 	}
@@ -252,7 +140,7 @@ async function manageResult(message: Message, sender: any) {
 
 const pushHistory = async (yes: boolean, message: Message) => {
 	const domain = urlToDomain(message.url || '');
-	await addHistory(
+	await bgControlleur.addHistory(
 		{
 			acceptance: yes,
 			type: message.type
@@ -262,25 +150,25 @@ const pushHistory = async (yes: boolean, message: Message) => {
 };
 
 const isAllow = async (domain: string): Promise<AllowKind> => {
-	const user = await getUserProfile();
+	const user = await bgControlleur.getUserProfile();
 	const site: WebSite = ProfileUtil.getWebSiteOrCreate(domain, user);
 	const permission: Authorization = site.permission as Authorization;
 
 	if (permission.accept) {
-		if (permission.always) return Promise.resolve(AllowKind.AlWaysAllow);
+		if (permission.always) return AllowKind.AlWaysAllow;
 		else {
 			if (new Date(permission.authorizationStop || '') > new Date()) {
-				return Promise.resolve(AllowKind.AllowForSession);
-			} else return Promise.resolve(AllowKind.Nothing);
+				return AllowKind.AllowForSession;
+			} else return AllowKind.Nothing;
 		}
 	} else if (permission.reject) {
-		if (permission.always) return Promise.resolve(AllowKind.AlwaysReject);
+		if (permission.always) return AllowKind.AlwaysReject;
 		else {
 			if (new Date(permission.authorizationStop || '') > new Date())
-				return Promise.resolve(AllowKind.RejectForSession);
-			else return Promise.resolve(AllowKind.Nothing);
+				return AllowKind.RejectForSession;
+			else return AllowKind.Nothing;
 		}
-	} else return Promise.resolve(AllowKind.Nothing);
+	} else return AllowKind.Nothing;
 };
 
 const buildResponseMessage = (message: Message, response: any): any => {

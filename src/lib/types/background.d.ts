@@ -39,6 +39,25 @@ interface SessionManager {
     getById: (id: string) => Promise<any>;
 }
 
+
+interface PermissionDuration {
+    always: boolean;
+    accept: boolean;
+    reject: boolean;
+    duration: Date;
+
+}
+interface BackgroundControlleur {
+    updatePermisison: (
+        duration: PermissionDuration,
+        site: WebSite,
+        domain: string,
+        type: string
+    ) => Promise<void>;
+    getUserProfile: () => Promise<Profile>;
+    addHistory: (info: { acceptance: boolean; type: string }, domain: string) => Promise<void>;
+}
+
 enum AllowKind {
     AlWaysAllow,
     AlwaysReject,
@@ -47,4 +66,4 @@ enum AllowKind {
     Nothing
 }
 
-export { Message, MessageSender, MessageType, PopupParams, AllowKind, SessionManager }
+export { Message, MessageSender, MessageType, PopupParams, AllowKind, SessionManager, BackgroundControlleur, PermissionDuration }

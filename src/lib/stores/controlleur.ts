@@ -4,11 +4,11 @@ import { ProfileDeleteMethod } from '$lib/types/profile.d';
 import { get, type Writable } from 'svelte/store';
 import { defaultWebNotificationSettings, web } from './utils';
 import { getPublicKey, nip19 } from 'nostr-tools';
-import type { NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
+import type { NotificationSetting, Profile, Relay, WebSite, WebSiteHistory } from '$lib/types/profile.d';
 import { duration, profiles, webNotifications, userProfile, theme, loadingProfile, browser } from './data';
-import { NostrUtil } from '$lib/utility';
+import { NostrUtil, ProfileUtil } from '$lib/utility';
 import type { Duration } from '$lib/types/duration';
-import type { PopupParams } from '$lib/types';
+import type { BackgroundControlleur, PermissionDuration, PopupParams } from '$lib/types';
 
 
 const sessionControlleur = () => {
@@ -411,6 +411,67 @@ const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 	});
 };
 
+
+
+// --------------------------------------------------------
+//  
+// Here if you want to use profile information, you need to load tt first
+//
+// BACKGROUND CONTROLLEUR
+
+const backgroundControlleur = (): BackgroundControlleur => {
+
+	const getUserProfile = async (): Promise<Profile> => {
+		await profileControlleur.loadProfiles();
+		const user = get(userProfile);
+		return Promise.resolve(user);
+	};
+
+	const addHistory = async (info: { acceptance: boolean; type: string }, domain: string) => {
+		const user = await getUserProfile();
+		const webSites = user.data?.webSites || {};
+		const site = ProfileUtil.getWebSiteOrCreate(domain, user);
+
+		site.history = [...site.history as WebSiteHistory[], {
+			accepted: info.acceptance,
+			type: info.type,
+			created_at: new Date().toString(),
+			data: undefined
+		}];
+
+		if (user.data)
+			user.data.webSites = { ...webSites, [domain]: site };
+		else user.data = { webSites: { [domain]: site } };
+
+		await profileControlleur.saveProfile(user);
+	}
+
+	const updatePermisison = async (
+		duration: PermissionDuration,
+		webSite: WebSite,
+		domain: string,
+		type: string
+	) => {
+		const user = await getUserProfile();
+		const webSites: { [url: string]: WebSite } = user.data?.webSites || {};
+
+		const site = ProfileUtil.getNewWebSitePermission(duration, webSite)
+		if (user.data)
+			user.data.webSites = { ...webSites, [domain]: site };
+		else user.data = { webSites: { [domain]: site } };
+
+		await profileControlleur.saveProfile(user);
+		await addHistory({ acceptance: duration.accept, type }, domain);
+	}
+
+	return { updatePermisison, getUserProfile, addHistory }
+}
+
+// END OF BACKGROUND CONTROLLEUR
+
+// --------------------------------------------------------
+
+
 export const profileControlleur: {
 	addRelayToProfile: (relayUrl: string) => Promise<void>;
 	changeDuration: (newDuration: Duration) => Promise<void>;
@@ -445,4 +506,4 @@ export const profileControlleur: {
 	updateNotification: updateNotification
 };
 
-export const controlleur = { sessionControlleur };
+export const controlleur = { sessionControlleur, backgroundControlleur };
