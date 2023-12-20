@@ -269,14 +269,9 @@ web.runtime.onMessage.addListener((message: Message, sender: MessageSender, send
 	if (message.prompt) {
 		manageResult(message, sender);
 		sendResponse({ message: true });
-	} else {
-		manageRequest(message)
-			.then((data) => {
-				sendResponse(data);
-			})
-			.catch((err) => {
-				alert(err);
-			});
-	}
+	} else manageRequest(message)
+		.then((data) => sendResponse(data))
+		.catch((err) => alert(err));
+
 	return true;
 });
