@@ -4,7 +4,7 @@
 
 	import { accept } from '$lib/stores/authorization';
 	import { createEventDispatcher } from 'svelte';
-	import { tr } from '$lib/stores/utils';
+	import { tr } from '$lib/utility/utils';
 
 	const dispatch = createEventDispatcher();
 

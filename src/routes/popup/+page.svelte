@@ -5,7 +5,7 @@
 
 	import { sendAuthorizationResponse } from '$lib/utility/browser-utils';
 	import { profileControlleur } from '$lib/stores/controlleur';
-	import { urlToDomain } from '$lib/stores/utils';
+	import { urlToDomain } from '$lib/utility/utils';
 	import { onMount } from 'svelte';
 	import { sessionData } from '$lib/stores/data';
 

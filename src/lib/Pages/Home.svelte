@@ -4,7 +4,7 @@
 	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
 
 	import { AppPageItem } from '$lib/components/App';
-	import { urlToDomain } from '$lib/stores/utils';
+	import { urlToDomain } from '$lib/utility/utils';
 	import { BrowserUtil } from '$lib/utility';
 	import { onMount } from 'svelte';
 

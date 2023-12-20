@@ -22,18 +22,15 @@
 
 	const fetchProfile = async () => {
 		if (key) {
-			profileControlleur.verifyKey(key).then(async (ok) => {
+			profileControlleur.checkNSEC(key).then(async (ok) => {
 				if (ok) {
 					if (!generated) fetchingProfile = true;
 					try {
-						const pk = await profileControlleur.verifyKey(key);
+						const pk = await profileControlleur.checkNSEC(key);
 						metadata = await NostrUtil.getMetadata(getPublicKey(pk));
 						const _relays = await NostrUtil.getRelays(getPublicKey(pk), true);
 						if (_relays) relays = _relays.tags;
 						else relays = [];
-
-						//console.log(relays);
-						//return Promise.reject('Nostr account not found');
 						if (metadata?.name !== undefined) {
 							generated = false;
 							metadata = metadata;

@@ -2,10 +2,10 @@
 
 import { ProfileDeleteMethod } from '$lib/types/profile.d';
 import { get, type Writable } from 'svelte/store';
-import { defaultWebNotificationSettings, web } from './utils';
+import { defaultWebNotificationSettings, web } from '../utility/utils';
 import { getPublicKey, nip19 } from 'nostr-tools';
 import type { NotificationSetting, Profile, Relay, WebSite, WebSiteHistory } from '$lib/types/profile.d';
-import { duration, profiles, webNotifications, userProfile, theme, loadingProfile, browser } from './data';
+import { duration, profiles, webNotifications, userProfile, theme, browser } from './data';
 import { NostrUtil, ProfileUtil } from '$lib/utility';
 import type { Duration } from '$lib/types/duration';
 import type { BackgroundControlleur, PermissionDuration, PopupParams } from '$lib/types';
@@ -43,7 +43,7 @@ const sessionControlleur = () => {
 		remove,
 		getById
 	}
-};
+}
 
 export async function loadDuration(): Promise<void> {
 	return new Promise(async (resolve, reject) => {
@@ -201,7 +201,6 @@ export async function settingProfile(profile: Profile): Promise<void> {
 // PROFILE MANAGEMENT
 const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefined> => {
 	try {
-		loadingProfile.set(true);
 		if (profile.data !== undefined) {
 			if (profile.data?.pubkey === undefined || profile.id === undefined) {
 				profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
@@ -240,8 +239,6 @@ const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefi
 	} catch (err) {
 		alert(JSON.stringify(err));
 		return false;
-	} finally {
-		loadingProfile.set(false);
 	}
 };
 
@@ -415,7 +412,7 @@ const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 
 // --------------------------------------------------------
 //  
-// Here if you want to use profile information, you need to load tt first
+// Here if you want to use profile information, you need to load it first in any function
 //
 // BACKGROUND CONTROLLEUR
 
@@ -475,7 +472,7 @@ const backgroundControlleur = (): BackgroundControlleur => {
 export const profileControlleur: {
 	addRelayToProfile: (relayUrl: string) => Promise<void>;
 	changeDuration: (newDuration: Duration) => Promise<void>;
-	createProfile: (name: string, key: string, metaData?: any) => Promise<boolean>;
+	createProfile: (name: string, key: string, metaData?: any, relays?: any[]) => Promise<boolean>;
 	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
 	loadDuration: () => Promise<void>;
 	loadNotifications: () => Promise<void>;

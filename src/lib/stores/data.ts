@@ -3,14 +3,13 @@ import { Page } from '$lib/types/page';
 import { get, readable, writable, type Writable } from 'svelte/store';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
 import type { Duration, SessionManager } from '$lib/types';
-import { urlToDomain } from './utils';
+import { urlToDomain } from '../utility/utils';
 import { browserControlleur } from '$lib/utility/browser-utils';
 import { controlleur } from '$lib/stores/controlleur';
 
 export const webNotifications: Writable<NotificationSetting[]> = writable([]);
 const showNotification: Writable<boolean> = writable(false);
 const userProfile: Writable<Profile> = writable({});
-const loadingProfile: Writable<boolean> = writable(false);
 const profiles: Writable<Profile[]> = writable([]);
 const duration: Writable<Duration> = writable({
 	name: 'One time',
@@ -62,7 +61,6 @@ export {
 	duration,
 	isAccepted,
 	isAlways,
-	loadingProfile,
 	profiles,
 	showNotification,
 	timeStop,

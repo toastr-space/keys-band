@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import { getDuration } from './utils';
+import { getDuration } from '../utility/utils';
 import { userProfile } from '$lib/stores/data';
 import { profileControlleur } from './controlleur';
 import { ProfileUtil } from '$lib/utility';

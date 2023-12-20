@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { userProfile } from '$lib/stores/data';
-	import { reverseArray, timeAgo, tr } from '$lib/stores/utils';
+	import { reverseArray, timeAgo, tr } from '$lib/utility/utils';
 	import type { WebSiteHistory } from '$lib/types';
 	import Icon from '@iconify/svelte';
 	export let domain: string = '';

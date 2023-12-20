@@ -1,5 +1,5 @@
 
-import { getDuration, web } from "$lib/stores/utils"
+import { getDuration, web } from "$lib/utility/utils"
 import type { Browser } from "$lib/types";
 
 function browserControlleur(): Browser {

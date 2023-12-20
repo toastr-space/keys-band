@@ -4,7 +4,7 @@ import type { WebSite, Authorization } from '$lib/types/profile';
 import { controlleur, profileControlleur } from '../stores/controlleur';
 import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
-import { urlToDomain, web } from '../stores/utils';
+import { urlToDomain, web } from '../utility/utils';
 import { userProfile } from '$lib/stores/data';
 import { AllowKind } from '$lib/types';
 import { get } from 'svelte/store';
