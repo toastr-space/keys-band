@@ -1,48 +1,42 @@
 /*eslint no-async-promise-executor: 0*/
 
 import { ProfileDeleteMethod } from '$lib/types/profile.d';
-import { get, writable, type Writable } from 'svelte/store';
+import { get, type Writable } from 'svelte/store';
 import { defaultWebNotificationSettings, web } from './utils';
 import { getPublicKey, nip19 } from 'nostr-tools';
 import type { NotificationSetting, Profile, Relay } from '$lib/types/profile.d';
 import { duration, profiles, webNotifications, userProfile, theme, loadingProfile, browser } from './data';
 import { NostrUtil } from '$lib/utility';
 import type { Duration } from '$lib/types/duration';
+import type { PopupParams } from '$lib/types';
 
 
 const sessionControlleur = () => {
-	const { subscribe, update, set } = writable({});
-
-	const loadData = async () => {
-		await browser.get('sessionData').then((datas) => {
-			if (datas?.sessionData) set(datas?.sessionData);
-			else browser.set({ sessionData: {} });
-		})
+	const loadData = async (): Promise<{ [key: string]: any }> => {
+		const datas = await browser.get('sessionData')
+		if (datas?.sessionData)
+			return datas?.sessionData;
+		return {};
 	}
 
-	const add = async (event: any): Promise<string> => {
+	const popAtIndex = async (index: string): Promise<any> => {
+		const data = await loadData();
+		const value = data[index];
+		delete data[index];
+		browser.set({ sessionData: data });
+		return value;
+	}
+
+	const add = async (event: PopupParams): Promise<string> => {
 		const randomId = Math.random().toString(36).substring(7);
-		update((x: any) => {
-			x[randomId] = event;
-			return x;
-		});
-		browser.set({ sessionData: get({ subscribe }) });
-		return Promise.resolve(randomId);
+		const data = await loadData();
+		data[randomId] = event;
+		browser.set({ sessionData: data });
+		return randomId;
 	};
 
-	const remove = async (id: string): Promise<void> => {
-		update((x: any) => {
-			delete x[id];
-			return x;
-		});
-		browser.set({ sessionData: get({ subscribe }) });
-	};
-
-	const getById = async (id: string): Promise<any> => {
-		await loadData();
-		const data = get({ subscribe }) as { [key: string]: any };
-		return Promise.resolve(data[id]);
-	}
+	const remove = async (id: string): Promise<void | any> => (popAtIndex(id))
+	const getById = async (id: string): Promise<any> => (await popAtIndex(id))
 
 	return {
 		add,
