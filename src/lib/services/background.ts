@@ -253,15 +253,13 @@ async function manageRequest(message: Message): Promise<any> {
 			data: message.params.event || message.params
 		};
 
-		const data: PopupParams = {
+		const dataId = await sessionManager.add({
 			action: 'login',
 			url: message.url,
 			requestId: message.id,
 			type: message.type,
 			data: message.params.event || message.params || '{}' || ''
-		};
-
-		const dataId = await sessionManager.add(data)
+		})
 
 		await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
 	});
