@@ -3,7 +3,7 @@
 	import Icon from '@iconify/svelte';
 	import { popup } from '@skeletonlabs/skeleton';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 
 	import { duration } from '$lib/stores/data';
 
@@ -41,8 +41,6 @@
 		}
 	];
 
-	// export let duration: Duration = durationOptions[0];
-
 	let durationDropdownMenuOpen = false;
 
 	const durationDropdownMenu: PopupSettings = {
@@ -52,16 +50,15 @@
 		state: () => (durationDropdownMenuOpen = false)
 	};
 
-	// const selectDuration = (selectedDuration: Duration) => {
-	// 	duration = selectedDuration;
-	// 	durationDropdownMenuOpen = false;
-	// 	dispatch('durationChange', { value: duration.value });
-	// };
 	const selectDuration = (selectedDuration: Duration) => {
 		profileControlleur.changeDuration(selectedDuration);
 		durationDropdownMenuOpen = false;
-		dispatch('durationChange', { value: selectedDuration });
+		dispatch('durationChange', { value: selectedDuration.value });
 	};
+
+	onMount(() => {
+		selectDuration($duration);
+	});
 </script>
 
 <div
