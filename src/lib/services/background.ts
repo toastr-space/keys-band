@@ -1,15 +1,13 @@
-import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
-import { urlToDomain, web } from '../stores/utils';
-import { controlleur, profileControlleur } from '../stores/controlleur';
-
+import type { Message, MessageSender, Responders } from '$lib/types';
 import type { WebSite, Authorization } from '$lib/types/profile';
 
-import { userProfile } from '$lib/stores/data';
-import { get } from 'svelte/store';
-import type { Message, MessageSender, PopupParams } from '$lib/types';
-import { AllowKind } from '$lib/types';
+import { controlleur, profileControlleur } from '../stores/controlleur';
+import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
-
+import { urlToDomain, web } from '../stores/utils';
+import { userProfile } from '$lib/stores/data';
+import { AllowKind } from '$lib/types';
+import { get } from 'svelte/store';
 
 const sessionManager = controlleur.sessionControlleur();
 const bgControlleur = controlleur.backgroundControlleur();
@@ -17,16 +15,11 @@ const bgControlleur = controlleur.backgroundControlleur();
 web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 
-const responders: {
-	[key: string]: {
-		resolve: (value?: any) => void;
-		type: string;
-		data: any;
-		domain: string;
-	};
-} = {};
+const responders: Responders = {};
+const requestQueue: any[] = [];
+let lastPopup: number = 0;
 
-async function makeResponse(type: string, data: any) {
+const makeResponse = async (type: string, data: any) => {
 	await profileControlleur.loadProfiles();
 	const user = get(userProfile);
 	const privateKey: string = user.data?.privateKey || '';
@@ -183,40 +176,24 @@ const buildResponseMessage = (message: Message, response: any): any => {
 			}
 		},
 		url: message.url
-	};
-};
+	}
+}
 
 /*eslint no-async-promise-executor: 0*/
-async function manageRequest(message: Message): Promise<any> {
-	return new Promise(async (resolve) => {
-		await profileControlleur.loadProfiles();
-		const user = get(userProfile);
+async function manageRequest(message: Message, resolver: any = null): Promise<any> {
+	return new Promise(async (res) => {
+		const resolve: Promise<any> | any = resolver || res;
+
+		const user = await bgControlleur.getUserProfile();
 		const domain = urlToDomain(message.url || '');
 
-		if (user.data?.privateKey === undefined)
-			return Promise.resolve(
-				buildResponseMessage(message, {
-					error: {
-						message: 'User rejected the request',
-						stack: 'User rejected the request'
-					}
-				})
-			);
-
-		const access: AllowKind = await isAllow(domain);
-
-		switch (access) {
-			case AllowKind.AlWaysAllow:
-				pushHistory(true, message);
-				return resolve(
-					buildResponseMessage(
-						message,
-						await makeResponse(message.type, message.params.event || message.params)
-					)
-				);
-			case AllowKind.AlwaysReject:
-				pushHistory(false, message);
-				return resolve(
+		const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
+		if (lastPopup !== 0 || popupWindow !== undefined) {
+			requestQueue.push({ message, resolver: resolve });
+			return
+		} else {
+			if (user.data?.privateKey === undefined)
+				return Promise.resolve(
 					buildResponseMessage(message, {
 						error: {
 							message: 'User rejected the request',
@@ -224,44 +201,68 @@ async function manageRequest(message: Message): Promise<any> {
 						}
 					})
 				);
-			case AllowKind.AllowForSession:
-				pushHistory(true, message);
-				return resolve(
-					buildResponseMessage(
-						message,
-						await makeResponse(message.type, message.params?.event || message.params)
-					)
-				);
-			case AllowKind.RejectForSession:
-				pushHistory(false, message);
-				return resolve(
-					buildResponseMessage(message, {
-						error: {
-							message: 'User rejected the request',
-							stack: 'User rejected the request'
-						}
-					})
-				);
-			case AllowKind.Nothing:
-				break;
+
+			const access: AllowKind = await isAllow(domain);
+
+			switch (access) {
+				case AllowKind.AlWaysAllow:
+					await pushHistory(true, message);
+					return resolve(
+						buildResponseMessage(
+							message,
+							await makeResponse(message.type, message.params.event || message.params)
+						)
+					);
+				case AllowKind.AlwaysReject:
+					await pushHistory(false, message);
+					return resolve(
+						buildResponseMessage(message, {
+							error: {
+								message: 'User rejected the request',
+								stack: 'User rejected the request'
+							}
+						})
+					);
+				case AllowKind.AllowForSession:
+					await pushHistory(true, message);
+					return resolve(
+						buildResponseMessage(
+							message,
+							await makeResponse(message.type, message.params?.event || message.params)
+						)
+					);
+				case AllowKind.RejectForSession:
+					await pushHistory(false, message);
+					return resolve(
+						buildResponseMessage(message, {
+							error: {
+								message: 'User rejected the request',
+								stack: 'User rejected the request'
+							}
+						})
+					);
+				case AllowKind.Nothing:
+					break;
+			}
+
+			responders[message.id] = {
+				resolve,
+				domain,
+				type: message.type,
+				data: message.params.event || message.params
+			};
+
+			const dataId = await sessionManager.add({
+				action: 'login',
+				url: message.url,
+				requestId: message.id,
+				type: message.type,
+				data: message.params.event || message.params || '{}' || ''
+			})
+
+			const win = await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
+			lastPopup = win.id || 0;
 		}
-
-		responders[message.id] = {
-			resolve,
-			domain,
-			type: message.type,
-			data: message.params.event || message.params
-		};
-
-		const dataId = await sessionManager.add({
-			action: 'login',
-			url: message.url,
-			requestId: message.id,
-			type: message.type,
-			data: message.params.event || message.params || '{}' || ''
-		})
-
-		await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
 	});
 }
 
@@ -270,8 +271,17 @@ web.runtime.onMessage.addListener((message: Message, sender: MessageSender, send
 		manageResult(message, sender);
 		sendResponse({ message: true });
 	} else manageRequest(message)
-		.then((data) => sendResponse(data))
-		.catch((err) => alert(err));
+		.then(async (data) => {
+			if (requestQueue.length > 0) {
+				lastPopup = 0;
+				const { message, resolver } = requestQueue.shift();
+				manageRequest(message, resolver);
+			}
+			sendResponse(data)
+		})
+		.catch((err) => {
+			console.error(err, "happened");
+		});
 
 	return true;
 });

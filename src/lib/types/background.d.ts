@@ -45,8 +45,8 @@ interface PermissionDuration {
     accept: boolean;
     reject: boolean;
     duration: Date;
-
 }
+
 interface BackgroundControlleur {
     updatePermisison: (
         duration: PermissionDuration,
@@ -66,4 +66,13 @@ enum AllowKind {
     Nothing
 }
 
-export { Message, MessageSender, MessageType, PopupParams, AllowKind, SessionManager, BackgroundControlleur, PermissionDuration }
+interface Responders {
+    [key: string]: {
+        resolve: (value?: any) => void;
+        type: string;
+        data: any;
+        domain: string;
+    };
+}
+
+export { Message, MessageSender, MessageType, PopupParams, AllowKind, SessionManager, BackgroundControlleur, PermissionDuration, Responders }
