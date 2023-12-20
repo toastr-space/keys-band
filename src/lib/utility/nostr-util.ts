@@ -1,5 +1,5 @@
 import { userProfile } from "$lib/stores/data";
-import { profileControlleur } from "$lib/stores/controlleur";
+import { profileControlleur } from "$lib/stores";
 import { RelayAccess, type Profile, type Relay } from "$lib/types/profile.d";
 import { SimplePool, type Event, type UnsignedEvent, finishEvent, getPublicKey } from "nostr-tools";
 import { get, writable, type Writable } from "svelte/store";
@@ -109,7 +109,7 @@ const pushRelays = async (profile: Profile): Promise<void> => {
 }
 
 const createProfileMetadata = async (name: string, key: string): Promise<boolean> => {
-    const pk = await profileControlleur.verifyKey(key);
+    const pk = await profileControlleur.checkNSEC(key);
     const event: UnsignedEvent = {
         kind: 0,
         created_at: Math.floor(Date.now() / 1000),

@@ -488,6 +488,7 @@ export const profileControlleur: {
 	settingProfile: (profile: Profile) => Promise<void>;
 	switchTheme: (themeName: string) => Promise<void>;
 	updateNotification: (name: string) => Promise<void>;
+	checkNSEC: (value: string) => Promise<string>;
 } = {
 	addRelayToProfile: addRelayToProfile,
 	changeDuration: changeDuration,
@@ -503,7 +504,8 @@ export const profileControlleur: {
 	saveProfiles: saveProfiles,
 	settingProfile: settingProfile,
 	switchTheme: switchTheme,
-	updateNotification: updateNotification
+	updateNotification: updateNotification,
+	checkNSEC: checkNSEC
 };
 
 export const controlleur = { sessionControlleur, backgroundControlleur };
