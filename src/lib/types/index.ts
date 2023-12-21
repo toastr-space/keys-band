@@ -1,5 +1,4 @@
-export { Page } from './page';
-export type * from './profile';
-export type * from './background';
+export { Page } from './page.d';
+export type * from './profile.d';
+export type * from './background.d';
 export { AllowKind } from './background.d';
-export type { Duration } from './duration';

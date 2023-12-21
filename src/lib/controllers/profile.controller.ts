@@ -2,50 +2,26 @@
 
 import { ProfileDeleteMethod } from '$lib/types/profile.d';
 import { get, type Writable } from 'svelte/store';
-import { defaultWebNotificationSettings, web } from '../utility/utils';
-import { getPublicKey, nip19 } from 'nostr-tools';
-import type { NotificationSetting, Profile, Relay, WebSite, WebSiteHistory } from '$lib/types/profile.d';
-import { duration, profiles, webNotifications, userProfile, theme, browser } from './data';
-import { NostrUtil, ProfileUtil } from '$lib/utility';
-import type { Duration } from '$lib/types/duration';
-import type { BackgroundControlleur, PermissionDuration, PopupParams } from '$lib/types';
+import { NostrUtil } from '$lib/utility';
+import { getPublicKey } from 'nostr-tools';
+import type {
+	Duration,
+	NotificationSetting,
+	Profile,
+	ProfileController,
+	Relay
+} from '$lib/types/profile.d';
+import {
+	duration,
+	profiles,
+	webNotifications,
+	userProfile,
+	theme,
+	browser
+} from '$lib/stores/data';
 
-
-const sessionControlleur = () => {
-	const loadData = async (): Promise<{ [key: string]: any }> => {
-		const datas = await browser.get('sessionData')
-		if (datas?.sessionData)
-			return datas?.sessionData;
-		return {};
-	}
-
-	const popAtIndex = async (index: string): Promise<any> => {
-		const data = await loadData();
-		const value = data[index];
-		delete data[index];
-		browser.set({ sessionData: data });
-		return value;
-	}
-
-	const add = async (event: PopupParams): Promise<string> => {
-		const randomId = Math.random().toString(36).substring(7);
-		const data = await loadData();
-		data[randomId] = event;
-		browser.set({ sessionData: data });
-		return randomId;
-	};
-
-	const remove = async (id: string): Promise<void | any> => (popAtIndex(id))
-	const getById = async (id: string): Promise<any> => (await popAtIndex(id))
-
-	return {
-		add,
-		remove,
-		getById
-	}
-}
-
-export async function loadDuration(): Promise<void> {
+// GENERAL SETTINGS
+const loadDuration = async (): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const value = await browser.get('duration');
@@ -67,9 +43,9 @@ export async function loadDuration(): Promise<void> {
 			reject(err);
 		}
 	});
-}
+};
 
-export async function changeDuration(newDuration: Duration): Promise<void> {
+const updateDuration = async (newDuration: Duration): Promise<void> => {
 	return new Promise((resolve, reject) => {
 		try {
 			browser.set({ duration: newDuration });
@@ -79,25 +55,28 @@ export async function changeDuration(newDuration: Duration): Promise<void> {
 			reject(err);
 		}
 	});
-}
+};
 
-export async function loadNotifications(): Promise<void> {
+const loadNotifications = async (): Promise<void> => {
 	return new Promise((resolve) => {
-		web.storage.local.get('notificationsSettings', (value) => {
-			if (value?.notificationsSettings) {
-				webNotifications.set(value?.notificationsSettings);
-			} else {
-				browser.set({
-					notificationsSettings: defaultWebNotificationSettings
-				});
-				webNotifications.set(defaultWebNotificationSettings);
+		web.storage.local.get(
+			'notificationsSettings',
+			(value: { notificationsSettings: NotificationSetting[] }) => {
+				if (value?.notificationsSettings) {
+					webNotifications.set(value?.notificationsSettings);
+				} else {
+					browser.set({
+						notificationsSettings: NostrUtil.defaultWebNotificationSettings
+					});
+					webNotifications.set(NostrUtil.defaultWebNotificationSettings);
+				}
+				resolve();
 			}
-			resolve();
-		});
+		);
 	});
-}
+};
 
-export async function updateNotification(name: string): Promise<void> {
+const updateNotification = async (name: string): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const value = await browser.get('notificationsSettings');
@@ -113,9 +92,9 @@ export async function updateNotification(name: string): Promise<void> {
 			reject(err);
 		}
 	});
-}
+};
 
-export async function loadTheme(): Promise<void> {
+const loadTheme = async (): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const value = await browser.get('theme');
@@ -132,9 +111,9 @@ export async function loadTheme(): Promise<void> {
 			reject(err);
 		}
 	});
-}
+};
 
-export async function switchTheme(themeName: string): Promise<void> {
+const switchTheme = async (themeName: string): Promise<void> => {
 	return new Promise((resolve) => {
 		browser.set({ theme: themeName });
 		theme.set(themeName);
@@ -144,39 +123,13 @@ export async function switchTheme(themeName: string): Promise<void> {
 		browser.set({ theme: themeName });
 		resolve();
 	});
-}
+};
 
-export async function checkNSEC(value: string): Promise<string> {
-	return new Promise(async (resolve, reject) => {
-		if (value?.length < 63) {
-			reject('Invalid key');
-			return;
-		}
-
-		let decodedValue;
-
-		if (value?.toString().startsWith('nsec')) {
-			try {
-				decodedValue = nip19.decode(value).data;
-			} catch (e) {
-				reject('Invalid key');
-				return;
-			}
-		} else if (value?.length === 64) {
-			decodedValue = value;
-		} else {
-			reject('Invalid key');
-			return;
-		}
-
-		resolve(decodedValue as string);
-	});
-}
-
-export async function isExistingProfile(name: string, key: string): Promise<boolean> {
+// PROFILE UTILITY
+const isExistingProfile = async (name: string, key: string): Promise<boolean> => {
 	try {
 		const _profiles = get(profiles);
-		const pkey = await checkNSEC(key);
+		const pkey = await NostrUtil.checkNSEC(key);
 		return _profiles.findIndex((p: Profile) => p.name === name || p?.data?.privateKey === pkey) !==
 			-1
 			? true
@@ -185,9 +138,9 @@ export async function isExistingProfile(name: string, key: string): Promise<bool
 		alert(err);
 	}
 	return false;
-}
+};
 
-export async function settingProfile(profile: Profile): Promise<void> {
+const settingProfile = async (profile: Profile): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			await browser.set({ currentProfile: profile.id });
@@ -196,7 +149,7 @@ export async function settingProfile(profile: Profile): Promise<void> {
 			reject(err);
 		}
 	});
-}
+};
 
 // PROFILE MANAGEMENT
 const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefined> => {
@@ -279,19 +232,19 @@ const deleteProfile = async (
 	});
 };
 
-export async function createProfile(
+const createProfile = async (
 	name: string,
 	key: string,
 	metadata?: any,
 	relays?: any
-): Promise<boolean> {
+): Promise<boolean> => {
 	return new Promise(async function (resolve, reject) {
 		if (name.length < 4) {
 			reject('Name must be at least 4 characters');
 			return;
 		}
 
-		const privateKey = (await checkNSEC(key)) as string;
+		const privateKey = (await NostrUtil.checkNSEC(key)) as string;
 
 		try {
 			if ((await isExistingProfile(name, privateKey)) === true) {
@@ -321,9 +274,9 @@ export async function createProfile(
 			reject(error);
 		}
 	});
-}
+};
 
-export async function loadProfiles(): Promise<Writable<Profile[]>> {
+const loadProfiles = async (): Promise<Writable<Profile[]>> => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const value = await browser.get('profiles');
@@ -361,14 +314,14 @@ export async function loadProfiles(): Promise<Writable<Profile[]>> {
 			reject(err);
 		}
 	});
-}
+};
 
-export async function saveProfiles(): Promise<void> {
+const saveProfiles = async (): Promise<void> => {
 	return new Promise((resolve) => {
 		browser.set({ profiles: get(profiles) });
 		resolve();
 	});
-}
+};
 
 const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
@@ -408,89 +361,12 @@ const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 	});
 };
 
-
-
-// --------------------------------------------------------
-//  
-// Here if you want to use profile information, you need to load it first in any function
-//
-// BACKGROUND CONTROLLEUR
-
-const backgroundControlleur = (): BackgroundControlleur => {
-
-	const getUserProfile = async (): Promise<Profile> => {
-		await profileControlleur.loadProfiles();
-		const user = get(userProfile);
-		return Promise.resolve(user);
-	};
-
-	const addHistory = async (info: { acceptance: boolean; type: string }, domain: string) => {
-		const user = await getUserProfile();
-		const webSites = user.data?.webSites || {};
-		const site = ProfileUtil.getWebSiteOrCreate(domain, user);
-
-		site.history = [...site.history as WebSiteHistory[], {
-			accepted: info.acceptance,
-			type: info.type,
-			created_at: new Date().toString(),
-			data: undefined
-		}];
-
-		if (user.data)
-			user.data.webSites = { ...webSites, [domain]: site };
-		else user.data = { webSites: { [domain]: site } };
-
-		await profileControlleur.saveProfile(user);
-	}
-
-	const updatePermisison = async (
-		duration: PermissionDuration,
-		webSite: WebSite,
-		domain: string,
-		type: string
-	) => {
-		const user = await getUserProfile();
-		const webSites: { [url: string]: WebSite } = user.data?.webSites || {};
-
-		const site = ProfileUtil.getNewWebSitePermission(duration, webSite)
-		if (user.data)
-			user.data.webSites = { ...webSites, [domain]: site };
-		else user.data = { webSites: { [domain]: site } };
-
-		await profileControlleur.saveProfile(user);
-		await addHistory({ acceptance: duration.accept, type }, domain);
-	}
-
-	return { updatePermisison, getUserProfile, addHistory }
-}
-
-// END OF BACKGROUND CONTROLLEUR
-
-// --------------------------------------------------------
-
-
-export const profileControlleur: {
-	addRelayToProfile: (relayUrl: string) => Promise<void>;
-	changeDuration: (newDuration: Duration) => Promise<void>;
-	createProfile: (name: string, key: string, metaData?: any, relays?: any[]) => Promise<boolean>;
-	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
-	loadDuration: () => Promise<void>;
-	loadNotifications: () => Promise<void>;
-	loadProfile: (profile: Profile) => Promise<boolean | Profile | undefined>;
-	loadProfiles: () => Promise<Writable<Profile[]>>;
-	loadTheme: () => Promise<void>;
-	removeRelayFromProfile: (relay: Relay) => Promise<void>;
-	saveProfile: (profile: Profile) => Promise<void>;
-	saveProfiles: () => Promise<void>;
-	settingProfile: (profile: Profile) => Promise<void>;
-	switchTheme: (themeName: string) => Promise<void>;
-	updateNotification: (name: string) => Promise<void>;
-	checkNSEC: (value: string) => Promise<string>;
-} = {
+export const profileController: ProfileController = {
 	addRelayToProfile: addRelayToProfile,
-	changeDuration: changeDuration,
+	updateDuration: updateDuration,
 	createProfile: createProfile,
 	deleteProfile: deleteProfile,
+	isExistingProfile: isExistingProfile,
 	loadDuration: loadDuration,
 	loadNotifications: loadNotifications,
 	loadProfile: loadProfile,
@@ -501,8 +377,5 @@ export const profileControlleur: {
 	saveProfiles: saveProfiles,
 	settingProfile: settingProfile,
 	switchTheme: switchTheme,
-	updateNotification: updateNotification,
-	checkNSEC: checkNSEC
+	updateNotification: updateNotification
 };
-
-export const controlleur = { sessionControlleur, backgroundControlleur };

@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { profileControlleur } from '$lib/stores/';
-
-	import { AppPage } from '$lib/components/App';
-	import { PageSettings, PageHome, PageAddProfile } from '$lib/Pages/';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
 
-	// Set theme based on local storage
-	if (typeof document !== 'undefined') profileControlleur.loadTheme();
+	import { AppPage } from '$lib/components/App';
+	import { profileController } from '$lib/controllers/profile.controller';
+	import { PageSettings, PageHome, PageAddProfile } from '$lib/pages';
 
-	const promise = profileControlleur.loadProfiles();
+	// Set theme based on local storage
+	if (typeof document !== 'undefined') profileController.loadTheme();
+
+	const promise = profileController.loadProfiles();
 </script>
 
 {#await promise}

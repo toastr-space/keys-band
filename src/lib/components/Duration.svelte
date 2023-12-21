@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { profileControlleur } from '$lib/stores';
 	import Icon from '@iconify/svelte';
 	import { popup } from '@skeletonlabs/skeleton';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
 	import { createEventDispatcher, onMount } from 'svelte';
 
 	import { duration } from '$lib/stores/data';
+	import { profileController } from '$lib/controllers/profile.controller';
 
 	const dispatch = createEventDispatcher();
 
@@ -51,7 +51,7 @@
 	};
 
 	const selectDuration = (selectedDuration: Duration) => {
-		profileControlleur.changeDuration(selectedDuration);
+		profileController.updateDuration(selectedDuration);
 		durationDropdownMenuOpen = false;
 		dispatch('durationChange', { value: selectedDuration.value });
 	};

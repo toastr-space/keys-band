@@ -4,15 +4,15 @@
 	import type { PopupParams } from '$lib/types';
 
 	import { sendAuthorizationResponse } from '$lib/utility/browser-utils';
-	import { profileControlleur } from '$lib/stores/controlleur';
 	import { urlToDomain } from '$lib/utility/utils';
 	import { onMount } from 'svelte';
 	import { sessionData } from '$lib/stores/data';
+	import { profileController } from '$lib/controllers/profile.controller';
 
 	let parameter: PopupParams;
 
 	async function handleData() {
-		profileControlleur.loadProfiles();
+		profileController.loadProfiles();
 		const urlParams = new URLSearchParams(document.location.search);
 		const dataId = atob(urlParams?.get('query') as string);
 		parameter = (await sessionData.getById(dataId)) || {};

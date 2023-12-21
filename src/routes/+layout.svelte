@@ -8,7 +8,7 @@
 	import './styles.css';
 	import { onMount } from 'svelte';
 	import { NostrUtil } from '$lib/utility';
-	import { profileControlleur } from '$lib/stores';
+	import { profileController } from '$lib/controllers/profile.controller';
 
 	TimeAgo.addDefaultLocale(en);
 
@@ -16,7 +16,7 @@
 
 	onMount(() => {
 		// Set duration based on local storage
-		profileControlleur.loadDuration();
+		profileController.loadDuration();
 
 		NostrUtil.prepareRelayPool();
 	});

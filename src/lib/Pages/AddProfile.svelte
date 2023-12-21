@@ -2,12 +2,12 @@
 	import { Page, type Relay } from '$lib/types';
 	import { currentPage } from '$lib/stores/data';
 	import { AppPageItem } from '$lib/components/App';
-	import { profileControlleur } from '$lib/stores';
 	import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools';
 	import Icon from '@iconify/svelte';
 	import InputField from '$lib/components/InputField.svelte';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { NostrUtil } from '$lib/utility';
+	import { profileController } from '$lib/controllers/profile.controller';
 
 	let name = '';
 	let key = '';
@@ -22,11 +22,11 @@
 
 	const fetchProfile = async () => {
 		if (key) {
-			profileControlleur.checkNSEC(key).then(async (ok) => {
+			NostrUtil.checkNSEC(key).then(async (ok) => {
 				if (ok) {
 					if (!generated) fetchingProfile = true;
 					try {
-						const pk = await profileControlleur.checkNSEC(key);
+						const pk = await NostrUtil.checkNSEC(key);
 						metadata = await NostrUtil.getMetadata(getPublicKey(pk));
 						const _relays = await NostrUtil.getRelays(getPublicKey(pk), true);
 						if (_relays) relays = _relays.tags;
@@ -63,7 +63,7 @@
 					});
 				});
 
-			await profileControlleur.createProfile(name, key, metadata, relays_list);
+			await profileController.createProfile(name, key, metadata, relays_list);
 			if (generated === true) await NostrUtil.createProfileMetadata(name, key);
 
 			name = '';

@@ -3,12 +3,12 @@
 
 	import Icon from '@iconify/svelte';
 
-	import { Page } from '$lib/types/page';
+	import { Page } from '$lib/types';
 	import { popup, Avatar } from '@skeletonlabs/skeleton';
-	import { profileControlleur } from '$lib/stores';
-	import { userProfile, theme, currentPage } from '../stores/data';
+	import { userProfile, theme, currentPage } from '$lib/stores/data';
 	import AccountDropdownMenu from './AccountDropdownMenu.svelte';
 	import { derived } from 'svelte/store';
+	import { profileController } from '$lib/controllers/profile.controller';
 
 	let accountDropdownMenuOpen = false;
 
@@ -66,7 +66,7 @@
 				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex flex-col py-1.5 rounded-3xl 2xl h-11 w-16"
 				on:click={() => {
 					$theme = $theme === 'dark' ? 'light' : 'dark';
-					profileControlleur.switchTheme($theme);
+					profileController.switchTheme($theme);
 				}}
 			>
 				<div

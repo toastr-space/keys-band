@@ -3,19 +3,19 @@
 	import ToggleSwitch from '../components/ToggleSwitch.svelte';
 	import { AppPageItem } from '$lib/components/App';
 	import { showNotification, userProfile } from '$lib/stores/data';
-	import { profileControlleur } from '$lib/stores';
 	import type { Relay } from '$lib/types';
+	import { profileController } from '$lib/controllers/profile.controller';
 
 	$: relays = $userProfile.data?.relays || [];
 	let relayInput: string = '';
 
 	const addRelay = () => {
-		profileControlleur.addRelayToProfile(relayInput).then(() => {
+		profileController.addRelayToProfile(relayInput).then(() => {
 			relayInput = '';
 		});
 	};
 	const removeRelay = (relay: Relay) => {
-		profileControlleur.removeRelayFromProfile(relay);
+		profileController.removeRelayFromProfile(relay);
 	};
 
 	function handleToggleNotification(event: CustomEvent) {

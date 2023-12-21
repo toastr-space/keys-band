@@ -4,13 +4,13 @@
 	import { Avatar } from '@skeletonlabs/skeleton';
 	import { tick } from 'svelte';
 
-	import { profileControlleur } from '$lib/stores';
 	import { userProfile, profiles, currentPage } from '../stores/data';
-	import { Page } from '$lib/types/page';
+	import { Page } from '$lib/types';
+	import { profileController } from '$lib/controllers/profile.controller';
 
 	export let accountDropdownMenuOpen: boolean;
 
-	const load = (profile: Profile) => profileControlleur.loadProfile(profile);
+	const load = (profile: Profile) => profileController.loadProfile(profile);
 </script>
 
 <div data-popup="accountDropdownMenu">
@@ -44,7 +44,7 @@
 							<button
 								class="btn btn-sm text-gray-500 px-0 py-0 mt-2"
 								on:click={async () => {
-									await profileControlleur.deleteProfile(profile);
+									await profileController.deleteProfile(profile);
 									await tick();
 									accountDropdownMenuOpen = true;
 								}}
