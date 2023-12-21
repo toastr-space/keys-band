@@ -1,7 +1,7 @@
 import type { Browser } from '$lib/types/profile';
 import { web } from '$lib/utility/utils';
 
-export const browserController = (): Browser => {
+export function browserController(): Browser {
 	const get = async (key: string): Promise<{ [key: string]: unknown }> => {
 		try {
 			const result = await web?.storage?.local?.get(key);
@@ -20,4 +20,4 @@ export const browserController = (): Browser => {
 	};
 
 	return { get, set };
-};
+}

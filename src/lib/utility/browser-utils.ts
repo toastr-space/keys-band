@@ -1,4 +1,26 @@
+import type { Browser } from '$lib/types/profile';
 import { getDuration, web } from '$lib/utility/utils';
+
+function browserControlleur(): Browser {
+	const get = async (key: string): Promise<{ [key: string]: unknown }> => {
+		try {
+			const result = await web?.storage?.local?.get(key);
+			return result;
+		} catch (err) {
+			return Promise.reject(err);
+		}
+	};
+	const set = async (items: { [key: string]: unknown }): Promise<void> => {
+		try {
+			const result = await web?.storage?.local?.set(items);
+			return result;
+		} catch (err) {
+			return Promise.reject(err);
+		}
+	};
+
+	return { get, set };
+}
 
 const getCurrentTab = async (): Promise<chrome.tabs.Tab> => {
 	return new Promise((resolve) => {
@@ -71,4 +93,10 @@ const sendAuthorizationResponse = (
 	});
 };
 
-export { getCurrentTab, injectJsinAllTabs, createWindow, sendAuthorizationResponse };
+export {
+	getCurrentTab,
+	injectJsinAllTabs,
+	createWindow,
+	sendAuthorizationResponse,
+	browserControlleur
+};

@@ -5,7 +5,8 @@ import { BrowserUtil, ProfileUtil } from '$lib/utility';
 import type { Duration, SessionManager } from '$lib/types';
 import { urlToDomain } from '../utility/utils';
 import { sessionController } from '$lib/controllers/session.controller';
-import { browserController } from '$lib/controllers/browser.controller';
+// import { browserController } from '$lib/controllers/browser.controller';
+import { browserControlleur } from '$lib/utility/browser-utils';
 
 export const webNotifications: Writable<NotificationSetting[]> = writable([]);
 const showNotification: Writable<boolean> = writable(false);
@@ -49,7 +50,7 @@ const timeStop = readable(new Date(), (set) => {
 	});
 });
 
-const browser: Browser = browserController();
+const browser: Browser = browserControlleur();
 
 let sessionData: SessionManager;
 if (typeof document !== 'undefined') sessionData = sessionController();
