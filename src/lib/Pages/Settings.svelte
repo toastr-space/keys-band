@@ -92,11 +92,13 @@
 			<span class="text-black dark:text-white">team</span>
 		</div>
 
-		<button
+		<a
 			type="button"
 			class="btn btn-lg bg-surface-400 dark:bg-surface-600 mt-4 text-black dark:text-white"
+			href="https://geyser.fund/project/keysdotband"
+			target="_blank"
 			><Icon icon="mdi:lightning-bolt" class="text-pink-600 dark:text-teal-500" />
-			Support</button
+			Support</a
 		>
 	</div>
 

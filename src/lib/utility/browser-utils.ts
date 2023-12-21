@@ -1,7 +1,7 @@
 import type { Browser } from '$lib/types/profile';
 import { getDuration, web } from '$lib/utility/utils';
 
-function browserControlleur(): Browser {
+function browserController(): Browser {
 	const get = async (key: string): Promise<{ [key: string]: unknown }> => {
 		try {
 			const result = await web?.storage?.local?.get(key);
@@ -98,5 +98,5 @@ export {
 	injectJsinAllTabs,
 	createWindow,
 	sendAuthorizationResponse,
-	browserControlleur
+	browserController
 };
