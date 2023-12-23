@@ -266,21 +266,26 @@ web.runtime.onMessage.addListener((message: Message, sender: MessageSender, send
 	if (message.prompt) {
 		manageResult(message, sender);
 		sendResponse({ message: true });
-	} else
-		manageRequest(message)
-			.then(async (data) => {
-				sendResponse(data);
-			})
-			.catch((err) => {
-				console.error(err, 'happened');
-			}).finally(() => {
-				console.log('requestQueue', requestQueue.length);
-				if (requestQueue.length > 0) {
-					const { message, resolver } = requestQueue.shift();
-					console.log('requestQueue', requestQueue.length, 'sending message', message, 'to popup');
-					manageRequest(message, resolver, true);
-				}
-			})
+	} else {
+		const i = setInterval(async () => {
+			manageRequest(message)
+				.then(async (data) => {
+					sendResponse(data);
+				})
+				.catch((err) => {
+					console.error(err, 'happened');
+				}).finally(() => {
+					console.log('requestQueue', requestQueue.length);
+					if (requestQueue.length > 0) {
+						const { message, resolver } = requestQueue.shift();
+						console.log('requestQueue', requestQueue.length, 'sending message', message, 'to popup');
+						manageRequest(message, resolver, true);
+					}
+				})
+			clearInterval(i);
+		}, Math.random() * 300);
+
+	}
 
 	return true;
 });
