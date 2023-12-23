@@ -1,14 +1,12 @@
-import type { Browser, NotificationSetting, Profile } from '$lib/types/profile';
+import type { Profile } from '$lib/types/profile';
 import { Page } from '$lib/types';
 import { get, readable, writable, type Writable } from 'svelte/store';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
 import type { Duration, SessionManager } from '$lib/types';
 import { urlToDomain } from '../utility/utils';
 import { sessionController } from '$lib/controllers/session.controller';
-import { browserController } from '$lib/utility/browser-utils';
+import { browserController } from '$lib/controllers';
 
-export const webNotifications: Writable<NotificationSetting[]> = writable([]);
-const showNotification: Writable<boolean> = writable(false);
 const userProfile: Writable<Profile> = writable({});
 const profiles: Writable<Profile[]> = writable([]);
 const duration: Writable<Duration> = writable({
@@ -49,8 +47,6 @@ const timeStop = readable(new Date(), (set) => {
 	});
 });
 
-const browser: Browser = browserController();
-
 let sessionData: SessionManager;
 if (typeof document !== 'undefined') sessionData = sessionController();
 else sessionData = { getById: async () => Promise.resolve({}) };
@@ -61,10 +57,9 @@ export {
 	isAccepted,
 	isAlways,
 	profiles,
-	showNotification,
 	timeStop,
 	theme,
 	userProfile,
-	browser,
+	browserController as browser,
 	sessionData
 };

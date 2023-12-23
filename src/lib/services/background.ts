@@ -2,8 +2,7 @@ import type { Message, MessageSender, Responders } from '$lib/types';
 import type { WebSite, Authorization } from '$lib/types/profile';
 
 import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
-import { BrowserUtil, ProfileUtil } from '$lib/utility';
-import { urlToDomain, web } from '../utility/utils';
+import { urlToDomain, web, BrowserUtil, ProfileUtil } from '../utility';
 import { userProfile } from '$lib/stores/data';
 import { AllowKind } from '$lib/types';
 import { get } from 'svelte/store';
@@ -19,7 +18,6 @@ web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.j
 
 const responders: Responders = {};
 const requestQueue: any[] = [];
-let lastPopup: number = 0;
 
 const makeResponse = async (type: string, data: any) => {
 	await profileController.loadProfiles();
@@ -72,22 +70,6 @@ const makeResponse = async (type: string, data: any) => {
 	}
 	return res;
 };
-
-// async function showNotification(type: string, accepted: boolean) {
-// 	await loadNotifications();
-// 	const _notifications = get(webNotifications);
-// 	_notifications.forEach((notification) => {
-// 		if (type.indexOf(notification.name) !== -1 && notification.state === true) {
-// 			web.notifications.create({
-// 				type: 'basic',
-// 				iconUrl: 'https://toastr.space/images/toastr/body.png',
-// 				title: type + ' permission requested',
-// 				message: 'Permission ' + (accepted ? 'accepted' : 'rejected') + ' for ' + type,
-// 				priority: 0
-// 			});
-// 		}
-// 	});
-// }
 
 async function manageResult(message: Message, sender: any) {
 	try {
@@ -183,20 +165,48 @@ const buildResponseMessage = (message: Message, response: any): any => {
 };
 
 /*eslint no-async-promise-executor: 0*/
-async function manageRequest(message: Message, resolver: any = null): Promise<any> {
+async function manageRequest(message: Message, resolver: any = null, next: boolean = false): Promise<any> {
 	return new Promise(async (res) => {
 		const resolve: Promise<any> | any = resolver || res;
 
 		const user = await background.getUserProfile();
 		const domain = urlToDomain(message.url || '');
 
-		const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
-		if (lastPopup !== 0 || popupWindow !== undefined) {
+		// const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
+
+		if (next === false) {
 			requestQueue.push({ message, resolver: resolve });
-			return;
-		} else {
-			if (user.data?.privateKey === undefined)
-				return Promise.resolve(
+			return
+		}
+		// if (popupWindow !== undefined || requestQueue.length > 0) {
+		// 	
+		// 	return;
+		// }
+
+		if (user.data?.privateKey === undefined)
+			return Promise.resolve(
+				buildResponseMessage(message, {
+					error: {
+						message: 'User rejected the request',
+						stack: 'User rejected the request'
+					}
+				})
+			);
+
+		const access: AllowKind = await isAllow(domain);
+
+		switch (access) {
+			case AllowKind.AlWaysAllow:
+				await pushHistory(true, message);
+				return resolve(
+					buildResponseMessage(
+						message,
+						await makeResponse(message.type, message.params.event || message.params)
+					)
+				);
+			case AllowKind.AlwaysReject:
+				await pushHistory(false, message);
+				return resolve(
 					buildResponseMessage(message, {
 						error: {
 							message: 'User rejected the request',
@@ -204,88 +214,77 @@ async function manageRequest(message: Message, resolver: any = null): Promise<an
 						}
 					})
 				);
-
-			const access: AllowKind = await isAllow(domain);
-
-			switch (access) {
-				case AllowKind.AlWaysAllow:
-					await pushHistory(true, message);
-					return resolve(
-						buildResponseMessage(
-							message,
-							await makeResponse(message.type, message.params.event || message.params)
-						)
-					);
-				case AllowKind.AlwaysReject:
-					await pushHistory(false, message);
-					return resolve(
-						buildResponseMessage(message, {
-							error: {
-								message: 'User rejected the request',
-								stack: 'User rejected the request'
-							}
-						})
-					);
-				case AllowKind.AllowForSession:
-					await pushHistory(true, message);
-					return resolve(
-						buildResponseMessage(
-							message,
-							await makeResponse(message.type, message.params?.event || message.params)
-						)
-					);
-				case AllowKind.RejectForSession:
-					await pushHistory(false, message);
-					return resolve(
-						buildResponseMessage(message, {
-							error: {
-								message: 'User rejected the request',
-								stack: 'User rejected the request'
-							}
-						})
-					);
-				case AllowKind.Nothing:
-					break;
-			}
-
-			responders[message.id] = {
-				resolve,
-				domain,
-				type: message.type,
-				data: message.params.event || message.params
-			};
-
-			const dataId = await session.add({
-				action: 'login',
-				url: message.url,
-				requestId: message.id,
-				type: message.type,
-				data: message.params.event || message.params || '{}' || ''
-			});
-
-			const win = await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
-			lastPopup = win.id || 0;
+			case AllowKind.AllowForSession:
+				await pushHistory(true, message);
+				return resolve(
+					buildResponseMessage(
+						message,
+						await makeResponse(message.type, message.params?.event || message.params)
+					)
+				);
+			case AllowKind.RejectForSession:
+				await pushHistory(false, message);
+				return resolve(
+					buildResponseMessage(message, {
+						error: {
+							message: 'User rejected the request',
+							stack: 'User rejected the request'
+						}
+					})
+				);
+			case AllowKind.Nothing:
+				break;
 		}
+
+		responders[message.id] = {
+			resolve,
+			domain,
+			type: message.type,
+			data: message.params.event || message.params
+		};
+
+		const dataId = await session.add({
+			action: 'login',
+			url: message.url,
+			requestId: message.id,
+			type: message.type,
+			data: message.params.event || message.params || '{}' || ''
+		});
+
+		await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
+
 	});
 }
+
+const proceedNextRequest = async () => {
+	const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
+	if (popupWindow === undefined && requestQueue.length > 0) {
+		const { message, resolver } = requestQueue.shift();
+		console.log('requestQueue', requestQueue.length, 'sending message', message, 'to popup');
+		manageRequest(message, resolver, true);
+	}
+}
+
+setInterval(async () => proceedNextRequest(), 100);
 
 web.runtime.onMessage.addListener((message: Message, sender: MessageSender, sendResponse) => {
 	if (message.prompt) {
 		manageResult(message, sender);
 		sendResponse({ message: true });
-	} else
-		manageRequest(message)
-			.then(async (data) => {
-				if (requestQueue.length > 0) {
-					lastPopup = 0;
-					const { message, resolver } = requestQueue.shift();
-					manageRequest(message, resolver);
-				}
-				sendResponse(data);
-			})
-			.catch((err) => {
-				console.error(err, 'happened');
-			});
+	} else {
+		const i = setInterval(async () => {
+			manageRequest(message)
+				.then(async (data) => {
+					sendResponse(data);
+				})
+				.catch((err) => {
+					console.error(err, 'happened');
+				}).finally(() => {
+					proceedNextRequest();
+				})
+			clearInterval(i);
+		}, Math.random() * 100);
+	}
 
 	return true;
 });

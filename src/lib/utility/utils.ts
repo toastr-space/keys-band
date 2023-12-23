@@ -1,3 +1,7 @@
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en';
+TimeAgo.addDefaultLocale(en);
+const timeAgo = new TimeAgo('en-US');
 
 export function getBrowser() {
   // @ts-ignore
@@ -16,36 +20,6 @@ export const web: typeof chrome = getBrowser();
 
 export function urlToDomain(url: string) {
   return url?.split("/")[2];
-}
-
-export function remainingTime(datetime: Date) {
-  const now: Date = new Date();
-  const diff = datetime.getTime() - now.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-  let _hours = hours.toString();
-  let _minutes = minutes.toString();
-  let _seconds = seconds.toString();
-
-  if (seconds < 10) {
-    _seconds = "0" + seconds;
-  }
-
-  if (minutes < 10) {
-    _minutes = "0" + minutes;
-  }
-
-  if (hours < 10) {
-    _hours = "0" + hours;
-  }
-
-  if (days > 0) {
-    return days + " days" + " " + _hours + " hours";
-  }
-  return _hours + ":" + _minutes + ":" + _seconds + "";
 }
 
 export function getDuration(choice: number): Date {
@@ -67,62 +41,6 @@ export function getDuration(choice: number): Date {
   return new Date();
 }
 
-export function reverseArray(arr: unknown[]) {
-  const newArray: unknown[] = [];
-  for (let i = arr.length - 1; i >= 0; i--) {
-    newArray.push(arr[i]);
-  }
-  return newArray;
-}
-
-export function timeAgo(date: Date) {
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-  if (days > 0) {
-    return days + " days ago";
-  } else if (hours > 0) {
-    return hours + " hours ago";
-  } else if (minutes > 0) {
-    return minutes + " minutes ago";
-  } else if (seconds > 0) {
-    return seconds + " seconds ago";
-  }
-  return "now";
-}
-
-export const defaultWebNotificationSettings = [
-  {
-    name: "signEvent",
-    description: "Sign Event",
-    state: false,
-  },
-  {
-    name: "permission",
-    description: "Authentifcation",
-    state: false,
-  },
-  {
-    name: "nip04",
-    description: "Message",
-    state: false,
-  },
-  {
-    name: "getPublicKey",
-    description: "Get Public Key",
-    state: false,
-  },
-  {
-    name: "getRelays",
-    description: "Get Relays",
-    state: false,
-  },
-];
-
 export function tr(name: string) {
   switch (name) {
     case "signEvent":
@@ -143,3 +61,6 @@ export function tr(name: string) {
       return name;
   }
 }
+
+
+export { timeAgo }

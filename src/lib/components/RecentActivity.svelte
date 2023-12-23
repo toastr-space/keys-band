@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { timeAgo, tr } from '$lib/utility';
 	import { userProfile } from '$lib/stores/data';
-	import { reverseArray, timeAgo, tr } from '$lib/utility/utils';
+
 	import type { WebSiteHistory } from '$lib/types';
+
 	import Icon from '@iconify/svelte';
+
 	export let domain: string = '';
 
 	let history_list: WebSiteHistory[] = [];
@@ -11,7 +14,7 @@
 	$: if ($userProfile.data?.webSites) {
 		const histories = $userProfile.data?.webSites[domain]?.history || [];
 		history_count = histories.length;
-		history_list = reverseArray(histories).slice(0, 10) as WebSiteHistory[];
+		history_list = histories.toReversed().slice(0, 10) as WebSiteHistory[];
 	}
 </script>
 
@@ -38,7 +41,7 @@
 			<div
 				class="text-black dark:text-white opacity-30 text-xs leading-4 self-center whitespace-nowrap my-auto"
 			>
-				{timeAgo(new Date(siteHistory.created_at))}
+				{timeAgo.format(new Date(siteHistory.created_at))}
 			</div>
 		</div>
 	{/each}

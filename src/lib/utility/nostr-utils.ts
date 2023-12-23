@@ -32,34 +32,6 @@ const checkRelays = async (url: string, isProfile: boolean = false) => {
 	}
 };
 
-const defaultWebNotificationSettings = [
-	{
-		name: 'signEvent',
-		description: 'Sign Event',
-		state: false
-	},
-	{
-		name: 'permission',
-		description: 'Authentifcation',
-		state: false
-	},
-	{
-		name: 'nip04',
-		description: 'Message',
-		state: false
-	},
-	{
-		name: 'getPublicKey',
-		description: 'Get Public Key',
-		state: false
-	},
-	{
-		name: 'getRelays',
-		description: 'Get Relays',
-		state: false
-	}
-];
-
 const prepareRelayPool = async () => {
 	default_relays.forEach((relay) => checkRelays(relay));
 	if (get(userProfile)) {
@@ -192,7 +164,6 @@ const checkNSEC = async (value: string): Promise<string> => {
 
 export {
 	checkNSEC,
-	defaultWebNotificationSettings,
 	getMetadata,
 	publish,
 	getRelays,

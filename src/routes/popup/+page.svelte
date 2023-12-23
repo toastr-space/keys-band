@@ -3,7 +3,7 @@
 
 	import type { PopupParams } from '$lib/types';
 
-	import { sendAuthorizationResponse } from '$lib/utility/browser-utils';
+	import { browserController } from '$lib/controllers';
 	import { urlToDomain } from '$lib/utility/utils';
 	import { onMount } from 'svelte';
 	import { sessionData } from '$lib/stores/data';
@@ -33,9 +33,19 @@
 			isPopup={true}
 			domain={urlToDomain(parameter.url || '')}
 			on:cancel={(event) =>
-				sendAuthorizationResponse(false, event.detail.duration, parameter.url, parameter.requestId)}
+				browserController.sendAuthorizationResponse(
+					false,
+					event.detail.duration,
+					parameter.url,
+					parameter.requestId
+				)}
 			on:accepted={(event) =>
-				sendAuthorizationResponse(true, event.detail.duration, parameter.url, parameter.requestId)}
+				browserController.sendAuthorizationResponse(
+					true,
+					event.detail.duration,
+					parameter.url,
+					parameter.requestId
+				)}
 		/>
 	{/if}
 </div>

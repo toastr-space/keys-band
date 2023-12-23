@@ -1,12 +1,6 @@
-import {
-	getCurrentTab,
-	injectJsinAllTabs,
-	createWindow,
-	sendAuthorizationResponse
-} from './browser-utils';
+import { browserController } from '$lib/controllers/browser.controller';
 import {
 	checkNSEC,
-	defaultWebNotificationSettings,
 	getMetadata,
 	publish,
 	getRelays,
@@ -18,14 +12,10 @@ import {
 import { getWebSiteOrCreate, getNewWebSitePermission } from './profile-utils';
 
 export const BrowserUtil = {
-	getCurrentTab,
-	injectJsinAllTabs,
-	createWindow,
-	sendAuthorizationResponse
+	...browserController
 };
 export const NostrUtil = {
 	checkNSEC,
-	defaultWebNotificationSettings,
 	getMetadata,
 	publish,
 	getRelays,
@@ -35,3 +25,5 @@ export const NostrUtil = {
 	prepareRelayPool
 };
 export const ProfileUtil = { getWebSiteOrCreate, getNewWebSitePermission };
+
+export * from './utils'
