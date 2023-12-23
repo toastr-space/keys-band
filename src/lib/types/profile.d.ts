@@ -80,9 +80,20 @@ interface NotificationSetting {
 	state: boolean;
 }
 
+
 interface Browser {
 	get: (key: string) => Promise<{ [key: string]: unknown }>;
 	set: (items: { [key: string]: unknown }) => Promise<void>;
+	getCurrentTab: () => Promise<chrome.tabs.Tab>;
+	injectJsInTab: (tab: chrome.tabs.Tab, jsFileName: string) => Promise<void>;
+	injectJsinAllTabs: (jsFileName: string) => Promise<void>;
+	createWindow: (url: string) => Promise<chrome.windows.Window>;
+	sendAuthorizationResponse: (
+		yes: boolean,
+		choice: number,
+		url: string | undefined,
+		requestId: string | undefined
+	) => Promise<void>;
 }
 
 enum ProfileDeleteMethod {
@@ -98,7 +109,6 @@ interface ProfileController {
 	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
 	isExistingProfile: (name: string, key: string) => Promise<boolean>;
 	loadDuration: () => Promise<void>;
-	loadNotifications: () => Promise<void>;
 	loadProfile: (profile: Profile) => Promise<boolean | Profile | undefined>;
 	loadProfiles: () => Promise<Writable<Profile[]>>;
 	loadTheme: () => Promise<void>;
@@ -107,7 +117,6 @@ interface ProfileController {
 	saveProfiles: () => Promise<void>;
 	settingProfile: (profile: Profile) => Promise<void>;
 	switchTheme: (themeName: string) => Promise<void>;
-	updateNotification: (name: string) => Promise<void>;
 }
 
 interface Duration {

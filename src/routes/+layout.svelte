@@ -1,11 +1,11 @@
 <script>
-	import { computePosition, autoUpdate, offset, shift, flip, arrow } from '@floating-ui/dom';
-	import { storePopup } from '@skeletonlabs/skeleton';
-
 	import './styles.css';
-	import { onMount } from 'svelte';
-	import { NostrUtil } from '$lib/utility';
+
+	import { computePosition, autoUpdate, offset, shift, flip, arrow } from '@floating-ui/dom';
 	import { profileController } from '$lib/controllers/profile.controller';
+	import { storePopup } from '@skeletonlabs/skeleton';
+	import { NostrUtil } from '$lib/utility';
+	import { onMount } from 'svelte';
 
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 

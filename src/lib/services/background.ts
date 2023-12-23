@@ -73,22 +73,6 @@ const makeResponse = async (type: string, data: any) => {
 	return res;
 };
 
-// async function showNotification(type: string, accepted: boolean) {
-// 	await loadNotifications();
-// 	const _notifications = get(webNotifications);
-// 	_notifications.forEach((notification) => {
-// 		if (type.indexOf(notification.name) !== -1 && notification.state === true) {
-// 			web.notifications.create({
-// 				type: 'basic',
-// 				iconUrl: 'https://toastr.space/images/toastr/body.png',
-// 				title: type + ' permission requested',
-// 				message: 'Permission ' + (accepted ? 'accepted' : 'rejected') + ' for ' + type,
-// 				priority: 0
-// 			});
-// 		}
-// 	});
-// }
-
 async function manageResult(message: Message, sender: any) {
 	try {
 		if (message.response === undefined) return;

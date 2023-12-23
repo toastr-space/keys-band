@@ -6,7 +6,6 @@ import { NostrUtil } from '$lib/utility';
 import { getPublicKey } from 'nostr-tools';
 import type {
 	Duration,
-	NotificationSetting,
 	Profile,
 	ProfileController,
 	Relay
@@ -14,7 +13,6 @@ import type {
 import {
 	duration,
 	profiles,
-	webNotifications,
 	userProfile,
 	theme,
 	browser
@@ -57,42 +55,6 @@ const updateDuration = async (newDuration: Duration): Promise<void> => {
 	});
 };
 
-const loadNotifications = async (): Promise<void> => {
-	return new Promise((resolve) => {
-		web.storage.local.get(
-			'notificationsSettings',
-			(value: { notificationsSettings: NotificationSetting[] }) => {
-				if (value?.notificationsSettings) {
-					webNotifications.set(value?.notificationsSettings);
-				} else {
-					browser.set({
-						notificationsSettings: NostrUtil.defaultWebNotificationSettings
-					});
-					webNotifications.set(NostrUtil.defaultWebNotificationSettings);
-				}
-				resolve();
-			}
-		);
-	});
-};
-
-const updateNotification = async (name: string): Promise<void> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const value = await browser.get('notificationsSettings');
-			let notifications = value.notificationsSettings as NotificationSetting[];
-			notifications = notifications.map((notification) => {
-				if (notification.name === name) notification.state = !notification.state;
-				return notification;
-			});
-			await browser.set({ notificationsSettings: notifications });
-			webNotifications.set(notifications);
-			resolve();
-		} catch (err) {
-			reject(err);
-		}
-	});
-};
 
 const loadTheme = async (): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
@@ -368,7 +330,6 @@ export const profileController: ProfileController = {
 	deleteProfile: deleteProfile,
 	isExistingProfile: isExistingProfile,
 	loadDuration: loadDuration,
-	loadNotifications: loadNotifications,
 	loadProfile: loadProfile,
 	loadProfiles: loadProfiles,
 	loadTheme: loadTheme,
@@ -377,5 +338,4 @@ export const profileController: ProfileController = {
 	saveProfiles: saveProfiles,
 	settingProfile: settingProfile,
 	switchTheme: switchTheme,
-	updateNotification: updateNotification
 };
