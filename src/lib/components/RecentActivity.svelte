@@ -14,7 +14,7 @@
 	$: if ($userProfile.data?.webSites) {
 		const histories = $userProfile.data?.webSites[domain]?.history || [];
 		history_count = histories.length;
-		history_list = histories.reverse().slice(0, 10) as WebSiteHistory[];
+		history_list = histories.toReversed().slice(0, 10) as WebSiteHistory[];
 	}
 </script>
 

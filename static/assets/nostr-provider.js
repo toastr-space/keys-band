@@ -3,7 +3,7 @@ window.nostr = {
   _pubkey: null,
 
   async getPublicKey() {
-    if (this._pubkey) return this._pubkey;
+    // if (this._pubkey) return this._pubkey;
     this._pubkey = await this._call("getPublicKey", {});
     return this._pubkey;
   },
@@ -30,11 +30,11 @@ window.nostr = {
     let id = Math.random().toString().slice(-4);
     console.log(
       "%c[keys.band:%c" +
-        id +
-        "%c]%c calling %c" +
-        type +
-        "%c with %c" +
-        JSON.stringify(params || {}),
+      id +
+      "%c]%c calling %c" +
+      type +
+      "%c with %c" +
+      JSON.stringify(params || {}),
       "background-color:#f1b912;font-weight:bold;color:white",
       "background-color:#f1b912;font-weight:bold;color:#a92727",
       "background-color:#f1b912;color:white;font-weight:bold",
@@ -79,11 +79,11 @@ window.addEventListener("message", (message) => {
 
   console.log(
     "%c[keys.band:%c" +
-      message.data.id +
-      "%c]%c result: %c" +
-      JSON.stringify(
-        message?.data?.response || message?.data?.response?.error?.message || {}
-      ),
+    message.data.id +
+    "%c]%c result: %c" +
+    JSON.stringify(
+      message?.data?.response || message?.data?.response?.error?.message || {}
+    ),
     "background-color:#f1b912;font-weight:bold;color:white",
     "background-color:#f1b912;font-weight:bold;color:#a92727",
     "background-color:#f1b912;color:white;font-weight:bold",
