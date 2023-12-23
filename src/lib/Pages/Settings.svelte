@@ -65,15 +65,15 @@
 	</div>
 
 	<!-- Section 2 -->
-	<div
+	<!-- <div
 		class="justify-center items-stretch bg-surface-400 dark:bg-black bg-opacity-50 self-stretch flex w-full flex-col mt-3 p-4 rounded-2xl"
 	>
 		<div
 			class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
 		>
-			General settings
+			GENERAL
 		</div>
-	</div>
+	</div> -->
 
 	<div class="justify-center items-stretch self-stretch flex w-full flex-col mt-3 p-4 rounded-2xl">
 		<div class="text-teal-400 text-center text-base whitespace-nowrap">
