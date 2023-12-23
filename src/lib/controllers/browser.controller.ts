@@ -1,5 +1,7 @@
-import type { Browser } from "$lib/types";
 import { getDuration } from "$lib/utility";
+import { web } from "$lib/utility";
+
+import type { Browser } from "$lib/types";
 
 const createBrowserController = (): Browser => {
     const get = async (key: string): Promise<{ [key: string]: unknown }> => {

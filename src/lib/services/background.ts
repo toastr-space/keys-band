@@ -2,8 +2,7 @@ import type { Message, MessageSender, Responders } from '$lib/types';
 import type { WebSite, Authorization } from '$lib/types/profile';
 
 import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
-import { BrowserUtil, ProfileUtil } from '$lib/utility';
-import { urlToDomain, web } from '../utility/utils';
+import { urlToDomain, web, BrowserUtil, ProfileUtil } from '../utility';
 import { userProfile } from '$lib/stores/data';
 import { AllowKind } from '$lib/types';
 import { get } from 'svelte/store';

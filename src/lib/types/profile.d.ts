@@ -73,14 +73,6 @@ interface Relay {
 	enabled: boolean;
 	created_at: Date;
 }
-
-interface NotificationSetting {
-	name: string;
-	description: string;
-	state: boolean;
-}
-
-
 interface Browser {
 	get: (key: string) => Promise<{ [key: string]: unknown }>;
 	set: (items: { [key: string]: unknown }) => Promise<void>;
@@ -134,7 +126,6 @@ export {
 	ProfileSetting,
 	Relay,
 	RelayAccess,
-	NotificationSetting,
 	ProfileDeleteMethod,
 	Authorization,
 	Browser
