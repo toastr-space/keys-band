@@ -172,13 +172,16 @@ async function manageRequest(message: Message, resolver: any = null, next: boole
 		const user = await background.getUserProfile();
 		const domain = urlToDomain(message.url || '');
 
-		const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
+		// const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
 
-		if (next === false)
-			if (popupWindow !== undefined || requestQueue.length > 0) {
-				requestQueue.push({ message, resolver: resolve });
-				return;
-			}
+		if (next === false) {
+			requestQueue.push({ message, resolver: resolve });
+			return
+		}
+		// if (popupWindow !== undefined || requestQueue.length > 0) {
+		// 	
+		// 	return;
+		// }
 
 		if (user.data?.privateKey === undefined)
 			return Promise.resolve(
@@ -253,14 +256,16 @@ async function manageRequest(message: Message, resolver: any = null, next: boole
 	});
 }
 
-setInterval(async () => {
+const proceedNextRequest = async () => {
 	const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
 	if (popupWindow === undefined && requestQueue.length > 0) {
 		const { message, resolver } = requestQueue.shift();
 		console.log('requestQueue', requestQueue.length, 'sending message', message, 'to popup');
 		manageRequest(message, resolver, true);
 	}
-}, 500);
+}
+
+setInterval(async () => proceedNextRequest(), 100);
 
 web.runtime.onMessage.addListener((message: Message, sender: MessageSender, sendResponse) => {
 	if (message.prompt) {
@@ -275,16 +280,10 @@ web.runtime.onMessage.addListener((message: Message, sender: MessageSender, send
 				.catch((err) => {
 					console.error(err, 'happened');
 				}).finally(() => {
-					console.log('requestQueue', requestQueue.length);
-					if (requestQueue.length > 0) {
-						const { message, resolver } = requestQueue.shift();
-						console.log('requestQueue', requestQueue.length, 'sending message', message, 'to popup');
-						manageRequest(message, resolver, true);
-					}
+					proceedNextRequest();
 				})
 			clearInterval(i);
-		}, Math.random() * 300);
-
+		}, Math.random() * 100);
 	}
 
 	return true;
