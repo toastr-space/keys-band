@@ -35,3 +35,5 @@ export const NostrUtil = {
 	prepareRelayPool
 };
 export const ProfileUtil = { getWebSiteOrCreate, getNewWebSitePermission };
+
+export * from './utils'

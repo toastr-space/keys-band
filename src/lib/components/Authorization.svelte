@@ -1,10 +1,10 @@
 <script lang="ts">
-	import Duration from './Duration.svelte';
-	import Icon from '@iconify/svelte';
-
 	import { accept } from '$lib/services/authorization';
 	import { createEventDispatcher } from 'svelte';
 	import { tr } from '$lib/utility/utils';
+
+	import Duration from './Duration.svelte';
+	import Icon from '@iconify/svelte';
 
 	const dispatch = createEventDispatcher();
 

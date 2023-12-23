@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import TimeAgo from 'javascript-time-ago';
+	import { timeAgo } from '$lib/utility';
 
 	import { createEventDispatcher } from 'svelte';
 	import { timeStop, isAlways, isAccepted } from '$lib/stores/data';
@@ -8,7 +8,7 @@
 	export let domain = '';
 
 	const dispatcher = createEventDispatcher();
-	const timeAgo = new TimeAgo('en-US');
+
 	$: time = $isAlways
 		? $isAccepted
 			? 'Trusted'
