@@ -15,8 +15,8 @@
 	"background": {
 		"service_worker": "background.js"
 	},
-	"permissions": ["storage", "scripting", "tabs", "activeTab"],
-	"host_permissions": ["https://*/*", "http://*/*"],
+	"permissions": ["storage", "scripting", "tabs"],
+	"host_permissions": ["https://*/*", "http://*/*", "<all_urls>"],
 	"content_scripts": [
 		{
 			"matches": ["<all_urls>"],

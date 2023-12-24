@@ -30,12 +30,14 @@ const createBrowserController = (): Browser => {
     };
     const injectJsInTab = async (tab: chrome.tabs.Tab, jsFileName: string): Promise<void> => {
         try {
+
             await web.scripting.executeScript({
                 target: { tabId: tab.id as number },
                 files: [jsFileName]
             });
             return;
         } catch (e) {
+            console.error(tab.id, tab.url)
             console.error('Error injecting Nostr Provider', e);
             return Promise.reject(e);
         }
