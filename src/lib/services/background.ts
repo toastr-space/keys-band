@@ -4,11 +4,12 @@ import type { WebSite, Authorization } from '$lib/types/profile';
 import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
 import { urlToDomain, web, BrowserUtil, ProfileUtil } from '../utility';
 import { userProfile } from '$lib/stores/data';
-import { AllowKind } from '$lib/types';
+import { AllowKind, MessageType } from '$lib/types';
 import { get } from 'svelte/store';
 import { profileController } from '$lib/controllers/profile.controller';
 import { sessionController } from '$lib/controllers/session.controller';
 import { backgroundController } from '$lib/controllers/background.controller';
+import { browserController } from '$lib/controllers';
 
 const session = sessionController();
 const background = backgroundController();
@@ -260,6 +261,21 @@ const proceedNextRequest = async () => {
 	const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
 	if (popupWindow === undefined && requestQueue.length > 0) {
 		const { message, resolver } = requestQueue.shift();
+		if (message.type === 'signEvent') {
+			const data = message.params.event;
+			if (data?.pubkey !== null || data?.pubkey !== undefined || data?.pubkey !== '') {
+				const user = await background.getUserProfile();
+				if (data.pubkey !== getPublicKey(user.data?.privateKey || '')) {
+					alert('Invalid public key, please switch to the correct account and refresh the page');
+					return resolver(buildResponseMessage(message, {
+						error: {
+							message: 'User rejected the request',
+							stack: 'User rejected the request'
+						}
+					}))
+				}
+			}
+		}
 		console.log('requestQueue', requestQueue.length, 'sending message', message, 'to popup');
 		manageRequest(message, resolver, true);
 	}
