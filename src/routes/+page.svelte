@@ -3,7 +3,10 @@
 
 	import { AppPage } from '$lib/components/App';
 	import { profileController } from '$lib/controllers/profile.controller';
-	import { PageSettings, PageHome, PageAddProfile } from '../lib/pages/index';
+	// import { PageSettings, PageHome, PageAddProfile } from '../lib/pages/index';
+	import PageHome from '$lib/pages/Home.svelte';
+	import PageSettings from '$lib/pages/Settings.svelte';
+	import PageAddProfile from '$lib/pages/AddProfile.svelte';
 
 	if (typeof document !== 'undefined') profileController.loadTheme();
 	const promise = profileController.loadProfiles();
