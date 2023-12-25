@@ -260,21 +260,6 @@ const proceedNextRequest = async () => {
 	const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
 	if (popupWindow === undefined && requestQueue.length > 0) {
 		const { message, resolver } = requestQueue.shift();
-		if (message.type === 'signEvent') {
-			const data = message.params.event;
-			if (data?.pubkey !== null && data?.pubkey !== undefined && data?.pubkey !== '') {
-				const user = await background.getUserProfile();
-				if (data.pubkey !== user.data?.pubkey || '') {
-					return resolver(buildResponseMessage(message, {
-						error: {
-							message: 'User rejected the request',
-							stack: 'User rejected the request',
-							code: 'invalid_public_key'
-						}
-					}))
-				}
-			}
-		}
 		manageRequest(message, resolver, true);
 	}
 }
@@ -292,7 +277,7 @@ web.runtime.onMessage.addListener((message: Message, sender: MessageSender, send
 					sendResponse(data);
 				})
 				.catch((err) => {
-					console.error(err, 'happened');
+					console.error(err);
 				}).finally(() => {
 					proceedNextRequest();
 				})
