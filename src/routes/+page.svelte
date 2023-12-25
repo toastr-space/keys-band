@@ -3,11 +3,9 @@
 
 	import { AppPage } from '$lib/components/App';
 	import { profileController } from '$lib/controllers/profile.controller';
-	import { PageSettings, PageHome, PageAddProfile } from '$lib/pages';
+	import { PageSettings, PageHome, PageAddProfile } from '../lib/pages/index';
 
-	// Set theme based on local storage
 	if (typeof document !== 'undefined') profileController.loadTheme();
-
 	const promise = profileController.loadProfiles();
 </script>
 
