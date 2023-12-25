@@ -19,9 +19,9 @@ module.exports = {
 		es2017: true,
 		node: true
 	},
-	"rules": {
-		"@typescript-eslint/ban-ts-comment": 0,
-		"@typescript-eslint/no-explicit-any": 0
+	rules: {
+		'@typescript-eslint/ban-ts-comment': 0,
+		'@typescript-eslint/no-explicit-any': 0
 	},
 	overrides: [
 		{

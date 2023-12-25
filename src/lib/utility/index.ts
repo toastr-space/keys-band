@@ -26,4 +26,4 @@ export const NostrUtil = {
 };
 export const ProfileUtil = { getWebSiteOrCreate, getNewWebSitePermission };
 
-export * from './utils'
+export * from './utils';

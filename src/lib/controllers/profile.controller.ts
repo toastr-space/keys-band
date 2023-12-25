@@ -4,19 +4,8 @@ import { ProfileDeleteMethod } from '$lib/types/profile.d';
 import { get, type Writable } from 'svelte/store';
 import { NostrUtil } from '$lib/utility';
 import { getPublicKey } from 'nostr-tools';
-import type {
-	Duration,
-	Profile,
-	ProfileController,
-	Relay
-} from '$lib/types/profile.d';
-import {
-	duration,
-	profiles,
-	userProfile,
-	theme,
-	browser
-} from '$lib/stores/data';
+import type { Duration, Profile, ProfileController, Relay } from '$lib/types/profile.d';
+import { duration, profiles, userProfile, theme, browser } from '$lib/stores/data';
 
 // GENERAL SETTINGS
 const loadDuration = async (): Promise<void> => {
@@ -54,7 +43,6 @@ const updateDuration = async (newDuration: Duration): Promise<void> => {
 		}
 	});
 };
-
 
 const loadTheme = async (): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
@@ -337,5 +325,5 @@ export const profileController: ProfileController = {
 	saveProfile: saveProfile,
 	saveProfiles: saveProfiles,
 	settingProfile: settingProfile,
-	switchTheme: switchTheme,
+	switchTheme: switchTheme
 };

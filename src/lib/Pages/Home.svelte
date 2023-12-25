@@ -8,9 +8,9 @@
 	import { BrowserUtil } from '$lib/utility';
 	import { onMount } from 'svelte';
 
-	let currentTab: chrome.tabs.Tab;
+	let currentTab: any;
+	let showAuthorization: boolean = false;
 
-	let showAuthorization = false;
 	onMount(() =>
 		BrowserUtil.getCurrentTab().then((tab) => {
 			currentTab = tab;

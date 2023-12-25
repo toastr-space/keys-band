@@ -10,9 +10,9 @@ export default {
 	darkMode: 'class',
 	plugins: [
 		require('@tailwindcss/typography'),
-		require("@tailwindcss/forms")({
-			strategy: 'base', // only generate global styles
-			strategy: 'class', // only generate classes
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
+		require('@tailwindcss/forms')({
+			strategy: 'base'
 		}),
 		skeleton({
 			themes: {

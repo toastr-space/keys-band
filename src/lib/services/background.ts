@@ -17,7 +17,6 @@ web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content
 web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 
 web.tabs.onActivated.addListener(async (activeInfo) => {
-	console.log('onActivated', activeInfo);
 	const tab = await web.tabs.get(activeInfo.tabId);
 
 	const user: Profile = await background.getUserProfile();
@@ -34,7 +33,7 @@ web.tabs.onActivated.addListener(async (activeInfo) => {
 			path: 'assets/logo-off.png'
 		});
 	}
-})
+});
 
 const responders: Responders = {};
 const requestQueue: any[] = [];
@@ -185,23 +184,21 @@ const buildResponseMessage = (message: Message, response: any): any => {
 };
 
 /*eslint no-async-promise-executor: 0*/
-async function manageRequest(message: Message, resolver: any = null, next: boolean = false): Promise<any> {
+async function manageRequest(
+	message: Message,
+	resolver: any = null,
+	next: boolean = false
+): Promise<any> {
 	return new Promise(async (res) => {
 		const resolve: Promise<any> | any = resolver || res;
 
 		const user = await background.getUserProfile();
 		const domain = urlToDomain(message.url || '');
 
-		// const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
-
 		if (next === false) {
 			requestQueue.push({ message, resolver: resolve });
-			return
+			return;
 		}
-		// if (popupWindow !== undefined || requestQueue.length > 0) {
-		// 	
-		// 	return;
-		// }
 
 		if (user.data?.privateKey === undefined)
 			return Promise.resolve(
@@ -272,7 +269,6 @@ async function manageRequest(message: Message, resolver: any = null, next: boole
 		});
 
 		await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
-
 	});
 }
 
@@ -282,7 +278,7 @@ const proceedNextRequest = async () => {
 		const { message, resolver } = requestQueue.shift();
 		manageRequest(message, resolver, true);
 	}
-}
+};
 
 setInterval(async () => proceedNextRequest(), 100);
 
@@ -298,9 +294,10 @@ web.runtime.onMessage.addListener((message: Message, sender: MessageSender, send
 				})
 				.catch((err) => {
 					console.error(err);
-				}).finally(() => {
-					proceedNextRequest();
 				})
+				.finally(() => {
+					proceedNextRequest();
+				});
 			clearInterval(i);
 		}, Math.random() * 100);
 	}

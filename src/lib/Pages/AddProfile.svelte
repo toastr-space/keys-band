@@ -13,7 +13,6 @@
 	let key = '';
 	let busy = false;
 	let fetchingProfile = false;
-	let error = false;
 	let generated = false;
 	let relays: any[] = [];
 	let metadata: any;
@@ -41,7 +40,6 @@
 					} catch (err) {
 						metadata = undefined;
 						fetchingProfile = false;
-						error = true;
 						relays = [];
 					}
 				}
@@ -70,7 +68,6 @@
 			key = '';
 			metadata = undefined;
 			fetchingProfile = false;
-			error = false;
 			generated = false;
 			relays = [];
 			currentPage.set(Page.Home);
