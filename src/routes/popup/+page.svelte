@@ -70,7 +70,7 @@
 					use:popup={accountDropdownMenu}
 					on:click={() => (accountDropdownMenuOpen = !accountDropdownMenuOpen)}
 				>
-					<span class="flex flex-row gap-2 items-center justify-between w-[250px]">
+					<span class="flex flex-row gap-1 items-center justify-between w-[250px]">
 						<Avatar
 							src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
 							width="w-10"

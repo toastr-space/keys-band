@@ -16,12 +16,12 @@
 
 <div data-popup="accountDropdownMenu">
 	<div
-		class="menu-modal card w-72 shadow-xl backdrop-blur-xl bg-surface-200 dark:bg-zinc-800 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
+		class="menu-modal card w-72 shadow-xl backdrop-blur-xl bg-surface-200 dark:bg-zinc-800 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30 pl-1"
 	>
-		<nav class="list-nav w-full">
+		<nav class="list-nav w-full" class:pb-3={canEdit}>
 			<ul class="w-full">
 				{#each $profiles as profile}
-					<li class="flex w-full items-stretch justify-between">
+					<li class="flex w-full gap-2">
 						<div class="flex-grow">
 							<button class="btn px-0 py-0" on:click={() => load(profile)}>
 								<Avatar
@@ -32,7 +32,7 @@
 
 								<div class="text-black dark:text-white text-base self-center my-auto">
 									{#if profile.name}
-										{profile.name.length > 10 ? profile.name.slice(0, 10) + '...' : profile.name}
+										{profile.name.length > 16 ? profile.name.slice(0, 16) + '...' : profile.name}
 									{/if}
 								</div>
 								{#if $userProfile?.name === profile?.name}
@@ -73,6 +73,8 @@
 							<span class="flex-auto text-black dark:text-white">Add Account</span>
 						</button>
 					</li>
+				{:else}
+					<li class="h-4 w-2" />
 				{/if}
 			</ul>
 		</nav>
