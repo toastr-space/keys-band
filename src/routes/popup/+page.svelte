@@ -48,7 +48,7 @@
 	});
 </script>
 
-<div class="w-full h-full flex flex-col p-4 mx-auto items-center bg-[#222222]">
+<div class="w-full h-full flex flex-col p-4 mx-auto items-center dark:bg-[#222222] bg-white">
 	{#if parameter?.url}
 		<div class="w-full bg-surface-400 rounded-lg dark:bg-black bg-opacity-50 h-[72px]">
 			<div

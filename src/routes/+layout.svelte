@@ -9,6 +9,7 @@
 
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 
+	if (typeof document !== 'undefined') profileController.loadTheme();
 	onMount(() => {
 		profileController.loadDuration();
 		NostrUtil.prepareRelayPool();
