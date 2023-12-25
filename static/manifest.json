@@ -9,8 +9,8 @@
 	"icons": {
 		"16": "assets/logo-on.png",
 		"32": "assets/logo-on.png",
-		"48": "assets/logo-on.png",
-		"128": "assets/logo-on.png"
+		"48": "assets/logo-on-64.png",
+		"128": "assets/logo-on-64.png"
 	},
 	"background": {
 		"service_worker": "background.js"

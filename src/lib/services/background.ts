@@ -1,5 +1,5 @@
 import type { Message, MessageSender, Responders } from '$lib/types';
-import type { WebSite, Authorization } from '$lib/types/profile';
+import type { WebSite, Authorization, Profile } from '$lib/types/profile';
 
 import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
 import { urlToDomain, web, BrowserUtil, ProfileUtil } from '../utility';
@@ -15,6 +15,26 @@ const background = backgroundController();
 
 web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
+
+web.tabs.onActivated.addListener(async (activeInfo) => {
+	console.log('onActivated', activeInfo);
+	const tab = await web.tabs.get(activeInfo.tabId);
+
+	const user: Profile = await background.getUserProfile();
+	const domain = urlToDomain(tab.url || '');
+	const webSites = user.data?.webSites as { [key: string]: WebSite };
+	if (domain in webSites) {
+		web.action.setIcon({
+			tabId: tab.id,
+			path: 'assets/logo-on.png'
+		});
+	} else {
+		web.action.setIcon({
+			tabId: tab.id,
+			path: 'assets/logo-off.png'
+		});
+	}
+})
 
 const responders: Responders = {};
 const requestQueue: any[] = [];
