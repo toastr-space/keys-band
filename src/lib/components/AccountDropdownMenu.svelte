@@ -9,6 +9,7 @@
 	import { profileController } from '$lib/controllers/profile.controller';
 
 	export let accountDropdownMenuOpen: boolean;
+	export let canEdit: boolean = true;
 
 	const load = (profile: Profile) => profileController.loadProfile(profile);
 </script>
@@ -17,8 +18,8 @@
 	<div
 		class="menu-modal card w-72 shadow-xl backdrop-blur-xl bg-surface-200 dark:bg-zinc-800 pt-3 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
 	>
-		<nav class="list-nav">
-			<ul>
+		<nav class="list-nav w-full">
+			<ul class="w-full">
 				{#each $profiles as profile}
 					<li class="flex w-full items-stretch justify-between">
 						<div class="flex-grow">
@@ -40,34 +41,39 @@
 							</button>
 						</div>
 
-						<div class="flex-shrink-0">
-							<button
-								class="btn btn-sm text-gray-500 px-0 py-0 mt-2"
-								on:click={async () => {
-									await profileController.deleteProfile(profile);
-									await tick();
-									accountDropdownMenuOpen = true;
-								}}
-							>
-								<Icon icon="mdi:trash-can-outline" width={22} />
-							</button>
-						</div>
+						{#if canEdit}
+							<div class="flex-shrink-0">
+								<button
+									class="btn btn-sm text-gray-500 px-0 py-0 mt-2"
+									on:click={async () => {
+										await profileController.deleteProfile(profile);
+										await tick();
+										accountDropdownMenuOpen = true;
+									}}
+								>
+									<Icon icon="mdi:trash-can-outline" width={22} />
+								</button>
+							</div>
+						{/if}
 					</li>
 				{/each}
-				<li
-					class="justify-center items-stretch self-stretch flex w-full flex-col py-3 border-t-[0.33px] border-t-black dark:border-t-white border-solid"
-				>
-					<button
-						on:click={() => {
-							currentPage.set(Page.AddProfile);
-						}}
-						class="mx-2"
+				{#if canEdit}
+					<li
+						class="justify-center items-stretch self-stretch flex w-full mb-2 flex-col py-3 border-t-[0.33px] border-t-black dark:border-t-white border-solid"
 					>
-						<span class="badge text-black dark:text-white"><Icon icon="mdi:plus" width={22} /></span
+						<button
+							on:click={() => {
+								currentPage.set(Page.AddProfile);
+							}}
+							class="mx-2"
 						>
-						<span class="flex-auto text-black dark:text-white">Add Account</span>
-					</button>
-				</li>
+							<span class="badge text-black dark:text-white"
+								><Icon icon="mdi:plus" width={22} /></span
+							>
+							<span class="flex-auto text-black dark:text-white">Add Account</span>
+						</button>
+					</li>
+				{/if}
 			</ul>
 		</nav>
 	</div>
