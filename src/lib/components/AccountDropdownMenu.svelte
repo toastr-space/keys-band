@@ -2,7 +2,6 @@
 	import type { Profile } from '$lib/types/profile';
 	import Icon from '@iconify/svelte';
 	import { Avatar } from '@skeletonlabs/skeleton';
-	import { tick } from 'svelte';
 
 	import { userProfile, profiles, currentPage } from '../stores/data';
 	import { Page } from '$lib/types';
@@ -47,7 +46,6 @@
 									class="btn btn-sm text-gray-500 px-0 py-0 mt-2"
 									on:click={async () => {
 										await profileController.deleteProfile(profile);
-										await tick();
 										accountDropdownMenuOpen = true;
 									}}
 								>
