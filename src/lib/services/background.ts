@@ -262,9 +262,9 @@ const proceedNextRequest = async () => {
 		const { message, resolver } = requestQueue.shift();
 		if (message.type === 'signEvent') {
 			const data = message.params.event;
-			if (data?.pubkey !== null || data?.pubkey !== undefined || data?.pubkey !== '') {
+			if (data?.pubkey !== null && data?.pubkey !== undefined && data?.pubkey !== '') {
 				const user = await background.getUserProfile();
-				if (data.pubkey !== getPublicKey(user.data?.privateKey || '')) {
+				if (data.pubkey !== user.data?.pubkey || '') {
 					return resolver(buildResponseMessage(message, {
 						error: {
 							message: 'User rejected the request',
