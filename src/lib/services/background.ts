@@ -19,7 +19,7 @@ const switchIcon = async (activeInfo: { tabId: number }) => {
 	const user: Profile = await background.getUserProfile();
 	const domain = urlToDomain(tab.url || '');
 	const webSites = user.data?.webSites as { [key: string]: WebSite };
-	if (domain in webSites) {
+	if (webSites !== undefined && domain in webSites) {
 		web.action.setIcon({
 			tabId: tab.id,
 			path: 'assets/logo-on.png'
@@ -194,16 +194,10 @@ async function manageRequest(message: Message, resolver: any = null, next: boole
 		const user = await background.getUserProfile();
 		const domain = urlToDomain(message.url || '');
 
-		// const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
-
 		if (next === false) {
 			requestQueue.push({ message, resolver: resolve });
 			return
 		}
-		// if (popupWindow !== undefined || requestQueue.length > 0) {
-		// 	
-		// 	return;
-		// }
 
 		if (user.data?.privateKey === undefined)
 			return Promise.resolve(
