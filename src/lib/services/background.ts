@@ -10,14 +10,10 @@ import { profileController } from '$lib/controllers/profile.controller';
 import { sessionController } from '$lib/controllers/session.controller';
 import { backgroundController } from '$lib/controllers/background.controller';
 
-const session = sessionController();
 const background = backgroundController();
+const session = sessionController();
 
-web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
-web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
-
-web.tabs.onActivated.addListener(async (activeInfo) => {
-	console.log('onActivated', activeInfo);
+const switchIcon = async (activeInfo: chrome.tabs.TabActiveInfo) => {
 	const tab = await web.tabs.get(activeInfo.tabId);
 
 	const user: Profile = await background.getUserProfile();
@@ -34,7 +30,12 @@ web.tabs.onActivated.addListener(async (activeInfo) => {
 			path: 'assets/logo-off.png'
 		});
 	}
-})
+}
+
+
+web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
+web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
+web.tabs.onActivated.addListener(async (activeInfo) => switchIcon(activeInfo));
 
 const responders: Responders = {};
 const requestQueue: any[] = [];
