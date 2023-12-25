@@ -13,7 +13,7 @@ import { backgroundController } from '$lib/controllers/background.controller';
 const background = backgroundController();
 const session = sessionController();
 
-const switchIcon = async (activeInfo: chrome.tabs.TabActiveInfo) => {
+const switchIcon = async (activeInfo: { tabId: number }) => {
 	const tab = await web.tabs.get(activeInfo.tabId);
 
 	const user: Profile = await background.getUserProfile();
@@ -36,6 +36,7 @@ const switchIcon = async (activeInfo: chrome.tabs.TabActiveInfo) => {
 web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 web.tabs.onActivated.addListener(async (activeInfo) => switchIcon(activeInfo));
+BrowserUtil.getCurrentTab().then((tab) => switchIcon({ tabId: tab.id as number }));
 
 const responders: Responders = {};
 const requestQueue: any[] = [];
