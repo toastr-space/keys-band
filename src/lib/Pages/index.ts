@@ -1,5 +1,5 @@
-import Home from './Home.svelte';
-import Settings from './Settings.svelte';
-import AddProfile from './AddProfile.svelte';
+import PageHome from './Home.svelte';
+import PageSettings from './Settings.svelte';
+import PageAddProfile from './AddProfile.svelte';
 
-export { Home as PageHome, Settings as PageSettings, AddProfile as PageAddProfile };
+export { PageHome, PageSettings, PageAddProfile };
