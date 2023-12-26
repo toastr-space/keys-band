@@ -54,17 +54,6 @@
 			<div
 				class="text-gray-800 dark:text-gray-400 text-opacity-70 font-semibold leading-4 tracking-[3px] flex flex-row items-center gap-2 p-2"
 			>
-				<!-- <span class="avatar">
-					<img
-						src={$userProfile.metadata?.picture || 'https://toastr.space/images/toastr.png'}
-						class="rounded-full h-10 w-10"
-						alt=""
-					/>
-				</span>
-				<span
-					>{$userProfile?.metadata?.name || $userProfile?.name || 'Click to select account'}</span
-				>
-				<span class="text-xs font-normal tracking-normal text-green-600">(active)</span> -->
 				<button
 					class="btn background-surface-700 pl-0 items-center"
 					use:popup={accountDropdownMenu}

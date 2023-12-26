@@ -32,7 +32,7 @@
 
 								<div class="text-black dark:text-white text-base self-center my-auto">
 									{#if profile.name}
-										{profile.name.length > 16 ? profile.name.slice(0, 16) + '...' : profile.name}
+										{profile.name.length > 10 ? profile.name.slice(0, 10) + '...' : profile.name}
 									{/if}
 								</div>
 								{#if $userProfile?.name === profile?.name}
