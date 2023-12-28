@@ -39,7 +39,30 @@ web.tabs.onActivated.addListener(async (activeInfo) => switchIcon(activeInfo));
 BrowserUtil.getCurrentTab().then((tab) => switchIcon({ tabId: tab.id as number }));
 
 const responders: Responders = {};
-const requestQueue: any[] = [];
+let requestQueue: any[] = [];
+
+const hasWebSiteAlreadyLogged = async (domain: string): Promise<Profile> => {
+	const allUsers = get(await profileController.loadProfiles()) as Profile[];
+	let lastDate = new Date(0);
+	let currentProfile: Profile | undefined;
+	for (const user of allUsers) {
+		const webSites = user.data?.webSites as { [key: string]: WebSite };
+		if (webSites !== undefined && domain in webSites) {
+			const history = webSites[domain].history || [];
+			for (const h of history) {
+				if (h.type === 'getPublicKey') {
+					const date = new Date(h.created_at);
+					if (date > lastDate) {
+						currentProfile = user as Profile;
+						lastDate = date;
+					}
+				}
+			}
+		}
+	}
+
+	return currentProfile || await background.getUserProfile();
+}
 
 const makeResponse = async (type: string, data: any) => {
 	await profileController.loadProfiles();
@@ -197,6 +220,22 @@ async function manageRequest(message: Message, resolver: any = null, next: boole
 		if (next === false) {
 			requestQueue.push({ message, resolver: resolve });
 			return
+		}
+
+		const hasLogged = await hasWebSiteAlreadyLogged(domain);
+		console.log(hasLogged, user, domain, message);
+		if (hasLogged.id !== user.id) {
+			requestQueue = []
+			return resolve(
+				buildResponseMessage(message, {
+					error: {
+						message: 'User rejected the request',
+						stack: 'User rejected the request',
+						errorCode: 'invalid_public_key',
+						user: hasLogged.name || ''
+					}
+				})
+			);
 		}
 
 		if (user.data?.privateKey === undefined)
