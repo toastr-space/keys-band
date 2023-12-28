@@ -30,8 +30,7 @@ const switchIcon = async (activeInfo: { tabId: number }) => {
 			path: 'assets/logo-off.png'
 		});
 	}
-}
-
+};
 
 web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
@@ -39,7 +38,7 @@ web.tabs.onActivated.addListener(async (activeInfo) => switchIcon(activeInfo));
 BrowserUtil.getCurrentTab().then((tab) => switchIcon({ tabId: tab.id as number }));
 
 const responders: Responders = {};
-let requestQueue: any[] = [];
+const requestQueue: any[] = [];
 
 const hasWebSiteAlreadyLogged = async (domain: string): Promise<Profile> => {
 	const allUsers = get(await profileController.loadProfiles()) as Profile[];
@@ -61,8 +60,8 @@ const hasWebSiteAlreadyLogged = async (domain: string): Promise<Profile> => {
 		}
 	}
 
-	return currentProfile || await background.getUserProfile();
-}
+	return currentProfile || (await background.getUserProfile());
+};
 
 const makeResponse = async (type: string, data: any) => {
 	await profileController.loadProfiles();
@@ -210,7 +209,11 @@ const buildResponseMessage = (message: Message, response: any): any => {
 };
 
 /*eslint no-async-promise-executor: 0*/
-async function manageRequest(message: Message, resolver: any = null, next: boolean = false): Promise<any> {
+async function manageRequest(
+	message: Message,
+	resolver: any = null,
+	next: boolean = false
+): Promise<any> {
 	return new Promise(async (res) => {
 		const resolve: Promise<any> | any = resolver || res;
 
@@ -219,24 +222,10 @@ async function manageRequest(message: Message, resolver: any = null, next: boole
 
 		if (next === false) {
 			requestQueue.push({ message, resolver: resolve });
-			return
+			return;
 		}
 
-		const hasLogged = await hasWebSiteAlreadyLogged(domain);
-		console.log(hasLogged, user, domain, message);
-		if (hasLogged.id !== user.id) {
-			requestQueue = []
-			return resolve(
-				buildResponseMessage(message, {
-					error: {
-						message: 'User rejected the request',
-						stack: 'User rejected the request',
-						errorCode: 'invalid_public_key',
-						user: hasLogged.name || ''
-					}
-				})
-			);
-		}
+		const previousProfile = await hasWebSiteAlreadyLogged(domain);
 
 		if (user.data?.privateKey === undefined)
 			return Promise.resolve(
@@ -249,6 +238,8 @@ async function manageRequest(message: Message, resolver: any = null, next: boole
 			);
 
 		const access: AllowKind = await isAllow(domain);
+		if (message.type === 'getPublicKey')
+			if (previousProfile.id !== user.id) access === AllowKind.Nothing;
 
 		switch (access) {
 			case AllowKind.AlWaysAllow:
@@ -303,11 +294,11 @@ async function manageRequest(message: Message, resolver: any = null, next: boole
 			url: message.url,
 			requestId: message.id,
 			type: message.type,
-			data: message.params.event || message.params || '{}' || ''
+			data: message.params.event || message.params || '{}' || '',
+			previousProfile
 		});
 
 		await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
-
 	});
 }
 
@@ -317,7 +308,7 @@ const proceedNextRequest = async () => {
 		const { message, resolver } = requestQueue.shift();
 		manageRequest(message, resolver, true);
 	}
-}
+};
 
 setInterval(async () => proceedNextRequest(), 100);
 
@@ -333,9 +324,10 @@ web.runtime.onMessage.addListener((message: Message, sender: MessageSender, send
 				})
 				.catch((err) => {
 					console.error(err);
-				}).finally(() => {
-					proceedNextRequest();
 				})
+				.finally(() => {
+					proceedNextRequest();
+				});
 			clearInterval(i);
 		}, Math.random() * 100);
 	}
