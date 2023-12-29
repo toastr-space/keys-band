@@ -9,33 +9,17 @@ import { get } from 'svelte/store';
 import { profileController } from '$lib/controllers/profile.controller';
 import { sessionController } from '$lib/controllers/session.controller';
 import { backgroundController } from '$lib/controllers/background.controller';
+import { browserController } from '$lib/controllers';
 
 const background = backgroundController();
 const session = sessionController();
 
-const switchIcon = async (activeInfo: { tabId: number }) => {
-	const tab = await web.tabs.get(activeInfo.tabId);
 
-	const user: Profile = await background.getUserProfile();
-	const domain = urlToDomain(tab.url || '');
-	const webSites = user.data?.webSites as { [key: string]: WebSite };
-	if (webSites !== undefined && domain in webSites) {
-		web.action.setIcon({
-			tabId: tab.id,
-			path: 'assets/logo-on.png'
-		});
-	} else {
-		web.action.setIcon({
-			tabId: tab.id,
-			path: 'assets/logo-off.png'
-		});
-	}
-};
 
 web.runtime.onInstalled.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
-web.tabs.onActivated.addListener(async (activeInfo) => switchIcon(activeInfo));
-BrowserUtil.getCurrentTab().then((tab) => switchIcon({ tabId: tab.id as number }));
+web.tabs.onActivated.addListener(async (activeInfo) => browserController.switchIcon(activeInfo));
+BrowserUtil.getCurrentTab().then((tab) => browserController.switchIcon({ tabId: tab.id as number }));
 
 const responders: Responders = {};
 const requestQueue: any[] = [];
@@ -68,6 +52,7 @@ const makeResponse = async (type: string, data: any) => {
 	const user = get(userProfile);
 	const privateKey: string = user.data?.privateKey || '';
 	let res;
+
 	switch (type) {
 		case 'getPublicKey':
 			res = getPublicKey(privateKey);

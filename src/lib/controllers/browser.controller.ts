@@ -1,7 +1,8 @@
-import { getDuration } from '$lib/utility';
+import { getDuration, urlToDomain } from '$lib/utility';
 import { web } from '$lib/utility';
 
-import type { Browser } from '$lib/types';
+import type { Browser, Profile, WebSite } from '$lib/types';
+import { backgroundController } from './background.controller';
 
 const createBrowserController = (): Browser => {
 	const get = async (key: string): Promise<{ [key: string]: unknown }> => {
@@ -57,6 +58,23 @@ const createBrowserController = (): Browser => {
 			});
 		});
 	};
+	const switchIcon = async (activeInfo: { tabId: number }) => {
+		const tab = await web.tabs.get(activeInfo.tabId);
+		const user: Profile = await backgroundController().getUserProfile();
+		const domain = urlToDomain(tab.url || '');
+		const webSites = user.data?.webSites as { [key: string]: WebSite };
+		if (webSites !== undefined && domain in webSites) {
+			web.action.setIcon({
+				tabId: tab.id,
+				path: 'assets/logo-on.png'
+			});
+		} else {
+			web.action.setIcon({
+				tabId: tab.id,
+				path: 'assets/logo-off.png'
+			});
+		}
+	};
 	const createWindow = async (url: string): Promise<chrome.windows.Window> => {
 		return web.windows.create({
 			url: web.runtime.getURL(url),
@@ -72,6 +90,7 @@ const createBrowserController = (): Browser => {
 		url: string | undefined,
 		requestId: string | undefined
 	) => {
+		getCurrentTab().then((tab) => switchIcon({ tabId: tab.id as number }));
 		return web.runtime.sendMessage({
 			prompt: true,
 			response: {
@@ -97,7 +116,8 @@ const createBrowserController = (): Browser => {
 		injectJsInTab,
 		injectJsinAllTabs,
 		createWindow,
-		sendAuthorizationResponse
+		sendAuthorizationResponse,
+		switchIcon
 	};
 };
 
