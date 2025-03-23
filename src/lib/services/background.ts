@@ -140,7 +140,20 @@ async function manageResult(message: Message, sender: any) {
 		console.error(e);
 	}
 
-	web.windows.remove(sender.tab.windowId);
+	try {
+		// Only try to remove the window if the tab and windowId exist
+		if (sender && sender.tab && sender.tab.windowId) {
+			web.windows.remove(sender.tab.windowId);
+		}
+	} catch (error) {
+		// Silently handle errors when removing windows that might no longer exist
+		if (error instanceof Error && error.message.includes('No window with id')) {
+			// Window was already closed, nothing to do
+		} else {
+			console.error('Error removing window:', error);
+		}
+	}
+	
 	delete responders[message.requestId as string];
 	return;
 }

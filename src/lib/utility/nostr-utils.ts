@@ -17,17 +17,45 @@ const available_profile_relays: Writable<string[]> = writable([]);
 
 const pool = new SimplePool();
 
+// Track failed relays with timestamps to avoid repeated connection attempts
+const failedRelays: Record<string, number> = {};
+// Track last error log time to throttle console messages
+let lastRelayErrorLog = 0;
+
+/**
+ * Attempts to connect to a relay and adds it to available relays if successful
+ * - Skips relays that failed recently (within last minute)
+ * - Throttles error logging to reduce console spam
+ */
 const checkRelays = async (url: string, isProfile: boolean = false) => {
-	if (url) {
-		try {
-			await pool.ensureRelay(url);
-			const available_relays = isProfile ? available_profile_relays : available_default_relays;
-			if (!get(available_relays).includes(url))
-				isProfile
-					? available_profile_relays.set([...get(available_profile_relays), url])
-					: available_default_relays.set([...get(available_default_relays), url]);
-		} catch (error: any) {
+	if (!url) return;
+	
+	// Skip reconnection attempts for relays that failed in the last minute
+	const now = Date.now();
+	if (failedRelays[url] && now - failedRelays[url] < 60000) {
+		return;
+	}
+	
+	try {
+		await pool.ensureRelay(url);
+		const available_relays = isProfile ? available_profile_relays : available_default_relays;
+		if (!get(available_relays).includes(url))
+			isProfile
+				? available_profile_relays.set([...get(available_profile_relays), url])
+				: available_default_relays.set([...get(available_default_relays), url]);
+		
+		// Clear from failed relays cache if connection is now successful
+		if (failedRelays[url]) {
+			delete failedRelays[url];
+		}
+	} catch (error: any) {
+		// Mark as failed with current timestamp
+		failedRelays[url] = now;
+		
+		// Throttle console logs to at most one per second to reduce spam
+		if (now - lastRelayErrorLog > 1000) {
 			console.log('Relay not available', url);
+			lastRelayErrorLog = now;
 		}
 	}
 };

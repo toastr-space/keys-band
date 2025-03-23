@@ -37,6 +37,13 @@ const createBrowserController = (): Browser => {
 			});
 			return;
 		} catch (e) {
+			// Check if this is a "No tab with id" error - which can happen if tab was closed
+			if (e instanceof Error && e.message && e.message.includes('No tab with id')) {
+				// Tab was closed, we can safely ignore this error
+				return;
+			}
+			
+			// Log other errors for debugging
 			console.error(tab.id, tab.url);
 			console.error('Error injecting Nostr Provider', e);
 			return Promise.reject(e);
@@ -59,20 +66,28 @@ const createBrowserController = (): Browser => {
 		});
 	};
 	const switchIcon = async (activeInfo: { tabId: number }) => {
-		const tab = await web.tabs.get(activeInfo.tabId);
-		const user: Profile = await backgroundController().getUserProfile();
-		const domain = urlToDomain(tab.url || '');
-		const webSites = user.data?.webSites as { [key: string]: WebSite };
-		if (webSites !== undefined && domain in webSites) {
-			web.action.setIcon({
-				tabId: tab.id,
-				path: 'assets/logo-on.png'
-			});
-		} else {
-			web.action.setIcon({
-				tabId: tab.id,
-				path: 'assets/logo-off.png'
-			});
+		try {
+			// Attempt to get the tab - this will fail if the tab no longer exists
+			const tab = await web.tabs.get(activeInfo.tabId);
+			const user: Profile = await backgroundController().getUserProfile();
+			const domain = urlToDomain(tab.url || '');
+			const webSites = user.data?.webSites as { [key: string]: WebSite };
+			if (webSites !== undefined && domain in webSites) {
+				web.action.setIcon({
+					tabId: tab.id,
+					path: 'assets/logo-on.png'
+				});
+			} else {
+				web.action.setIcon({
+					tabId: tab.id,
+					path: 'assets/logo-off.png'
+				});
+			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('No tab with id')) {
+				return;
+			}
+			throw error;
 		}
 	};
 	const createWindow = async (url: string): Promise<chrome.windows.Window> => {

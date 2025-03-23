@@ -1,9 +1,20 @@
 window.nostr = {
   _requests: {},
   _pubkey: null,
+  _pubkeyTimestamp: 0,  // Track when the pubkey was last fetched
+  _cacheTimeout: 2000,  // Cache timeout in milliseconds (2 seconds)
 
   async getPublicKey() {
-    // if (this._pubkey) return this._pubkey;
+    const now = Date.now();
+    
+    // Use cached pubkey if it exists and hasn't expired
+    // This reduces requests while still allowing account switching to be detected
+    if (this._pubkey && (now - this._pubkeyTimestamp < this._cacheTimeout)) {
+      return this._pubkey;
+    }
+    
+    this._pubkeyTimestamp = now;
+    // Get fresh pubkey from extension
     this._pubkey = await this._call("getPublicKey", {});
     return this._pubkey;
   },
