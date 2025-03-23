@@ -5,6 +5,7 @@
 	import { userProfile } from '$lib/stores/data';
 	import type { Relay } from '$lib/types';
 	import { profileController } from '$lib/controllers/profile.controller';
+	import { nip19 } from 'nostr-tools';
 
 	$: relays = $userProfile.data?.relays || [];
 	let relayInput: string = '';
@@ -65,32 +66,80 @@
 	</div>
 
 	<!-- Section 2 -->
-	<!-- <div
+	<div
 		class="justify-center items-stretch bg-surface-400 dark:bg-black bg-opacity-50 self-stretch flex w-full flex-col mt-3 p-4 rounded-2xl"
 	>
 		<div
 			class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
 		>
-			GENERAL
+			KEYS
 		</div>
-	</div> -->
-
-	<div class="justify-center items-stretch self-stretch flex w-full flex-col mt-3 p-4 rounded-2xl">
-		<div class="text-teal-400 text-center text-base whitespace-nowrap">
-			<span class="text-black dark:text-white">Made by the</span>
-			<a href="https://toastr.space" target="_blank" class="text-pink-600 dark:text-teal-400"
-				>toastr.space</a
+		<!-- Get pubkey -->
+		<div class="justify-start items-stretch flex gap-5 mt-2">
+			<button
+				type="button"
+				class="btn btn-sm text-gray-500"
+				on:click={() => {
+					// Copy pubkey to clipboard
+					navigator.clipboard.writeText($userProfile.data?.pubkey || '');
+				}}
 			>
-			<span class="text-black dark:text-white">team</span>
+				<Icon icon="mdi:key" class="text-pink-600 dark:text-teal-500 mr-2" width={20} />
+				Copy Public Key to Clipboard
+			</button>
 		</div>
+		<!-- Get npub -->
+		<div class="justify-start items-stretch flex gap-5 mt-2">
+			<button
+				type="button"
+				class="btn btn-sm text-gray-500"
+				on:click={() => {
+					// Copy pubkey to clipboard
+					navigator.clipboard.writeText(nip19.npubEncode($userProfile.data?.pubkey || ''));
+				}}
+			>
+				<Icon icon="mdi:key-plus" class="text-pink-600 dark:text-teal-500 mr-2" width={20} />
+				Copy Npub to Clipboard
+			</button>
+		</div>
+		<!-- Get private key-->
+		<div class="justify-start items-stretch flex gap-5 mt-2">
+			<button
+				type="button"
+				class="btn btn-sm text-gray-500"
+				on:click={() => {
+					// Copy nsec to clipboard
+					navigator.clipboard.writeText($userProfile.data?.privateKey || '');
+				}}
+			>
+				<Icon icon="mdi:key-outline" class="text-pink-600 dark:text-teal-500 mr-2" width={20} />
+				Copy Private Key to Clipboard
+			</button>
+		</div>
+		<!-- Get nsec -->
+		<div class="justify-start items-stretch flex gap-5 mt-2">
+			<button
+				type="button"
+				class="btn btn-sm text-gray-500"
+				on:click={() => {
+					// Copy nsec to clipboard
+					navigator.clipboard.writeText(nip19.nsecEncode($userProfile.data?.privateKey || ''));
+				}}
+			>
+				<Icon icon="mdi:key-star" class="text-pink-600 dark:text-teal-500 mr-2" width={20} />
+				Copy Nsec to Clipboard
+			</button>
+		</div>
+	</div>
 
+	<div class="justify-center items-stretch self-stretch flex w-full flex-col mt-2 p-4 rounded-2xl">
 		<a
 			type="button"
-			class="btn btn-lg bg-surface-400 dark:bg-surface-600 mt-4 text-black dark:text-white"
+			class="btn btn-lg bg-surface-400 dark:bg-surface-600 text-black dark:text-white"
 			href="https://geyser.fund/project/keysdotband"
 			target="_blank"
-			><Icon icon="mdi:lightning-bolt" class="text-pink-600 dark:text-teal-500" />
-			Support</a
+			><Icon icon="mdi:lightning-bolt" class="text-pink-600 dark:text-teal-500 mr-2" width={20} />
+			Support Development Work</a
 		>
 	</div>
 
