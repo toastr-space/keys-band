@@ -12,6 +12,13 @@ interface Profile {
 		webSites?: { [url: string]: WebSite };
 		relays?: Relay[];
 	};
+	ephemeralKeys?: {
+		[pubkey: string]: {
+			privateKey: string;
+			groupMembers: string[];
+			createdAt: number;
+		}
+	};
 }
 
 interface UserProfile {
