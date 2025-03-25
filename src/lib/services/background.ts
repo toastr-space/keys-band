@@ -1,8 +1,11 @@
+// Import polyfills first to ensure they're loaded before any dependencies
+import '../utility/polyfills';
+
 import type { Message, MessageSender, Responders } from '$lib/types';
 import type { WebSite, Authorization, Profile } from '$lib/types/profile';
 
-import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
-import { urlToDomain, web, BrowserUtil, ProfileUtil } from '../utility';
+import { finishEvent, getPublicKey, nip04, generatePrivateKey } from 'nostr-tools';
+import { urlToDomain, web, BrowserUtil, ProfileUtil, RingSignatureUtil } from '../utility';
 import { userProfile } from '$lib/stores/data';
 import { AllowKind } from '$lib/types';
 import { get } from 'svelte/store';
@@ -69,6 +72,97 @@ const makeResponse = async (type: string, data: any) => {
 				res.pubkey = pk;
 			}
 			res = finishEvent(res, privateKey);
+			break;
+		case 'signEventAsGroupMember':
+			try {
+				// Find the group-member-proof tag with null signature
+				const event = data;
+				const groupTag = event.tags.find(
+					(tag: any) => tag[0] === 'group-member-proof' && tag[1] === null
+				);
+				
+				if (!groupTag) {
+					return {
+						error: {
+							message: 'Missing group-member-proof tag with null signature',
+							stack: 'Group member proof tag must be provided in format ["group-member-proof", null, pubkey1, pubkey2, ...]'
+						}
+					};
+				}
+				
+				// Extract group members
+				const groupMembers = groupTag.slice(2);
+				
+				// Generate ephemeral keypair
+				const ephemeralPrivKey = RingSignatureUtil.generateEphemeralPrivateKey();
+				const ephemeralPubKey = getPublicKey(ephemeralPrivKey);
+				
+				// Prepare the event with ephemeral key
+				const preparedEvent = { ...event };
+				preparedEvent.pubkey = ephemeralPubKey;
+				
+				// Remove the original group-member-proof tag
+				preparedEvent.tags = preparedEvent.tags.filter(
+					(tag: any) => !(tag[0] === 'group-member-proof' && tag[1] === null)
+				);
+				
+				// Create event commitment for the signature
+				const commitment = await RingSignatureUtil.createEventCommitment(preparedEvent);
+				
+				// Generate ring signature
+				const ringSignature = await RingSignatureUtil.createRingSignature(
+					commitment,
+					groupMembers,
+					privateKey
+				);
+				
+				// Add group member proof tag with signature
+				preparedEvent.tags.push([
+					"group-member-proof", 
+					ringSignature, 
+					...groupMembers
+				]);
+				
+				// Store the ephemeral keypair for future use
+				RingSignatureUtil.storeEphemeralKey(user, ephemeralPrivKey, ephemeralPubKey, groupMembers);
+				await profileController.saveProfile(user);
+				
+				// Sign with ephemeral key
+				res = finishEvent(preparedEvent, ephemeralPrivKey);
+			} catch (e) {
+				res = {
+					error: {
+						message: 'Error while creating group member proof',
+						stack: e
+					}
+				};
+			}
+			break;
+		case 'verifyGroupMemberProof':
+			try {
+				const event = data;
+				const groupProofTag = event.tags.find((tag: any) => tag[0] === 'group-member-proof' && tag[1] !== null);
+				
+				if (!groupProofTag) {
+					res = false;
+					break;
+				}
+				
+				const [_, ringSignature, ...groupMembers] = groupProofTag;
+				
+				// Create a copy of the event without the proof tag for verification
+				const eventCopy = { ...event };
+				eventCopy.tags = eventCopy.tags.filter((tag: any) => tag[0] !== 'group-member-proof');
+				
+				// Create commitment for verification
+				const commitment = await RingSignatureUtil.createEventCommitment(eventCopy);
+				
+				// Verify ring signature
+				res = RingSignatureUtil.verifyRingSignature(ringSignature, groupMembers, commitment);
+			} catch (e) {
+				console.error('Error verifying group member proof', e);
+				res = false;
+			}
 			break;
 		case 'nip04.decrypt':
 			try {

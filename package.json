@@ -4,18 +4,19 @@
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build && npx esbuild ./src/lib/services/background.ts --bundle --outdir=build/ && npx esbuild ./src/lib/services/content.ts --bundle --outdir=build/",
+		"build": "vite build && npx esbuild ./src/lib/services/background.ts --bundle --platform=browser --define:global=window --external:util --inject:./src/lib/utility/esbuild-polyfills.js --outdir=build/ && npx esbuild ./src/lib/services/content.ts --bundle --platform=browser --define:global=window --external:util --inject:./src/lib/utility/esbuild-polyfills.js --outdir=build/",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"nodemon": "nodemon --ext '*' --watch 'src/' --exec \"vite build && npx esbuild ./src/lib/services/background.ts --bundle --outdir=build/ && npx esbuild ./src/lib/services/content.ts --bundle --outdir=build/\"",
+		"nodemon": "nodemon --ext '*' --watch 'src/' --exec \"vite build && npx esbuild ./src/lib/services/background.ts --bundle --platform=browser --define:global=window --external:util --inject:./src/lib/utility/esbuild-polyfills.js --outdir=build/ && npx esbuild ./src/lib/services/content.ts --bundle --platform=browser --define:global=window --external:util --inject:./src/lib/utility/esbuild-polyfills.js --outdir=build/\"",
 		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"test": "vitest run",
+		"test:watch": "vitest"
 	},
 	"devDependencies": {
 		"@skeletonlabs/skeleton": "^2.5.1",
 		"@skeletonlabs/tw-plugin": "^0.2.4",
-		"@sveltejs/adapter-auto": "^2.0.0",
 		"@sveltejs/kit": "^1.27.4",
 		"@tailwindcss/forms": "^0.5.7",
 		"@tailwindcss/typography": "^0.5.10",
@@ -23,22 +24,24 @@
 		"@typescript-eslint/eslint-plugin": "^6.0.0",
 		"@typescript-eslint/parser": "^6.0.0",
 		"autoprefixer": "^10.4.14",
-		"daisyui": "^4.4.12",
 		"eslint": "^8.28.0",
 		"eslint-config-prettier": "^9.0.0",
 		"eslint-plugin-svelte": "^2.30.0",
+		"jsdom": "^26.0.0",
 		"nodemon": "^3.0.2",
 		"postcss": "^8.4.24",
 		"postcss-load-config": "^4.0.1",
 		"prettier": "^3.0.0",
-		"prettier-plugin-tailwindcss": "^0.4.1",
 		"svelte": "^4.2.7",
 		"svelte-check": "^3.6.0",
+		"svelte-eslint-parser": "^1.1.0",
 		"sveltekit-adapter-chrome-extension": "^2.0.0",
 		"tailwindcss": "^3.3.2",
 		"tslib": "^2.4.1",
 		"typescript": "^5.0.0",
 		"vite": "^5.0.10",
+		"vite-plugin-node-polyfills": "^0.23.0",
+		"vitest": "^3.0.9",
 		"webextension-polyfill": "^0.10.0"
 	},
 	"type": "module",
@@ -49,8 +52,12 @@
 		"@types/chrome": "^0.0.253",
 		"esbuild": "^0.19.8",
 		"javascript-time-ago": "^2.5.9",
-		"nostr-tools": "^1.17.0",
-		"qrcode": "^1.5.3",
-		"vite-plugin-singlefile": "^0.13.5"
+		"lrs": "^0.1.5",
+		"nostr-tools": "^1.17.0"
+	},
+	"engines": {
+		"npm": "please-use-pnpm",
+		"yarn": "please-use-pnpm",
+		"pnpm": ">= 7.0.0"
 	}
 }
