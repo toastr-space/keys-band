@@ -16,6 +16,7 @@
 	class:bg-zinc-400={!isToggled}
 	class:dark:bg-teal-400={isToggled}
 	class:dark:bg-zinc-800={!isToggled}
+	aria-label={isToggled ? 'Toggle switch enabled, click to disable' : 'Toggle switch disabled, click to enable'}
 	on:click={toggle}
 >
 	<div
