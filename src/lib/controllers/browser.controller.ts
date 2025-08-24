@@ -43,7 +43,18 @@ const createBrowserController = (): Browser => {
 				return;
 			}
 			
-			// Log other errors for debugging
+			// Check if this is an extensions gallery error or other restricted page
+			if (e instanceof Error && e.message && 
+				(e.message.includes('extensions gallery cannot be scripted') || 
+				 e.message.includes('Cannot access') ||
+				 e.message.includes('restricted') ||
+				 e.message.includes('chrome://') ||
+				 e.message.includes('chrome-extension://'))) {
+				// These are expected errors for restricted pages, ignore silently
+				return;
+			}
+			
+			// Log other unexpected errors for debugging
 			console.error(tab.id, tab.url);
 			console.error('Error injecting Nostr Provider', e);
 			return Promise.reject(e);
@@ -54,7 +65,15 @@ const createBrowserController = (): Browser => {
 			web.tabs.query({}, function (tabs: chrome.tabs.Tab[]) {
 				tabs.forEach(async (tab) => {
 					try {
-						if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('chrome-extension://'))
+						// Skip Chrome internal pages, extensions, and other special URLs
+						if (!tab.url || 
+							tab.url.startsWith('chrome://') || 
+							tab.url.startsWith('chrome-extension://') ||
+							tab.url.startsWith('moz-extension://') ||
+							tab.url.startsWith('edge-extension://') ||
+							tab.url.startsWith('about:') ||
+							tab.url.startsWith('file://') ||
+							tab.url === 'about:blank')
 							return;
 						await injectJsInTab(tab, jsFileName);
 					} catch (e) {
@@ -105,8 +124,11 @@ const createBrowserController = (): Browser => {
 		url: string | undefined,
 		requestId: string | undefined
 	) => {
+		console.log('[Popup] Sending authorization response:', { yes, choice, url, requestId });
+		
 		getCurrentTab().then((tab) => switchIcon({ tabId: tab.id as number }));
-		return web.runtime.sendMessage({
+		
+		const message = {
 			prompt: true,
 			response: {
 				status: yes ? 'success' : 'error',
@@ -121,7 +143,11 @@ const createBrowserController = (): Browser => {
 			ext: 'keys.band',
 			url,
 			requestId
-		});
+		};
+		
+		console.log('[Popup] Sending message:', message);
+		
+		return web.runtime.sendMessage(message);
 	};
 
 	return {

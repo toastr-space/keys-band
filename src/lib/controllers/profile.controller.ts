@@ -85,7 +85,6 @@ const switchTheme = async (themeName: string): Promise<void> => {
 		if (typeof document === 'undefined') return;
 		if (themeName === 'dark') document.documentElement.classList.add('dark');
 		else document.documentElement.classList.remove('dark');
-		browser.set({ theme: themeName });
 		resolve();
 	});
 };
