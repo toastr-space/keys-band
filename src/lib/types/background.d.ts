@@ -1,3 +1,5 @@
+import type { Runtime, Tabs } from 'webextension-polyfill';
+
 enum MessageType {
 	GET_PUBLIC_KEY = 'getPublicKey',
 	GET_RELAYS = 'getRelays',
@@ -16,11 +18,11 @@ interface Message {
 	url: string | undefined;
 }
 
-interface MessageSender extends browser.Runtime.MessageSender {
+interface MessageSender extends Runtime.MessageSender {
 	id?: string | undefined;
 	origin?: string | undefined;
 	url?: string | undefined;
-	tab?: browser.Tabs.Tab | undefined;
+	tab?: Tabs.Tab | undefined;
 }
 
 interface PopupParams {

@@ -73,13 +73,15 @@ interface Relay {
 	enabled: boolean;
 	created_at: Date;
 }
+import type { Tabs, Windows } from 'webextension-polyfill';
+
 interface Browser {
 	get: (key: string) => Promise<{ [key: string]: unknown }>;
 	set: (items: { [key: string]: unknown }) => Promise<void>;
-	getCurrentTab: () => Promise<browser.Tabs.Tab>;
-	injectJsInTab: (tab: browser.Tabs.Tab, jsFileName: string) => Promise<void>;
+	getCurrentTab: () => Promise<Tabs.Tab>;
+	injectJsInTab: (tab: Tabs.Tab, jsFileName: string) => Promise<void>;
 	injectJsinAllTabs: (jsFileName: string) => Promise<void>;
-	createWindow: (url: string) => Promise<browser.Windows.Window>;
+	createWindow: (url: string) => Promise<Windows.Window>;
 	switchIcon: (activeInfo: { tabId: number }) => Promise<void>;
 	sendAuthorizationResponse: (
 		yes: boolean,

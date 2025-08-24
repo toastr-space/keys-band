@@ -8,7 +8,8 @@
 	import { BrowserUtil } from '$lib/utility';
 	import { onMount } from 'svelte';
 
-	let currentTab: browser.Tabs.Tab;
+	import type { Tabs } from 'webextension-polyfill';
+	let currentTab: Tabs.Tab;
 
 	let showAuthorization = false;
 	onMount(() =>

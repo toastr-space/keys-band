@@ -1,5 +1,6 @@
 import { getDuration, urlToDomain } from '$lib/utility';
 import { web } from '$lib/utility';
+import type { Tabs, Windows } from 'webextension-polyfill';
 
 import type { Browser, Profile, WebSite } from '$lib/types';
 import { backgroundController } from './background.controller';
@@ -22,11 +23,11 @@ const createBrowserController = (): Browser => {
 		}
 	};
 
-	const getCurrentTab = async (): Promise<browser.Tabs.Tab> => {
+	const getCurrentTab = async (): Promise<Tabs.Tab> => {
 		const tabs = await web.tabs.query({ active: true, currentWindow: true });
 		return tabs[0];
 	};
-	const injectJsInTab = async (tab: browser.Tabs.Tab, jsFileName: string): Promise<void> => {
+	const injectJsInTab = async (tab: Tabs.Tab, jsFileName: string): Promise<void> => {
 		try {
 			await web.scripting.executeScript({
 				target: { tabId: tab.id as number },
@@ -102,7 +103,7 @@ const createBrowserController = (): Browser => {
 			throw error;
 		}
 	};
-	const createWindow = async (url: string): Promise<browser.Windows.Window> => {
+	const createWindow = async (url: string): Promise<Windows.Window> => {
 		return web.windows.create({
 			url: web.runtime.getURL(url),
 			width: 400,

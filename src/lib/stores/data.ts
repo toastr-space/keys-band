@@ -1,6 +1,7 @@
 import type { Profile } from '$lib/types/profile';
 import { Page } from '$lib/types';
 import { get, readable, writable, type Writable } from 'svelte/store';
+import type { Tabs } from 'webextension-polyfill';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
 import type { Duration, SessionManager } from '$lib/types';
 import { urlToDomain } from '../utility/utils';
@@ -20,7 +21,7 @@ const isAlways: Writable<boolean> = writable(false);
 const isAccepted: Writable<boolean> = writable(false);
 
 const timeStop = readable(new Date(), (set) => {
-	BrowserUtil.getCurrentTab().then((tab: browser.Tabs.Tab) => {
+	BrowserUtil.getCurrentTab().then((tab: Tabs.Tab) => {
 		const domain = urlToDomain(new URL(tab.url || '').href);
 		const permission = ProfileUtil.getWebSiteOrCreate(domain, get(userProfile))?.permission;
 		isAccepted.set(permission?.accept || false);
