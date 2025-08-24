@@ -66,23 +66,25 @@
 				class="text-gray-800 dark:text-gray-400 text-opacity-70 font-semibold leading-4 tracking-[3px] flex flex-row items-center gap-2 p-2"
 			>
 				<button
-					class="btn background-surface-700 pl-0 items-center"
+					class="w-full inline-flex items-center gap-2 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-700 text-black dark:text-white pl-3 pr-0 py-2 justify-start rounded-2xl transition-colors"
 					use:popup={accountDropdownMenu}
 					on:click={() => (accountDropdownMenuOpen = !accountDropdownMenuOpen)}
 				>
-					<span class="flex flex-row gap-1 items-center justify-between w-[250px]">
-						<Avatar
-							src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
-							width="w-10"
-							rounded="rounded-full"
-						/>
+					<span class="flex flex-row gap-2 items-center justify-between w-[250px]">
+						<span class="rounded-full bg-zinc-700 ring-1 ring-zinc-600 p-0.5">
+							<Avatar
+								src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
+								width="w-10"
+								rounded="rounded-full"
+							/>
+						</span>
 						<div
-							class="text-black dark:text-white text-xl font-semibold leading-7 text-ellipsis overflow-hidden flex-grow my-auto"
+							class="text-black dark:text-white text-left text-xl font-semibold leading-7 text-ellipsis overflow-hidden flex-grow my-auto"
 						>
 							{$displayName}
 						</div>
 						<Icon
-							icon={accountDropdownMenuOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+							icon={accountDropdownMenuOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'} 
 							width={28}
 							class="text-gray-500 ml-2 mt-1"
 						/>
