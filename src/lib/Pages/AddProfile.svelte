@@ -84,7 +84,7 @@
 
 <AppPageItem name="add-account">
 	<div
-		class="justify-center items-stretch bg-surface-400 dark:bg-black bg-opacity-50 self-stretch flex w-full flex-col mt-3 p-4 rounded-2xl"
+		class="justify-center items-stretch kb-surface self-stretch flex w-full flex-col mt-3 p-4 rounded-2xl"
 	>
 		<div
 			class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
@@ -119,7 +119,7 @@
 	</div>
 	<div class="items-stretch flex w-full gap-3 mt-3">
 		<button
-			class="btn text-black dark:text-white bg-surface-400 font-medium leading-5 whitespace-nowrap justify-center bg-opacity-20 px-8 py-3 rounded-full"
+			class="btn text-black dark:text-white kb-button font-medium leading-5 whitespace-nowrap justify-center px-8 py-3 rounded-2xl transition-colors"
 			on:click={() => {
 				let sk = generatePrivateKey();
 				key = nip19.nsecEncode(sk);

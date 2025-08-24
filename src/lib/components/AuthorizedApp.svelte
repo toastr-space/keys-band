@@ -17,7 +17,7 @@
 </script>
 
 <div
-	class="justify-center items-stretch bg-surface-400 dark:bg-black bg-opacity-50 flex w-full flex-col mt-3 p-4 rounded-2xl"
+	class="justify-center items-stretch kb-surface flex w-full flex-col mt-3 p-4 rounded-2xl"
 >
 	<div class="justify-between items-stretch flex gap-0">
 		<div

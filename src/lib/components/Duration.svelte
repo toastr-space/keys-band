@@ -62,7 +62,7 @@
 </script>
 
 <div
-	class="justify-center items-stretch bg-surface-400 dark:bg-black bg-opacity-50 flex w-full flex-col mt-3 p-4 rounded-2xl"
+	class="justify-center items-stretch kb-surface flex w-full flex-col mt-3 p-4 rounded-2xl"
 >
 	<div
 		class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
@@ -72,7 +72,7 @@
 	<div class="items-center flex gap-3 mt-2 pr-20 max-md:pr-5">
 		<div class="text-black dark:text-white text-base leading-5 my-auto">Allow</div>
 		<button
-			class="btn text-black dark:text-white bg-surface-200 dark:bg-zinc-800"
+			class="btn text-black dark:text-white kb-button rounded-2xl transition-colors"
 			use:popup={durationDropdownMenu}
 			on:click={() => (durationDropdownMenuOpen = !durationDropdownMenuOpen)}
 		>
@@ -86,10 +86,10 @@
 	</div>
 </div>
 
-<div data-popup="durationDropdownMenu">
-	<div
-		class="card w-42 shadow-xl backdrop-blur-xl bg-surface-200 dark:bg-zinc-800 rounded-2xl border-[0.33px] border-solid border-white border-opacity-30"
-	>
+	<div data-popup="durationDropdownMenu">
+		<div
+			class="card w-42 shadow-xl backdrop-blur-xl kb-surface-strong rounded-2xl border-[0.33px] border-solid border-black/10 dark:border-white/10"
+		>
 		<nav class="list-nav">
 			<ul>
 				{#each durationOptions as option, i}

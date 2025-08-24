@@ -29,27 +29,27 @@
 
 <div class="flex flex-row w-full justify-between gap-2">
 	{#if $currentPage === Page.Home}
-		<div
-			class="bg-surface-400 dark:bg-black bg-opacity-50 flex flex-col p-4 pb-2 rounded-2xl flex-grow gap-1"
-		>
+		<div class="kb-surface flex flex-col p-4 pb-2 rounded-2xl flex-grow gap-1">
 			<div
 				class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
 			>
 				ACCOUNT
 			</div>
 			<button
-				class="btn background-surface-700 pl-0 items-center"
+				class="w-full inline-flex items-center gap-2 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-700 text-black dark:text-white pl-1 pr-2 py-2 justify-start rounded-2xl transition-colors"
 				use:popup={accountDropdownMenu}
 				on:click={() => (accountDropdownMenuOpen = !accountDropdownMenuOpen)}
 			>
 				<span class="flex flex-row gap-2 items-center justify-between w-[250px]">
-					<Avatar
-						src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
-						width="w-10"
-						rounded="rounded-full"
-					/>
+					<span class="rounded-full bg-zinc-700 ring-1 ring-zinc-600 p-0.5">
+						<Avatar
+							src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
+							width="w-10"
+							rounded="rounded-full"
+						/>
+					</span>
 					<div
-						class="text-black dark:text-white text-xl font-semibold leading-7 text-ellipsis overflow-hidden flex-grow my-auto"
+						class="text-black dark:text-white text-left text-xl font-semibold leading-7 text-ellipsis overflow-hidden flex-grow my-auto"
 					>
 						{$displayName}
 					</div>
@@ -63,7 +63,7 @@
 		</div>
 		<div class="flex flex-col h-full justify-between gap-3 w-36 items-center">
 			<button
-				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex flex-col py-1.5 rounded-3xl 2xl h-11 w-16"
+				class="justify-center kb-button flex flex-col py-1.5 rounded-3xl 2xl h-11 w-16"
 				on:click={() => {
 					$theme = $theme === 'dark' ? 'light' : 'dark';
 					profileController.switchTheme($theme);
@@ -81,9 +81,7 @@
 					/>
 				</div>
 			</button>
-			<div
-				class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex items-center flex-col py-1.5 rounded-3xl h-11 w-16"
-			>
+			<div class="justify-center kb-button flex items-center flex-col py-1.5 rounded-3xl h-11 w-16">
 				<button
 					class="btn btn-sm text-gray-500 px-0 py-0"
 					on:click={() => {
@@ -99,14 +97,14 @@
 		<div class="items-stretch self-stretch flex w-full justify-between gap-3">
 			<button
 				type="button"
-				class="btn-icon bg-surface-400 dark:bg-black pl-0"
+				class="btn-icon kb-button pl-0"
 				on:click={() => {
 					$currentPage = Page.Home;
 				}}
 			>
 				<Icon icon="carbon:chevron-left" class="text-black dark:text-white" width={28} />
 			</button>
-			<div class="text-white text-2xl font-bold leading-7 self-center grow my-auto">
+			<div class="text-black dark:text-white text-2xl font-bold leading-7 self-center grow my-auto">
 				{$currentPage.slice(0, 1).toUpperCase() +
 					$currentPage.slice(1, $currentPage.length).replaceAll('-', ' ')}
 			</div>
