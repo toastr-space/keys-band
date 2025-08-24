@@ -22,14 +22,11 @@ const createBrowserController = (): Browser => {
 		}
 	};
 
-	const getCurrentTab = async (): Promise<chrome.tabs.Tab> => {
-		return new Promise((resolve) => {
-			web.tabs.query({ active: true, currentWindow: true }, (tabs: chrome.tabs.Tab[]) =>
-				resolve(tabs[0])
-			);
-		});
+	const getCurrentTab = async (): Promise<browser.Tabs.Tab> => {
+		const tabs = await web.tabs.query({ active: true, currentWindow: true });
+		return tabs[0];
 	};
-	const injectJsInTab = async (tab: chrome.tabs.Tab, jsFileName: string): Promise<void> => {
+	const injectJsInTab = async (tab: browser.Tabs.Tab, jsFileName: string): Promise<void> => {
 		try {
 			await web.scripting.executeScript({
 				target: { tabId: tab.id as number },
@@ -61,28 +58,24 @@ const createBrowserController = (): Browser => {
 		}
 	};
 	const injectJsinAllTabs = async (jsFileName: string): Promise<void> => {
-		return new Promise((resolve) => {
-			web.tabs.query({}, function (tabs: chrome.tabs.Tab[]) {
-				tabs.forEach(async (tab) => {
-					try {
-						// Skip Chrome internal pages, extensions, and other special URLs
-						if (!tab.url || 
-							tab.url.startsWith('chrome://') || 
-							tab.url.startsWith('chrome-extension://') ||
-							tab.url.startsWith('moz-extension://') ||
-							tab.url.startsWith('edge-extension://') ||
-							tab.url.startsWith('about:') ||
-							tab.url.startsWith('file://') ||
-							tab.url === 'about:blank')
-							return;
-						await injectJsInTab(tab, jsFileName);
-					} catch (e) {
-						console.log('Error injecting Nostr Provider', e);
-					}
-				});
-				resolve();
-			});
-		});
+		const tabs = await web.tabs.query({});
+		for (const tab of tabs) {
+			try {
+				// Skip Chrome internal pages, extensions, and other special URLs
+				if (!tab.url || 
+					tab.url.startsWith('chrome://') || 
+					tab.url.startsWith('chrome-extension://') ||
+					tab.url.startsWith('moz-extension://') ||
+					tab.url.startsWith('edge-extension://') ||
+					tab.url.startsWith('about:') ||
+					tab.url.startsWith('file://') ||
+					tab.url === 'about:blank')
+					continue;
+				await injectJsInTab(tab, jsFileName);
+			} catch (e) {
+				console.log('Error injecting Nostr Provider', e);
+			}
+		}
 	};
 	const switchIcon = async (activeInfo: { tabId: number }) => {
 		try {
@@ -109,7 +102,7 @@ const createBrowserController = (): Browser => {
 			throw error;
 		}
 	};
-	const createWindow = async (url: string): Promise<chrome.windows.Window> => {
+	const createWindow = async (url: string): Promise<browser.Windows.Window> => {
 		return web.windows.create({
 			url: web.runtime.getURL(url),
 			width: 400,

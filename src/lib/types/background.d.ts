@@ -16,11 +16,11 @@ interface Message {
 	url: string | undefined;
 }
 
-interface MessageSender extends chrome.runtime.MessageSender {
+interface MessageSender extends browser.Runtime.MessageSender {
 	id?: string | undefined;
 	origin?: string | undefined;
 	url?: string | undefined;
-	tab?: chrome.tabs.Tab | undefined;
+	tab?: browser.Tabs.Tab | undefined;
 }
 
 interface PopupParams {

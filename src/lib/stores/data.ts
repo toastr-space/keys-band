@@ -20,7 +20,7 @@ const isAlways: Writable<boolean> = writable(false);
 const isAccepted: Writable<boolean> = writable(false);
 
 const timeStop = readable(new Date(), (set) => {
-	BrowserUtil.getCurrentTab().then((tab: chrome.tabs.Tab) => {
+	BrowserUtil.getCurrentTab().then((tab: browser.Tabs.Tab) => {
 		const domain = urlToDomain(new URL(tab.url || '').href);
 		const permission = ProfileUtil.getWebSiteOrCreate(domain, get(userProfile))?.permission;
 		isAccepted.set(permission?.accept || false);

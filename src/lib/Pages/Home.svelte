@@ -8,7 +8,7 @@
 	import { BrowserUtil } from '$lib/utility';
 	import { onMount } from 'svelte';
 
-	let currentTab: chrome.tabs.Tab;
+	let currentTab: browser.Tabs.Tab;
 
 	let showAuthorization = false;
 	onMount(() =>

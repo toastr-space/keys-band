@@ -76,10 +76,10 @@ interface Relay {
 interface Browser {
 	get: (key: string) => Promise<{ [key: string]: unknown }>;
 	set: (items: { [key: string]: unknown }) => Promise<void>;
-	getCurrentTab: () => Promise<chrome.tabs.Tab>;
-	injectJsInTab: (tab: chrome.tabs.Tab, jsFileName: string) => Promise<void>;
+	getCurrentTab: () => Promise<browser.Tabs.Tab>;
+	injectJsInTab: (tab: browser.Tabs.Tab, jsFileName: string) => Promise<void>;
 	injectJsinAllTabs: (jsFileName: string) => Promise<void>;
-	createWindow: (url: string) => Promise<chrome.windows.Window>;
+	createWindow: (url: string) => Promise<browser.Windows.Window>;
 	switchIcon: (activeInfo: { tabId: number }) => Promise<void>;
 	sendAuthorizationResponse: (
 		yes: boolean,

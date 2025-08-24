@@ -3,20 +3,9 @@ import en from 'javascript-time-ago/locale/en';
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo('en-US');
 
-export function getBrowser() {
-  // @ts-ignore
-  if (typeof browser !== "undefined") {
-    // @ts-ignore
-    return browser;
-    // @ts-ignore
-  } else if (typeof chrome !== "undefined") {
-    // @ts-ignore
-    return chrome;
-  }
+import browser from 'webextension-polyfill';
 
-  return null;
-}
-export const web: typeof chrome = getBrowser();
+export const web = browser;
 
 export function urlToDomain(url: string) {
   return url?.split("/")[2];
