@@ -23,13 +23,9 @@ if (window.nostr === undefined) {
 }
 
 window.addEventListener("message", (event) => {
-
-  
   if (event.source !== window || !event.data || event.data.ext !== "keys.band") {
-
     return;
   }
-  
   if (event.data.response === undefined || event.data.response === null) {
     const data = event.data || {};
     data["url"] = event.origin;
