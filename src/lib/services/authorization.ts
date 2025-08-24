@@ -9,12 +9,12 @@ const accept = async (accept: boolean, domain: string, choice: number = 0) => {
 	try {
 		const webSites = get(userProfile)?.data?.webSites || {};
 		const site = ProfileUtil.getWebSiteOrCreate(domain, get(userProfile));
-		site.permission = {
-			always: choice === 1,
-			authorizationStop: getDuration(choice)?.toString(),
-			accept: accept,
-			reject: !accept
-		};
+	site.permission = {
+		always: choice === 1,
+		authorizationStop: getDuration(choice)?.toString(),
+		accept: accept,
+		reject: !accept
+	};
 
 		const arr = site.history || [];
 		arr.push({
