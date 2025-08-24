@@ -177,14 +177,14 @@ const isAllow = async (domain: string): Promise<AllowKind> => {
 	if (permission.accept) {
 		if (permission.always) return AllowKind.AlWaysAllow;
 		else {
-			if (new Date(permission.authorizationStop || '') > new Date()) {
+			if (permission.authorizationStop && new Date(permission.authorizationStop) > new Date()) {
 				return AllowKind.AllowForSession;
 			} else return AllowKind.Nothing;
 		}
 	} else if (permission.reject) {
 		if (permission.always) return AllowKind.AlwaysReject;
 		else {
-			if (new Date(permission.authorizationStop || '') > new Date())
+			if (permission.authorizationStop && new Date(permission.authorizationStop) > new Date())
 				return AllowKind.RejectForSession;
 			else return AllowKind.Nothing;
 		}
