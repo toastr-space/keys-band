@@ -1,4 +1,4 @@
-import './routes/styles.css';
+import './styles.css';
 import { mount } from 'svelte';
 import PopupApp from './PopupApp.svelte';
 
