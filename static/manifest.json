@@ -4,7 +4,7 @@
 	"version": "1.5.0",
 	"description": "Nostr Nip07 implementation",
 	"action": {
-		"default_popup": "index.html"
+		"default_popup": "popup.html"
 	},
 	"icons": {
 		"16": "assets/logo-on.png",
@@ -13,7 +13,8 @@
 		"128": "assets/logo-on-64.png"
 	},
 	"background": {
-		"service_worker": "background.js"
+		"service_worker": "background.js",
+		"type": "module"
 	},
 	"permissions": ["storage", "scripting", "tabs"],
 	"host_permissions": ["https://*/*", "http://*/*", "<all_urls>"],
