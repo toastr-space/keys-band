@@ -4,7 +4,7 @@ import { get, readable, writable, type Writable } from 'svelte/store';
 import type { Tabs } from 'webextension-polyfill';
 import { BrowserUtil, ProfileUtil } from '$lib/utility';
 import type { Duration, SessionManager } from '$lib/types';
-import { urlToDomain } from '../utility/utils';
+import { urlToDomain } from '$lib/utility/utils';
 import { sessionController } from '$lib/controllers/session.controller';
 import { browserController } from '$lib/controllers';
 
