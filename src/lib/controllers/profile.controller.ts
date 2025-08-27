@@ -1,121 +1,169 @@
-/*eslint no-async-promise-executor: 0*/
-
 import { ProfileDeleteMethod } from '$lib/types/profile.d';
 import { get, type Writable } from 'svelte/store';
 import { NostrUtil } from '$lib/utility';
 import { getPublicKey } from 'nostr-tools';
-import type {
-	Duration,
-	Profile,
-	ProfileController,
-	Relay
-} from '$lib/types/profile.d';
-import {
-	duration,
-	profiles,
-	userProfile,
-	theme,
-	browser
-} from '$lib/stores/data';
+import type { Duration, Profile, ProfileController, Relay } from '$lib/types/profile.d';
+import { duration, profiles, userProfile, theme, browser } from '$lib/stores/data';
+
+// Constants
+const DEFAULT_DURATION: Duration = {
+	name: 'One time',
+	value: 0
+};
+
+const DEFAULT_THEME = 'dark';
+const MIN_PROFILE_NAME_LENGTH = 4;
+
+// Helper functions
+const handleError = (operation: string, error: unknown): never => {
+	const message = error instanceof Error ? error.message : 'Unknown error';
+	console.error(`${operation} failed:`, message);
+	throw new Error(`${operation}: ${message}`);
+};
+
+const updateStoreAndStorage = async <T>(
+	store: { set: (value: T) => void },
+	storageKey: string,
+	value: T
+): Promise<void> => {
+	try {
+		await browser.set({ [storageKey]: value });
+		store.set(value);
+	} catch (error) {
+		handleError(`Update ${storageKey}`, error);
+	}
+};
 
 // GENERAL SETTINGS
 const loadDuration = async (): Promise<void> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const value = await browser.get('duration');
-			if (value?.duration) duration.set(value?.duration as Duration);
-			else {
-				browser.set({
-					duration: {
-						name: 'One time',
-						value: 0
-					}
-				});
-				duration.set({
-					name: 'One time',
-					value: 0
-				});
-			}
-			resolve();
-		} catch (err) {
-			reject(err);
+	try {
+		const value = await browser.get('duration');
+		const storedDuration = value?.duration as Duration;
+
+		if (storedDuration) {
+			duration.set(storedDuration);
+		} else {
+			await updateStoreAndStorage(duration, 'duration', DEFAULT_DURATION);
 		}
-	});
+	} catch (error) {
+		handleError('Load duration', error);
+	}
 };
 
 const updateDuration = async (newDuration: Duration): Promise<void> => {
-	return new Promise((resolve, reject) => {
-		try {
-			browser.set({ duration: newDuration });
-			duration.set(newDuration);
-			resolve();
-		} catch (err) {
-			reject(err);
-		}
-	});
+	await updateStoreAndStorage(duration, 'duration', newDuration);
 };
 
-
 const loadTheme = async (): Promise<void> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const value = await browser.get('theme');
-			if ("theme" in value === false) browser.set({ theme: "dark" });
-			if (value?.theme !== 'dark') {
-				theme.set(value?.theme as string);
-				document.documentElement.classList.remove('dark');
-			} else {
-				browser.set({ theme: 'dark' });
-				theme.set('dark');
-				document.documentElement.classList.add('dark');
-			}
-			resolve();
-		} catch (err) {
-			theme.set('dark');
-			document.documentElement.classList.add('dark');
-			reject(err);
+	try {
+		const value = await browser.get('theme');
+		const storedTheme = value?.theme as string;
+
+		if (!storedTheme) {
+			await updateStoreAndStorage(theme, 'theme', DEFAULT_THEME);
+			return;
 		}
-	});
+
+		theme.set(storedTheme);
+
+		if (storedTheme === 'dark') {
+			document.documentElement.classList.add('dark');
+		} else {
+			document.documentElement.classList.remove('dark');
+		}
+	} catch (error) {
+		handleError('Load theme', error);
+	}
 };
 
 const switchTheme = async (themeName: string): Promise<void> => {
-	return new Promise((resolve) => {
-		browser.set({ theme: themeName });
-		theme.set(themeName);
-		if (typeof document === 'undefined') return;
-		if (themeName === 'dark') document.documentElement.classList.add('dark');
-		else document.documentElement.classList.remove('dark');
-		resolve();
-	});
-};
-
-// PROFILE UTILITY
-const isExistingProfile = async (name: string, key: string): Promise<boolean> => {
 	try {
-		const _profiles = get(profiles);
-		const pkey = await NostrUtil.checkNSEC(key);
-		return _profiles.findIndex((p: Profile) => p.name === name || p?.data?.privateKey === pkey) !==
-			-1
-			? true
-			: false;
-	} catch (err) {
-		alert(err);
-	}
-	return false;
-};
+		await updateStoreAndStorage(theme, 'theme', themeName);
 
-const settingProfile = async (profile: Profile): Promise<void> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			await browser.set({ currentProfile: profile.id });
-			resolve();
-		} catch (err) {
-			reject(err);
+		if (themeName === 'dark') {
+			document.documentElement.classList.add('dark');
+		} else {
+			document.documentElement.classList.remove('dark');
 		}
-	});
+	} catch (error) {
+		handleError('Switch theme', error);
+	}
 };
 
 // PROFILE MANAGEMENT
+const validateProfile = (profile: Profile): void => {
+	if (!profile.id || !profile.data?.privateKey) {
+		throw new Error('Invalid profile: missing required fields');
+	}
+	if (!profile.name || profile.name.length < MIN_PROFILE_NAME_LENGTH) {
+		throw new Error(`Profile name must be at least ${MIN_PROFILE_NAME_LENGTH} characters`);
+	}
+};
+
+const generateProfileId = (privateKey: string): string => {
+	try {
+		return getPublicKey(privateKey);
+	} catch (error) {
+		throw new Error('Failed to generate profile ID from private key');
+	}
+};
+
+const isExistingProfile = async (name: string, privateKey: string): Promise<boolean> => {
+	try {
+		const existingProfiles = get(profiles);
+		const profileId = generateProfileId(privateKey);
+
+		return existingProfiles.some((profile) => profile.name === name || profile.id === profileId);
+	} catch (error) {
+		console.error('Error checking existing profile:', error);
+		return false;
+	}
+};
+
+const createProfile = async (
+	name: string,
+	key: string,
+	metadata?: any,
+	relays?: Relay[]
+): Promise<boolean | undefined> => {
+	try {
+		if (name.length < MIN_PROFILE_NAME_LENGTH) {
+			throw new Error(`Name must be at least ${MIN_PROFILE_NAME_LENGTH} characters`);
+		}
+
+		const privateKey = (await NostrUtil.checkNSEC(key)) as string;
+
+		if (await isExistingProfile(name, privateKey)) {
+			throw new Error('Name or key already exists');
+		}
+
+		const profile: Profile = {
+			name,
+			id: generateProfileId(privateKey),
+			metadata: metadata || {},
+			data: {
+				pubkey: generateProfileId(privateKey),
+				privateKey,
+				webSites: {},
+				relays: relays || []
+			}
+		};
+
+		validateProfile(profile);
+
+		// Update profiles array
+		const currentProfiles = get(profiles);
+		const updatedProfiles = [...currentProfiles, profile];
+
+		profiles.set(updatedProfiles);
+		await saveProfiles();
+
+		return true;
+	} catch (error) {
+		handleError('Create profile', error);
+	}
+};
+
 const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefined> => {
 	try {
 		if (profile.data !== undefined) {
@@ -123,15 +171,15 @@ const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefi
 				profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
 				profile.id = profile.data.pubkey;
 			}
-			await settingProfile(profile);
+			await browser.set({ currentProfile: profile.id });
 			userProfile.set(profile);
 			if (profile.data?.relays?.length || 1 > 0) {
 				NostrUtil.getRelays(profile.data?.pubkey as string, true).then((event) => {
 					if (event?.tags) {
-						const relays_list: Relay[] = [];
+						const networkRelays: Relay[] = [];
 						if (event.tags.length > 0)
 							event.tags.forEach((relay) => {
-								relays_list.push({
+								networkRelays.push({
 									url: relay[1],
 									enabled: true,
 									created_at: new Date(),
@@ -139,11 +187,21 @@ const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefi
 										relay.length > 2 ? (relay[2] === 'read' ? 0 : relay[2] === 'write' ? 1 : 2) : 2
 								});
 							});
-						if (profile.data) profile.data.relays = relays_list;
+						
+						// Merge network relays with existing local relays, avoiding duplicates
+						if (profile.data) {
+							const existingRelays = profile.data.relays || [];
+							const existingUrls = new Set(existingRelays.map(r => r.url));
+							
+							// Only add network relays that don't already exist locally
+							const newRelays = networkRelays.filter(relay => !existingUrls.has(relay.url));
+							
+							profile.data.relays = [...existingRelays, ...newRelays];
+						}
+						
 						if (profile.id === get(userProfile).id) userProfile.set(profile);
 						saveProfile(profile);
 					}
-					saveProfile(profile);
 				});
 			}
 			NostrUtil.getMetadata(profile.data.pubkey as string).then((metaData) => {
@@ -154,190 +212,199 @@ const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefi
 			return profile;
 		}
 	} catch (err) {
-		alert(JSON.stringify(err));
+		console.error(JSON.stringify(err));
 		return false;
 	}
 };
 
+const loadProfiles = async (): Promise<Writable<Profile[]>> => {
+	const value = await browser.get('profiles');
+	if (value?.profiles) profiles.set((value?.profiles as Profile[]) || []);
+	else {
+		browser.set({ profiles: [] });
+		profiles.set([]);
+	}
+
+	const data = await browser.get('currentProfile');
+
+	for (const profile of get(profiles)) {
+		if (
+			profile.data !== undefined &&
+			(profile.data?.pubkey === undefined || profile.id === undefined)
+		) {
+			profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
+			profile.id = profile.data.pubkey;
+		}
+		if (profile.id === data?.currentProfile) {
+			userProfile.set(profile);
+			await NostrUtil.prepareRelayPool();
+			await loadProfile(profile);
+		}
+
+		NostrUtil.getMetadata(profile?.data?.pubkey as string).then((metaData) => {
+			if ((profile.id as string) !== (data.currentProfile as string)) {
+				profile.metadata = metaData;
+				saveProfile(profile);
+			}
+		});
+	}
+	return profiles;
+};
+
 const saveProfile = async (profile: Profile): Promise<void> => {
 	try {
-		const _profiles = get(profiles);
-		let index;
-		if (profile.id) {
-			index = _profiles.findIndex((p) => p.id === profile.id);
-			if (index === -1)
-				index = _profiles.findIndex((p) => p.data?.privateKey === profile.data?.privateKey);
-		} else index = _profiles.findIndex((p) => p.data?.privateKey === profile.data?.privateKey);
-		_profiles[index] = profile;
-		await browser.set({ profiles: _profiles });
-		Promise.resolve();
-	} catch (err) {
-		Promise.reject(err);
+		validateProfile(profile);
+
+		const currentProfiles = get(profiles);
+		const updatedProfiles = currentProfiles.map((p) => (p.id === profile.id ? profile : p));
+
+		profiles.set(updatedProfiles);
+		await saveProfiles();
+
+		console.log(`Profile saved: ${profile.name}`);
+	} catch (error) {
+		handleError('Save profile', error);
 	}
 };
 
-const deleteProfile = async (
-	profile: Profile,
-	method: ProfileDeleteMethod = ProfileDeleteMethod.DEFAULT
-): Promise<void> => {
-	return new Promise((resolve) => {
-		if (method === ProfileDeleteMethod.DEFAULT) {
-			const _profiles = get(profiles);
-
-			const index = _profiles.findIndex((p) => p.name === profile.name);
-			_profiles.splice(index, 1);
-			profiles.set(_profiles);
-			if (get(userProfile)?.id === profile.id) {
-				loadProfile(_profiles[0] ?? {});
-			}
-			saveProfiles();
-			resolve();
-		}
-	});
-};
-
-const createProfile = async (
-	name: string,
-	key: string,
-	metadata?: any,
-	relays?: any
-): Promise<boolean> => {
-	return new Promise(async function (resolve, reject) {
-		if (name.length < 4) {
-			reject('Name must be at least 4 characters');
-			return;
-		}
-
-		const privateKey = (await NostrUtil.checkNSEC(key)) as string;
-
-		try {
-			if ((await isExistingProfile(name, privateKey)) === true) {
-				reject('Name or key already exists');
-				return;
-			}
-
-			const profile: Profile = {
-				name: name,
-				id: getPublicKey(privateKey),
-				metadata: metadata,
-				data: {
-					pubkey: getPublicKey(privateKey),
-					privateKey,
-					webSites: {},
-					relays
-				}
-			};
-			profiles.update((profiles) => [...profiles, profile]);
-			saveProfiles();
-			const metaData = await NostrUtil.getMetadata(getPublicKey(privateKey));
-			profile.metadata = metaData;
-			await loadProfile(profile);
-
-			resolve(true);
-		} catch (error) {
-			reject(error);
-		}
-	});
-};
-
-const loadProfiles = async (): Promise<Writable<Profile[]>> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const value = await browser.get('profiles');
-			if (value?.profiles) profiles.set((value?.profiles as Profile[]) || []);
-			else {
-				browser.set({ profiles: [] });
-				profiles.set([]);
-			}
-
-			const data = await browser.get('currentProfile');
-
-			for (const profile of get(profiles)) {
-				if (
-					profile.data !== undefined &&
-					(profile.data?.pubkey === undefined || profile.id === undefined)
-				) {
-					profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
-					profile.id = profile.data.pubkey;
-				}
-				if (profile.id === data?.currentProfile) {
-					userProfile.set(profile);
-					await NostrUtil.prepareRelayPool();
-					await loadProfile(profile);
-				}
-
-				NostrUtil.getMetadata(profile?.data?.pubkey as string).then((metaData) => {
-					if ((profile.id as string) !== (data.currentProfile as string)) {
-						profile.metadata = metaData;
-						saveProfile(profile);
-					}
-				});
-			}
-			resolve(profiles);
-		} catch (err) {
-			reject(err);
-		}
-	});
-};
-
 const saveProfiles = async (): Promise<void> => {
-	return new Promise((resolve) => {
-		browser.set({ profiles: get(profiles) });
-		resolve();
-	});
+	try {
+		await browser.set({ profiles: get(profiles) });
+	} catch (error) {
+		handleError('Save profiles', error);
+	}
 };
 
-const addRelayToProfile = async (relayUrl: string): Promise<void> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const relay: Relay = {
-				url: relayUrl,
-				enabled: true,
-				created_at: new Date()
-			};
-			userProfile.update((profile) => {
-				profile?.data?.relays?.push(relay);
-				return profile;
-			});
-			await saveProfile(get(userProfile));
-			NostrUtil.pushRelays(get(userProfile));
-			resolve();
-		} catch (err) {
-			reject(err);
+const deleteProfile = async (profile: Profile, method?: ProfileDeleteMethod): Promise<void> => {
+	try {
+		const currentProfiles = get(profiles);
+		const filteredProfiles = currentProfiles.filter((p) => p.id !== profile.id);
+
+		profiles.set(filteredProfiles);
+		await saveProfiles();
+
+		// If deleted profile was current, clear it
+		const currentProfile = get(userProfile);
+		if (currentProfile.id === profile.id) {
+			userProfile.set({} as Profile);
+			await browser.set({ currentProfile: null });
 		}
-	});
+
+		console.log(`Profile deleted: ${profile.name} (method: ${method})`);
+	} catch (error) {
+		handleError('Delete profile', error);
+	}
+};
+
+const settingProfile = async (profile: Profile): Promise<void> => {
+	try {
+		validateProfile(profile);
+
+		await Promise.all([saveProfile(profile), loadProfile(profile)]);
+	} catch (error) {
+		handleError('Setting profile', error);
+	}
+};
+
+// RELAY MANAGEMENT
+const addRelayToProfile = async (relayUrl: string): Promise<void> => {
+	try {
+		if (!relayUrl || typeof relayUrl !== 'string') {
+			throw new Error('Invalid relay URL');
+		}
+
+		const relay: Relay = {
+			url: relayUrl.trim(),
+			enabled: true,
+			created_at: new Date()
+		};
+
+		userProfile.update((profile) => {
+			if (!profile.data) {
+				profile.data = { relays: [relay], webSites: {}, pubkey: '', privateKey: '' };
+			} else if (!profile.data.relays) {
+				profile.data.relays = [relay];
+			} else {
+				profile.data.relays.push(relay);
+			}
+			return profile;
+		});
+
+		const updatedProfile = get(userProfile);
+		await saveProfile(updatedProfile);
+		NostrUtil.pushRelays(updatedProfile);
+
+		console.log(`Relay added: ${relayUrl}`);
+	} catch (error) {
+		handleError('Add relay to profile', error);
+	}
 };
 
 const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			userProfile.update((profile) => {
-				const index = profile?.data?.relays?.findIndex((r) => r.url === relay.url) as number;
-				profile?.data?.relays?.splice(index, 1);
-				return profile;
-			});
-			await saveProfile(get(userProfile));
-			NostrUtil.pushRelays(get(userProfile));
-			resolve();
-		} catch (err) {
-			reject(err);
-		}
-	});
+	try {
+		userProfile.update((profile) => {
+			if (profile.data?.relays) {
+				profile.data.relays = profile.data.relays.filter((r) => r.url !== relay.url);
+			}
+			return profile;
+		});
+
+		const updatedProfile = get(userProfile);
+		await saveProfile(updatedProfile);
+		NostrUtil.pushRelays(updatedProfile);
+
+		console.log(`Relay removed: ${relay.url}`);
+	} catch (error) {
+		handleError('Remove relay from profile', error);
+	}
 };
 
+// Export controller object
 export const profileController: ProfileController = {
-	addRelayToProfile: addRelayToProfile,
-	updateDuration: updateDuration,
-	createProfile: createProfile,
-	deleteProfile: deleteProfile,
-	isExistingProfile: isExistingProfile,
-	loadDuration: loadDuration,
-	loadProfile: loadProfile,
-	loadProfiles: loadProfiles,
-	loadTheme: loadTheme,
-	removeRelayFromProfile: removeRelayFromProfile,
-	saveProfile: saveProfile,
-	saveProfiles: saveProfiles,
-	settingProfile: settingProfile,
-	switchTheme: switchTheme,
+	// Settings
+	loadDuration,
+	updateDuration,
+	loadTheme,
+	switchTheme,
+
+	// Profile management
+	createProfile,
+	loadProfile,
+	loadProfiles,
+	saveProfile,
+	saveProfiles,
+	deleteProfile,
+	settingProfile,
+	isExistingProfile,
+
+	// Relay management
+	addRelayToProfile,
+	removeRelayFromProfile
+};
+
+// Export individual functions for tree-shaking
+export {
+	// Settings
+	loadDuration,
+	updateDuration,
+	loadTheme,
+	switchTheme,
+
+	// Profile management
+	createProfile,
+	loadProfile,
+	loadProfiles,
+	saveProfile,
+	saveProfiles,
+	deleteProfile,
+	settingProfile,
+	isExistingProfile,
+
+	// Relay management
+	addRelayToProfile,
+	removeRelayFromProfile,
+
+	// Utilities
+	validateProfile,
+	generateProfileId
 };

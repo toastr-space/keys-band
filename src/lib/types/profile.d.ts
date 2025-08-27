@@ -100,7 +100,12 @@ enum ProfileDeleteMethod {
 interface ProfileController {
 	addRelayToProfile: (relayUrl: string) => Promise<void>;
 	updateDuration: (newDuration: Duration) => Promise<void>;
-	createProfile: (name: string, key: string, metaData?: any, relays?: any[]) => Promise<boolean>;
+	createProfile: (
+		name: string,
+		key: string,
+		metaData?: any,
+		relays?: any[]
+	) => Promise<boolean | undefined>;
 	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
 	isExistingProfile: (name: string, key: string) => Promise<boolean>;
 	loadDuration: () => Promise<void>;

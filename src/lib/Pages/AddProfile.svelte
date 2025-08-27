@@ -9,16 +9,18 @@
 	import { NostrUtil } from '$lib/utility';
 	import { profileController } from '$lib/controllers/profile.controller';
 
-	let name = '';
-	let key = '';
-	let busy = false;
-	let fetchingProfile = false;
-	let error = false;
-	let generated = false;
+	let name = $state('');
+	let key = $state('');
+	let busy = $state(false);
+	let fetchingProfile = $state(false);
+	let error = $state(false);
+	let generated = $state(false);
 	let relays: any[] = [];
 	let metadata: any;
 
-	$: if (key) fetchProfile();
+	$effect(() => {
+		if (key) fetchProfile();
+	});
 
 	const fetchProfile = async () => {
 		if (key) {

@@ -8,8 +8,13 @@
 	import { Page } from '$lib/types';
 	import { profileController } from '$lib/controllers/profile.controller';
 
-	export let accountDropdownMenuOpen: boolean;
-	export let canEdit: boolean = true;
+	let { 
+		accountDropdownMenuOpen,
+		canEdit = true
+	}: {
+		accountDropdownMenuOpen: boolean;
+		canEdit?: boolean;
+	} = $props();
 
 	const load = (profile: Profile) => profileController.loadProfile(profile);
 </script>

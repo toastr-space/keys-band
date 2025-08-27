@@ -1,7 +1,7 @@
-<script>
+<script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 
-	export let isToggled = false;
+	let { isToggled = false }: { isToggled?: boolean } = $props();
 	const dispatch = createEventDispatcher();
 
 	function toggle() {

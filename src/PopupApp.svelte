@@ -122,7 +122,7 @@
 					<button
 						class="w-full inline-flex items-center gap-2 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-700 text-black dark:text-white px-3 py-2 justify-start rounded-2xl transition-colors"
 						use:popup={accountDropdownMenu}
-						on:click={() => (accountDropdownMenuOpen = !accountDropdownMenuOpen)}
+						onclick={() => (accountDropdownMenuOpen = !accountDropdownMenuOpen)}
 					>
 						<span class="flex flex-row gap-2 items-center justify-between w-full">
 							<span class="rounded-full bg-zinc-700 ring-1 ring-zinc-600 p-0.5">
@@ -151,20 +151,22 @@
 				popupType={parameter.type}
 				isPopup={true}
 				domain={urlToDomain(parameter.url || '')}
-				on:cancel={(event) =>
+				oncancel={(event) =>
 					browserController.sendAuthorizationResponse(
 						false,
 						event.detail.duration,
 						parameter?.url,
 						parameter?.requestId || ''
 					)}
-				on:accepted={(event) =>
+				onaccepted={(event) => {
+					console.log('Accepted event received in PopupApp:', event.detail);
 					browserController.sendAuthorizationResponse(
 						true,
 						event.detail.duration,
 						parameter?.url,
 						parameter?.requestId || ''
-					)}
+					);
+				}}
 			/>
 		</div>
 	{:else}

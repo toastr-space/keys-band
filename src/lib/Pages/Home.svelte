@@ -9,9 +9,9 @@
 	import { onMount } from 'svelte';
 
 	import type { Tabs } from 'webextension-polyfill';
-	let currentTab: Tabs.Tab;
+	let currentTab = $state<Tabs.Tab>();
 
-	let showAuthorization = false;
+	let showAuthorization = $state(false);
 	onMount(() =>
 		BrowserUtil.getCurrentTab().then((tab) => {
 			currentTab = tab;
@@ -34,10 +34,12 @@
 				domain={urlToDomain(currentTab?.url || '')}
 				isPopup={false}
 				popupType={'permission'}
-				on:cancel={() => {
+				oncancel={() => {
+					console.log('Cancel callback called in Home');
 					showAuthorization = false;
 				}}
-				on:accepted={() => {
+				onaccepted={() => {
+					console.log('Accept callback called in Home');
 					showAuthorization = false;
 				}}
 			/>

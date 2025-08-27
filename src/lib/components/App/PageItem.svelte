@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { currentPage } from '$lib/stores/data';
 
-	export let name = '';
+	let { name = '' }: { name?: string } = $props();
 </script>
 
 {#if $currentPage.toString() === name}
