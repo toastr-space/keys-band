@@ -76,14 +76,9 @@
 			class="btn bg-pink-400 dark:bg-teal-400 flex gap-2 px-20 py-3 rounded-full w-full place-content-center max-md:px-5"
 			onclick={async () => {
 				console.log('Confirm button clicked!', { domain, durationChoice });
-				console.log('Accept function type:', typeof accept);
 				try {
-					if (typeof accept !== 'function') {
-						console.error('accept is not a function, it is:', accept);
-						return;
-					}
-					const result = await accept(true, domain, durationChoice);
-					console.log('Accept result:', result);
+					const ok = await accept(true, domain, durationChoice);
+					console.log('Accept result:', ok);
 					onaccepted?.({ detail: { duration: durationChoice } });
 					console.log('Callback onaccepted called');
 				} catch (error) {

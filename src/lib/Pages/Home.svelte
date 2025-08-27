@@ -6,6 +6,7 @@
 	import { AppPageItem } from '$lib/components/App';
 	import { urlToDomain } from '$lib/utility/utils';
 	import { BrowserUtil } from '$lib/utility';
+	import { browserController } from '$lib/controllers';
 	import { onMount } from 'svelte';
 
 	import type { Tabs } from 'webextension-polyfill';
@@ -34,12 +35,34 @@
 				domain={urlToDomain(currentTab?.url || '')}
 				isPopup={false}
 				popupType={'permission'}
-				oncancel={() => {
+				oncancel={async (event) => {
 					console.log('Cancel callback called in Home');
+					try {
+						await browserController.sendAuthorizationResponse(
+							false,
+							event.detail.duration,
+							currentTab?.url,
+							undefined
+						);
+						await browserController.switchIcon({ tabId: currentTab?.id as number });
+					} catch (error) {
+						console.error('Error processing cancel:', error);
+					}
 					showAuthorization = false;
 				}}
-				onaccepted={() => {
+				onaccepted={async (event) => {
 					console.log('Accept callback called in Home');
+					try {
+						await browserController.sendAuthorizationResponse(
+							true,
+							event.detail.duration,
+							currentTab?.url,
+							undefined
+						);
+						await browserController.switchIcon({ tabId: currentTab?.id as number });
+					} catch (error) {
+						console.error('Error processing accept:', error);
+					}
 					showAuthorization = false;
 				}}
 			/>
