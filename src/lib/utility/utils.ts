@@ -20,7 +20,7 @@ const DURATION_CONSTANTS = {
 // Duration choices mapping
 const DURATION_MAP = {
 	0: 0, // One time
-	1: 100 * DURATION_CONSTANTS.YEAR, // Forever (100 years)
+	1: null, // Forever
 	2: 5 * DURATION_CONSTANTS.MINUTE, // 5 minutes
 	3: DURATION_CONSTANTS.HOUR, // 1 hour
 	4: 5 * DURATION_CONSTANTS.HOUR, // 5 hours
@@ -145,7 +145,7 @@ export function debounce<T extends (...args: any[]) => any>(
 	func: T,
 	wait: number
 ): (...args: Parameters<T>) => void {
-	let timeout: NodeJS.Timeout;
+	let timeout: number;
 	
 	return (...args: Parameters<T>) => {
 		clearTimeout(timeout);
