@@ -2,7 +2,7 @@ import type { Message, MessageSender, Responders } from '$lib/types';
 import type { WebSite, Authorization, Profile } from '$lib/types/profile';
 
 import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
-import { urlToDomain, web, BrowserUtil, ProfileUtil } from '../utility';
+import { urlToDomain, web, BrowserUtil, ProfileUtil } from '$lib/utility';
 import { userProfile } from '$lib/stores/data';
 import { AllowKind } from '$lib/types';
 import { get } from 'svelte/store';
@@ -177,14 +177,14 @@ const isAllow = async (domain: string): Promise<AllowKind> => {
 	if (permission.accept) {
 		if (permission.always) return AllowKind.AlWaysAllow;
 		else {
-			if (new Date(permission.authorizationStop || '') > new Date()) {
+			if (permission.authorizationStop && new Date(permission.authorizationStop) > new Date()) {
 				return AllowKind.AllowForSession;
 			} else return AllowKind.Nothing;
 		}
 	} else if (permission.reject) {
 		if (permission.always) return AllowKind.AlwaysReject;
 		else {
-			if (new Date(permission.authorizationStop || '') > new Date())
+			if (permission.authorizationStop && new Date(permission.authorizationStop) > new Date())
 				return AllowKind.RejectForSession;
 			else return AllowKind.Nothing;
 		}
@@ -213,43 +213,37 @@ async function manageRequest(
 	next: boolean = false
 ): Promise<any> {
 	return new Promise(async (res) => {
+
+		
 		const resolve: Promise<any> | any = resolver || res;
 
-		const user = await background.getUserProfile();
-		const domain = urlToDomain(message.url || '');
+		try {
+			const user = await background.getUserProfile();
 
-		if (next === false) {
-			requestQueue.push({ message, resolver: resolve });
-			return;
-		}
+			
+			const domain = urlToDomain(message.url || '');
 
-		const previousProfile = await hasWebSiteAlreadyLogged(domain);
 
-		if (user.data?.privateKey === undefined)
-			return Promise.resolve(
-				buildResponseMessage(message, {
-					error: {
-						message: 'User rejected the request',
-						stack: 'User rejected the request'
-					}
-				})
-			);
-
-		const access: AllowKind = await isAllow(domain);
-		if (message.type === 'getPublicKey')
-			if (previousProfile.id !== user.id) access === AllowKind.Nothing;
-
-		switch (access) {
-			case AllowKind.AlWaysAllow:
-				await pushHistory(true, message);
-				return resolve(
-					buildResponseMessage(
-						message,
-						await makeResponse(message.type, message.params.event || message.params)
-					)
+			if (next === false) {
+				// Check if we already have a request for this domain+type queued OR pending via popup
+				const existingInQueue = requestQueue.find(
+					(item) => item.message.url === message.url && item.message.type === message.type
 				);
-			case AllowKind.AlwaysReject:
-				await pushHistory(false, message);
+				const existingPending = Object.values(responders).some(
+					(r) => r.domain === domain && r.type === message.type
+				);
+				if (existingInQueue || existingPending) {
+					return;
+				}
+				requestQueue.push({ message, resolver: resolve });
+				return;
+			}
+
+			const previousProfile = await hasWebSiteAlreadyLogged(domain);
+
+
+			if (user.data?.privateKey === undefined) {
+	
 				return resolve(
 					buildResponseMessage(message, {
 						error: {
@@ -258,51 +252,105 @@ async function manageRequest(
 						}
 					})
 				);
-			case AllowKind.AllowForSession:
-				await pushHistory(true, message);
-				return resolve(
-					buildResponseMessage(
-						message,
-						await makeResponse(message.type, message.params?.event || message.params)
-					)
-				);
-			case AllowKind.RejectForSession:
-				await pushHistory(false, message);
-				return resolve(
-					buildResponseMessage(message, {
-						error: {
-							message: 'User rejected the request',
-							stack: 'User rejected the request'
-						}
-					})
-				);
-			case AllowKind.Nothing:
-				break;
+			}
+
+			let access: AllowKind = await isAllow(domain);
+
+			
+			if (message.type === 'getPublicKey')
+				if (previousProfile.id !== user.id) access = AllowKind.Nothing;
+
+			switch (access) {
+				case AllowKind.AlWaysAllow:
+	
+					await pushHistory(true, message);
+					return resolve(
+						buildResponseMessage(
+							message,
+							await makeResponse(message.type, message.params.event || message.params)
+						)
+					);
+				case AllowKind.AlwaysReject:
+	
+					await pushHistory(false, message);
+					return resolve(
+						buildResponseMessage(message, {
+							error: {
+								message: 'User rejected the request',
+								stack: 'User rejected the request'
+							}
+						})
+					);
+				case AllowKind.AllowForSession:
+	
+					await pushHistory(true, message);
+					return resolve(
+						buildResponseMessage(
+							message,
+							await makeResponse(message.type, message.params?.event || message.params)
+						)
+					);
+				case AllowKind.RejectForSession:
+	
+					await pushHistory(false, message);
+					return resolve(
+						buildResponseMessage(message, {
+							error: {
+								message: 'User rejected the request',
+								stack: 'User rejected the request'
+							}
+						})
+					);
+				case AllowKind.Nothing:
+	
+					break;
+			}
+
+
+			responders[message.id] = {
+				resolve,
+				domain,
+				type: message.type,
+				data: message.params.event || message.params
+			};
+
+			const dataId = await session.add({
+				action: 'login',
+				url: message.url,
+				requestId: message.id,
+				type: message.type,
+				data: message.params.event || message.params || '{}' || '',
+				previousProfile
+			});
+
+			await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
+		} catch (error) {
+			console.error('[Background] Error in manageRequest:', error);
+			throw error;
 		}
-
-		responders[message.id] = {
-			resolve,
-			domain,
-			type: message.type,
-			data: message.params.event || message.params
-		};
-
-		const dataId = await session.add({
-			action: 'login',
-			url: message.url,
-			requestId: message.id,
-			type: message.type,
-			data: message.params.event || message.params || '{}' || '',
-			previousProfile
-		});
-
-		await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
 	});
 }
 
 const proceedNextRequest = async () => {
-	const popupWindow = (await web.windows.getAll()).find((win) => win.type === 'popup');
-	if (popupWindow === undefined && requestQueue.length > 0) {
+	const allWindows = await web.windows.getAll();
+	const popupWindows = allWindows.filter((win) => win.type === 'popup');
+	
+	// Check if any popup has authorization query parameter
+	let authorizationPopupExists = false;
+	for (const popup of popupWindows) {
+		if (popup.tabs && popup.tabs.length > 0) {
+			const url = popup.tabs[0].url || '';
+			if (url.includes('popup.html?query=')) {
+				authorizationPopupExists = true;
+				break;
+			}
+		}
+	}
+	
+
+	
+	if (!authorizationPopupExists && requestQueue.length > 0) {
+
 		const { message, resolver } = requestQueue.shift();
 		manageRequest(message, resolver, true);
 	}
@@ -311,23 +359,37 @@ const proceedNextRequest = async () => {
 setInterval(async () => proceedNextRequest(), 100);
 
 web.runtime.onMessage.addListener((message: Message, sender: MessageSender, sendResponse) => {
+
+	
 	if (message.prompt) {
+
 		manageResult(message, sender);
 		sendResponse({ message: true });
 	} else {
-		const i = setInterval(async () => {
-			manageRequest(message)
-				.then(async (data) => {
-					sendResponse(data);
-				})
-				.catch((err) => {
-					console.error(err);
-				})
-				.finally(() => {
-					proceedNextRequest();
+
+		
+		// Call manageRequest immediately instead of using setInterval
+		manageRequest(message)
+			.then(async (data) => {
+				sendResponse(data);
+			})
+			.catch((err) => {
+				console.error('[Background] Error in manageRequest:', err);
+				sendResponse({
+					id: message.id,
+					type: message.type,
+					ext: 'keys.band',
+					response: {
+						error: {
+							message: 'Internal error',
+							stack: err.toString()
+						}
+					}
 				});
-			clearInterval(i);
-		}, Math.random() * 100);
+			})
+			.finally(() => {
+				proceedNextRequest();
+			});
 	}
 
 	return true;

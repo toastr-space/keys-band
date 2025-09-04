@@ -14,12 +14,12 @@
 	$: if ($userProfile.data?.webSites) {
 		const histories = $userProfile.data?.webSites[domain]?.history || [];
 		history_count = histories.length;
-		history_list = histories.toReversed().slice(0, 10) as WebSiteHistory[];
+		history_list = histories.toReversed().slice(0, 9) as WebSiteHistory[];
 	}
 </script>
 
 <div
-	class="bg-surface-400 dark:bg-black bg-opacity-50 flex w-full flex-col mt-3 p-4 flex-grow rounded-2xl"
+	class="kb-surface flex w-full flex-col mt-3 p-4 flex-grow rounded-2xl"
 >
 	<div
 		class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[3px]"
@@ -45,7 +45,8 @@
 			</div>
 		</div>
 	{/each}
-	<span class="divider" />
+	<!-- Use a neutral divider to avoid theme blue tint -->
+	<div class="my-2 h-px bg-gray-300 dark:bg-zinc-700 opacity-30"></div>
 	<span class="text-right text-black dark:text-white opacity-50 font-medium text-sm mt-2">
 		Total activities: {history_count}
 	</span>

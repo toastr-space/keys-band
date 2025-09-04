@@ -1,18 +1,25 @@
 <script lang="ts">
 	import { accept } from '$lib/services/authorization';
-	import { createEventDispatcher } from 'svelte';
 	import { tr } from '$lib/utility/utils';
 
 	import Duration from './Duration.svelte';
 	import Icon from '@iconify/svelte';
 
-	const dispatch = createEventDispatcher();
+	let durationChoice = $state(0);
 
-	let durationChoice: number = 0;
-
-	export let domain: string;
-	export let popupType: string;
-	export let isPopup = false;
+	let {
+		domain,
+		popupType,
+		isPopup = false,
+		onaccepted,
+		oncancel
+	}: {
+		domain: string;
+		popupType: string;
+		isPopup?: boolean;
+		onaccepted?: (event: { detail: { duration: number } }) => void;
+		oncancel?: (event: { detail: { duration: number } }) => void;
+	} = $props();
 
 	function handleDurationChange(event: { detail: { value: number } }) {
 		durationChoice = event.detail.value;
@@ -20,8 +27,8 @@
 </script>
 
 <div class="w-full h-full mx-auto flex flex-col flex-grow justify-between mt-3">
-	<div
-		class="justify-center bg-surface-400 dark:bg-black bg-opacity-50 flex w-full flex-col p-4 rounded-2xl mx-auto flex-grow"
+    <div
+		class="justify-center kb-surface flex w-full flex-col p-4 rounded-2xl mx-auto flex-grow"
 	>
 		<div
 			class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[3px]"
@@ -54,18 +61,29 @@
 	<div class="items-stretch flex w-full gap-3 mt-3">
 		<button
 			class="btn text-black dark:text-white bg-surface-400 font-medium leading-5 whitespace-nowrap justify-center bg-opacity-20 px-8 py-3 rounded-full"
-			on:click={async () => {
-				await accept(false, domain, durationChoice);
-				dispatch('cancel', { duration: durationChoice });
+			onclick={async () => {
+				try {
+					await accept(false, domain, durationChoice);
+					oncancel?.({ detail: { duration: durationChoice } });
+				} catch (error) {
+					console.error('Error in reject:', error);
+				}
 			}}
 		>
 			Reject
 		</button>
 		<button
 			class="btn bg-pink-400 dark:bg-teal-400 flex gap-2 px-20 py-3 rounded-full w-full place-content-center max-md:px-5"
-			on:click={async () => {
-				await accept(true, domain, durationChoice);
-				dispatch('accepted', { duration: durationChoice });
+			onclick={async () => {
+				console.log('Confirm button clicked!', { domain, durationChoice });
+				try {
+					const ok = await accept(true, domain, durationChoice);
+					console.log('Accept result:', ok);
+					onaccepted?.({ detail: { duration: durationChoice } });
+					console.log('Callback onaccepted called');
+				} catch (error) {
+					console.error('Error in confirm:', error);
+				}
 			}}
 		>
 			<div class="text-black text-base font-medium leading-5">Confirm</div>

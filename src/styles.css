@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body::-webkit-scrollbar:vertical {
+    width: 2px;
+    height: 100px;
+}
+
+body::-webkit-scrollbar-thumb {
+    background: #666;
+}
+
+
+/* Respect light/dark theme: default light, dark when html has .dark */
+html, body {
+    background-color: #ffffff;
+}
+html.dark, html.dark body {
+    background-color: #222222 !important;
+    background-image: none !important;
+}
+
+/* Theming tokens for surfaces and buttons (light/dark) */
+:root {
+    --kb-surface: rgba(244, 244, 245, 0.8);       /* zinc-100 @ 80% */
+    --kb-surface-strong: rgba(228, 228, 231, 0.9);/* zinc-200 @ 90% */
+    --kb-button-bg: #f4f4f5;                      /* zinc-100 */
+    --kb-button-hover: #e4e4e7;                   /* zinc-200 */
+}
+html.dark {
+    --kb-surface: rgba(0, 0, 0, 0.5);             /* neutral dark surface */
+    --kb-surface-strong: rgba(24, 24, 27, 0.8);   /* zinc-900 @ 80% */
+    --kb-button-bg: rgba(0, 0, 0, 0.5);
+    --kb-button-hover: #3f3f46;                   /* zinc-700 */
+}
+
+/* Utility classes */
+.kb-surface { background-color: var(--kb-surface) !important; }
+.kb-surface-strong { background-color: var(--kb-surface-strong) !important; }
+.kb-button { background-color: var(--kb-button-bg) !important; }
+.kb-button:hover { background-color: var(--kb-button-hover) !important; }

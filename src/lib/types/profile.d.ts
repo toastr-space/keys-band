@@ -73,13 +73,15 @@ interface Relay {
 	enabled: boolean;
 	created_at: Date;
 }
+import type { Tabs, Windows } from 'webextension-polyfill';
+
 interface Browser {
 	get: (key: string) => Promise<{ [key: string]: unknown }>;
 	set: (items: { [key: string]: unknown }) => Promise<void>;
-	getCurrentTab: () => Promise<chrome.tabs.Tab>;
-	injectJsInTab: (tab: chrome.tabs.Tab, jsFileName: string) => Promise<void>;
+	getCurrentTab: () => Promise<Tabs.Tab>;
+	injectJsInTab: (tab: Tabs.Tab, jsFileName: string) => Promise<void>;
 	injectJsinAllTabs: (jsFileName: string) => Promise<void>;
-	createWindow: (url: string) => Promise<chrome.windows.Window>;
+	createWindow: (url: string) => Promise<Windows.Window>;
 	switchIcon: (activeInfo: { tabId: number }) => Promise<void>;
 	sendAuthorizationResponse: (
 		yes: boolean,
@@ -98,7 +100,12 @@ enum ProfileDeleteMethod {
 interface ProfileController {
 	addRelayToProfile: (relayUrl: string) => Promise<void>;
 	updateDuration: (newDuration: Duration) => Promise<void>;
-	createProfile: (name: string, key: string, metaData?: any, relays?: any[]) => Promise<boolean>;
+	createProfile: (
+		name: string,
+		key: string,
+		metaData?: any,
+		relays?: any[]
+	) => Promise<boolean | undefined>;
 	deleteProfile: (profile: Profile, method?: ProfileDeleteMethod) => Promise<void>;
 	isExistingProfile: (name: string, key: string) => Promise<boolean>;
 	loadDuration: () => Promise<void>;

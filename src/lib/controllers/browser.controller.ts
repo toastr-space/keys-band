@@ -1,5 +1,6 @@
 import { getDuration, urlToDomain } from '$lib/utility';
 import { web } from '$lib/utility';
+import type { Tabs, Windows } from 'webextension-polyfill';
 
 import type { Browser, Profile, WebSite } from '$lib/types';
 import { backgroundController } from './background.controller';
@@ -22,14 +23,11 @@ const createBrowserController = (): Browser => {
 		}
 	};
 
-	const getCurrentTab = async (): Promise<chrome.tabs.Tab> => {
-		return new Promise((resolve) => {
-			web.tabs.query({ active: true, currentWindow: true }, (tabs: chrome.tabs.Tab[]) =>
-				resolve(tabs[0])
-			);
-		});
+	const getCurrentTab = async (): Promise<Tabs.Tab> => {
+		const tabs = await web.tabs.query({ active: true, currentWindow: true });
+		return tabs[0];
 	};
-	const injectJsInTab = async (tab: chrome.tabs.Tab, jsFileName: string): Promise<void> => {
+	const injectJsInTab = async (tab: Tabs.Tab, jsFileName: string): Promise<void> => {
 		try {
 			await web.scripting.executeScript({
 				target: { tabId: tab.id as number },
@@ -43,27 +41,42 @@ const createBrowserController = (): Browser => {
 				return;
 			}
 			
-			// Log other errors for debugging
+			// Check if this is an extensions gallery error or other restricted page
+			if (e instanceof Error && e.message && 
+				(e.message.includes('extensions gallery cannot be scripted') || 
+				 e.message.includes('Cannot access') ||
+				 e.message.includes('restricted') ||
+				 e.message.includes('chrome://') ||
+				 e.message.includes('chrome-extension://'))) {
+				// These are expected errors for restricted pages, ignore silently
+				return;
+			}
+			
+			// Log other unexpected errors for debugging
 			console.error(tab.id, tab.url);
 			console.error('Error injecting Nostr Provider', e);
 			return Promise.reject(e);
 		}
 	};
 	const injectJsinAllTabs = async (jsFileName: string): Promise<void> => {
-		return new Promise((resolve) => {
-			web.tabs.query({}, function (tabs: chrome.tabs.Tab[]) {
-				tabs.forEach(async (tab) => {
-					try {
-						if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('chrome-extension://'))
-							return;
-						await injectJsInTab(tab, jsFileName);
-					} catch (e) {
-						console.log('Error injecting Nostr Provider', e);
-					}
-				});
-				resolve();
-			});
-		});
+		const tabs = await web.tabs.query({});
+		for (const tab of tabs) {
+			try {
+				// Skip Chrome internal pages, extensions, and other special URLs
+				if (!tab.url || 
+					tab.url.startsWith('chrome://') || 
+					tab.url.startsWith('chrome-extension://') ||
+					tab.url.startsWith('moz-extension://') ||
+					tab.url.startsWith('edge-extension://') ||
+					tab.url.startsWith('about:') ||
+					tab.url.startsWith('file://') ||
+					tab.url === 'about:blank')
+					continue;
+				await injectJsInTab(tab, jsFileName);
+			} catch (e) {
+				console.log('Error injecting Nostr Provider', e);
+			}
+		}
 	};
 	const switchIcon = async (activeInfo: { tabId: number }) => {
 		try {
@@ -90,7 +103,7 @@ const createBrowserController = (): Browser => {
 			throw error;
 		}
 	};
-	const createWindow = async (url: string): Promise<chrome.windows.Window> => {
+	const createWindow = async (url: string): Promise<Windows.Window> => {
 		return web.windows.create({
 			url: web.runtime.getURL(url),
 			width: 400,
@@ -105,8 +118,11 @@ const createBrowserController = (): Browser => {
 		url: string | undefined,
 		requestId: string | undefined
 	) => {
+		console.log('[Popup] Sending authorization response:', { yes, choice, url, requestId });
+		
 		getCurrentTab().then((tab) => switchIcon({ tabId: tab.id as number }));
-		return web.runtime.sendMessage({
+		
+		const message = {
 			prompt: true,
 			response: {
 				status: yes ? 'success' : 'error',
@@ -121,7 +137,11 @@ const createBrowserController = (): Browser => {
 			ext: 'keys.band',
 			url,
 			requestId
-		});
+		};
+		
+		console.log('[Popup] Sending message:', message);
+		
+		return web.runtime.sendMessage(message);
 	};
 
 	return {
