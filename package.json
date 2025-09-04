@@ -1,6 +1,6 @@
 {
 	"name": "keys.band",
-	"version": "1.1.0-a.0",
+	"version": "1.6.0",
 	"private": true,
 	"scripts": {
 		"dev": "vite build --watch",
