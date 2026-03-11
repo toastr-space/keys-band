@@ -8,9 +8,12 @@ enum MessageType {
 	NIP04_ENCRYPT = 'nip04.encrypt'
 }
 
+type AuthorizationPromptKind = 'popup' | 'sidepanel' | 'sidebar';
+
 interface Message {
 	id: string;
 	requestId?: string | number | undefined;
+	promptContext?: AuthorizationPromptKind | undefined;
 	prompt?: boolean | undefined; // popup message
 	response?: boolean | undefined | any; // only when its reply
 	type: MessageType | string;
@@ -81,6 +84,7 @@ export {
 	Message,
 	MessageSender,
 	MessageType,
+	AuthorizationPromptKind,
 	PopupParams,
 	AllowKind,
 	SessionManager,

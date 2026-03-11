@@ -1,9 +1,32 @@
-import { getDuration, urlToDomain } from '$lib/utility';
-import { web } from '$lib/utility';
+import { getDuration, urlToDomain, web } from '$lib/utility/utils';
 import type { Tabs, Windows } from 'webextension-polyfill';
 
 import type { Browser, Profile, WebSite } from '$lib/types';
+import type { AuthorizationPromptKind } from '$lib/types/background';
 import { backgroundController } from './background.controller';
+
+const RESTRICTED_URL_PREFIXES = ['chrome://', 'chrome-extension://', 'moz-extension://', 'about:'];
+
+const isRestrictedUrl = (url: string): boolean =>
+	RESTRICTED_URL_PREFIXES.some((prefix) => url.includes(prefix)) ||
+	url.includes('extensions gallery cannot be scripted') ||
+	url.includes('showing error page') ||
+	url.includes('Cannot access') ||
+	url.includes('restricted');
+
+const getActionApi = () => web.action || web.browserAction;
+
+const getFallbackAuthorizationPromptKind = (): AuthorizationPromptKind => {
+	if (__BROWSER__ === 'chrome') {
+		return 'sidepanel';
+	}
+
+	if (__BROWSER__ === 'firefox') {
+		return 'sidebar';
+	}
+
+	return 'popup';
+};
 
 const createBrowserController = (): Browser => {
 	const get = async (key: string): Promise<{ [key: string]: unknown }> => {
@@ -49,14 +72,7 @@ const createBrowserController = (): Browser => {
 			}
 
 			// Check if this is an extensions gallery error or other restricted page
-			if (e instanceof Error && e.message &&
-				(e.message.includes('extensions gallery cannot be scripted') ||
-				 e.message.includes('Cannot access') ||
-				 e.message.includes('restricted') ||
-				 e.message.includes('chrome://') ||
-				 e.message.includes('chrome-extension://') ||
-				 e.message.includes('moz-extension://') ||
-				 e.message.includes('about:'))) {
+			if (e instanceof Error && e.message && isRestrictedUrl(e.message)) {
 				// These are expected errors for restricted pages, ignore silently
 				return;
 			}
@@ -72,15 +88,16 @@ const createBrowserController = (): Browser => {
 		for (const tab of tabs) {
 			try {
 				// Skip Chrome internal pages, extensions, and other special URLs
-				if (!tab.url || 
-					tab.url.startsWith('chrome://') || 
-					tab.url.startsWith('chrome-extension://') ||
-					tab.url.startsWith('moz-extension://') ||
+				if (
+					!tab.url ||
 					tab.url.startsWith('edge-extension://') ||
-					tab.url.startsWith('about:') ||
 					tab.url.startsWith('file://') ||
-					tab.url === 'about:blank')
+					tab.url === 'about:blank' ||
+					isRestrictedUrl(tab.url)
+				) {
 					continue;
+				}
+
 				await injectJsInTab(tab, jsFileName);
 			} catch (e) {
 				console.log('Error injecting Nostr Provider', e);
@@ -96,7 +113,7 @@ const createBrowserController = (): Browser => {
 			const webSites = user.data?.webSites as { [key: string]: WebSite };
 
 			// Use browserAction for Firefox (MV2) or action for Chrome (MV3)
-			const actionApi = web.action || web.browserAction;
+			const actionApi = getActionApi();
 			if (!actionApi) return;
 
 			if (webSites !== undefined && domain in webSites) {
@@ -121,6 +138,21 @@ const createBrowserController = (): Browser => {
 			throw error;
 		}
 	};
+	const setPendingRequestsBadge = async (count: number): Promise<void> => {
+		const actionApi = getActionApi();
+		if (!actionApi) return;
+
+		const text = count > 0 ? (count > 99 ? '99+' : String(count)) : '';
+		const title =
+			count > 0 ? `Keys.Band - ${count} pending request${count === 1 ? '' : 's'}` : 'Keys.Band';
+
+		await Promise.all([
+			actionApi.setBadgeBackgroundColor?.({ color: '#ef4444' }),
+			actionApi.setBadgeTextColor?.({ color: '#ffffff' }),
+			actionApi.setBadgeText?.({ text }),
+			actionApi.setTitle?.({ title })
+		]);
+	};
 	const createWindow = async (url: string): Promise<Windows.Window> => {
 		return web.windows.create({
 			url: web.runtime.getURL(url),
@@ -129,19 +161,93 @@ const createBrowserController = (): Browser => {
 			type: 'popup'
 		});
 	};
+	const openAuthorizationPrompt = async (
+		url: string,
+		sender?: { tab?: Tabs.Tab | undefined }
+	): Promise<AuthorizationPromptKind> => {
+		const sidePanelUrl = url.replace(/^popup\.html/, 'sidepanel.html');
+
+		try {
+			if (
+				__BROWSER__ === 'chrome' &&
+				typeof chrome !== 'undefined' &&
+				chrome.sidePanel &&
+				sender?.tab?.id !== undefined &&
+				sender.tab.windowId !== undefined
+			) {
+				await chrome.sidePanel.setOptions({
+					tabId: sender.tab.id,
+					path: sidePanelUrl,
+					enabled: true
+				});
+				try {
+					await chrome.sidePanel.open({
+						tabId: sender.tab.id,
+						windowId: sender.tab.windowId
+					});
+				} catch (error) {
+					console.warn('Unable to auto-open Chrome side panel, waiting for toolbar click:', error);
+				}
+				return 'sidepanel';
+			}
+
+			if (__BROWSER__ === 'firefox' && web.sidebarAction) {
+				const sidebarUrl = web.runtime.getURL(sidePanelUrl);
+				if (sender?.tab?.id !== undefined && web.sidebarAction.setPanel) {
+					await web.sidebarAction.setPanel({
+						tabId: sender.tab.id,
+						panel: sidebarUrl
+					});
+				} else if (web.sidebarAction.setPanel) {
+					await web.sidebarAction.setPanel({ panel: sidebarUrl });
+				}
+
+				if ('open' in web.sidebarAction && typeof web.sidebarAction.open === 'function') {
+					try {
+						await web.sidebarAction.open();
+					} catch (error) {
+						console.warn(
+							'Unable to auto-open Firefox sidebar, waiting for user to open it:',
+							error
+						);
+					}
+				}
+
+				return 'sidebar';
+			}
+		} catch (error) {
+			console.error('Error opening authorization panel:', error);
+		}
+
+		const fallbackPromptKind = getFallbackAuthorizationPromptKind();
+		if (fallbackPromptKind !== 'popup') {
+			return fallbackPromptKind;
+		}
+
+		await createWindow(url);
+		return 'popup';
+	};
 
 	const sendAuthorizationResponse = (
 		yes: boolean,
 		choice: number,
 		url: string | undefined,
-		requestId: string | undefined
+		requestId: string | undefined,
+		promptContext?: AuthorizationPromptKind
 	) => {
-		console.log('[Popup] Sending authorization response:', { yes, choice, url, requestId });
-		
+		console.log('[Popup] Sending authorization response:', {
+			yes,
+			choice,
+			url,
+			requestId,
+			promptContext
+		});
+
 		getCurrentTab().then((tab) => switchIcon({ tabId: tab.id as number }));
-		
+
 		const message = {
 			prompt: true,
+			promptContext,
 			response: {
 				status: yes ? 'success' : 'error',
 				error: !yes,
@@ -156,9 +262,9 @@ const createBrowserController = (): Browser => {
 			url,
 			requestId
 		};
-		
+
 		console.log('[Popup] Sending message:', message);
-		
+
 		return web.runtime.sendMessage(message);
 	};
 
@@ -169,6 +275,8 @@ const createBrowserController = (): Browser => {
 		injectJsInTab,
 		injectJsinAllTabs,
 		createWindow,
+		openAuthorizationPrompt,
+		setPendingRequestsBadge,
 		sendAuthorizationResponse,
 		switchIcon
 	};

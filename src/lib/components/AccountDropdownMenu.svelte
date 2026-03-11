@@ -32,7 +32,7 @@
 						<div class="flex-grow min-w-0">
 							<button
 								class="w-full flex items-center gap-0 pl-0 mx-0 py-2 text-left bg-transparent hover:bg-white/60 dark:hover:bg-white/5 text-black dark:text-white transition-colors rounded-md cursor-pointer"
-								on:click={() => load(profile)}
+								onclick={() => load(profile)}
 							>
 								<span class="rounded-full bg-zinc-700 ring-1 ring-zinc-600">
 									<Avatar
@@ -59,7 +59,7 @@
 							<div class="flex items-center pr-2 max-w-12">
 								<button
 									class="bg-transparent btn-xs hover:bg-white/60 dark:hover:bg-white/10 rounded-lg flex items-center justify-center transition-all delete-btn-visible"
-									on:click={async () => {
+									onclick={async () => {
 										await profileController.deleteProfile(profile);
 										await tick();
 										accountDropdownMenuOpen = true;
@@ -81,7 +81,7 @@
 						class="justify-center items-stretch self-stretch border-t-[1px] flex w-full mb-2 flex-col py-1 mt-1 px-3   dark:border-t-white/10 border-solid hover:bg-white/80 dark:hover:bg-white/10 transition-colors rounded-lg"
 					> 
 						<button
-							on:click={() => {
+							onclick={() => {
 								currentPage.set(Page.AddProfile);
 							}}
 							class="w-full flex items-center gap-3 px-3 py-2 text-left bg-transparent hover:bg-white/60 dark:hover:bg-white/5 text-black dark:text-white transition-colors rounded-md cursor-pointer"

@@ -19,6 +19,8 @@ export const mockBrowser: CustomBrowser = {
 		incognito: false,
 		alwaysOnTop: false
 	} as Windows.Window),
+	openAuthorizationPrompt: vi.fn().mockResolvedValue('popup'),
+	setPendingRequestsBadge: vi.fn().mockResolvedValue(undefined),
 	switchIcon: vi.fn().mockResolvedValue(undefined),
 	sendAuthorizationResponse: vi.fn().mockResolvedValue(undefined)
 };

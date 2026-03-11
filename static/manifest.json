@@ -3,9 +3,7 @@
 	"name": "Keys.Band",
 	"version": "1.6.0",
 	"description": "Nostr Nip07 implementation",
-	"action": {
-		"default_popup": "popup.html"
-	},
+	"action": {},
 	"side_panel": {
 		"default_path": "sidepanel.html"
 	},

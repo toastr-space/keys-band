@@ -3,8 +3,9 @@
 	"name": "Keys.Band",
 	"version": "1.6.0",
 	"description": "Nostr Nip07 implementation",
-	"browser_action": {
-		"default_popup": "popup.html"
+	"browser_action": {},
+	"sidebar_action": {
+		"default_panel": "sidepanel.html"
 	},
 	"icons": {
 		"16": "assets/logo-on.png",

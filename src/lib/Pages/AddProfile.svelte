@@ -16,7 +16,7 @@
 	let error = $state(false);
 	let generated = $state(false);
 	let relays: any[] = [];
-	let metadata: any;
+	let metadata = $state<any>(undefined);
 
 	$effect(() => {
 		if (key) fetchProfile();
@@ -122,7 +122,7 @@
 	<div class="items-stretch flex w-full gap-3 mt-3">
 		<button
 			class="btn text-black dark:text-white kb-button font-medium leading-5 whitespace-nowrap justify-center px-8 py-3 rounded-2xl transition-colors"
-			on:click={() => {
+			onclick={() => {
 				let sk = generatePrivateKey();
 				key = nip19.nsecEncode(sk);
 				generated = true;
@@ -136,7 +136,7 @@
 			type="button"
 			class="btn bg-pink-400 dark:bg-teal-400 text-black flex gap-2 px-20 py-3 rounded-full w-full place-content-center max-md:px-5"
 			disabled={busy || !name || !key}
-			on:click={save}
+			onclick={save}
 		>
 			<Icon icon="carbon:save" width={20} />
 			<span>
