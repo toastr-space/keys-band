@@ -75,6 +75,8 @@ interface Relay {
 }
 import type { Tabs, Windows } from 'webextension-polyfill';
 
+type AuthorizationPromptKind = 'popup' | 'sidepanel' | 'sidebar';
+
 interface Browser {
 	get: (key: string) => Promise<{ [key: string]: unknown }>;
 	set: (items: { [key: string]: unknown }) => Promise<void>;
@@ -82,12 +84,18 @@ interface Browser {
 	injectJsInTab: (tab: Tabs.Tab, jsFileName: string) => Promise<void>;
 	injectJsinAllTabs: (jsFileName: string) => Promise<void>;
 	createWindow: (url: string) => Promise<Windows.Window>;
+	openAuthorizationPrompt: (
+		url: string,
+		sender?: { tab?: Tabs.Tab | undefined }
+	) => Promise<AuthorizationPromptKind>;
+	setPendingRequestsBadge: (count: number) => Promise<void>;
 	switchIcon: (activeInfo: { tabId: number }) => Promise<void>;
 	sendAuthorizationResponse: (
 		yes: boolean,
 		choice: number,
 		url: string | undefined,
-		requestId: string | undefined
+		requestId: string | undefined,
+		promptContext?: AuthorizationPromptKind
 	) => Promise<void>;
 }
 

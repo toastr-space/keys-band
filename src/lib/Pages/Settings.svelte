@@ -221,7 +221,7 @@
 				<div class="justify-center items-stretch">
 					<button
 						class="btn-icon btn-icon-sm bg-pink-400 dark:bg-teal-400"
-						on:click={() => removeRelay(relay)}
+						onclick={() => removeRelay(relay)}
 					>
 						<Icon icon="mdi:delete" class="text-black" />
 					</button>
@@ -245,7 +245,7 @@
 				<button
 					type="button"
 					class="btn bg-pink-400 dark:bg-teal-400 text-black h-12 px-6 rounded-xl hover:bg-pink-500 dark:hover:bg-teal-500 transition-colors"
-					on:click={addRelay}
+					onclick={addRelay}
 				>
 					<Icon icon="mdi:plus" class="text-black" width={20} />
 					Add
@@ -268,7 +268,7 @@
 			<button
 				type="button"
 				class="btn btn-sm text-gray-500 justify-start"
-				on:click={() => copyToClipboard($userProfile.data?.pubkey || '', 'pubkey')}
+				onclick={() => copyToClipboard($userProfile.data?.pubkey || '', 'pubkey')}
 			>
 				<Icon icon={copiedStates.pubkey ? "mdi:check" : "mdi:key"} class="text-pink-600 dark:text-teal-400 mr-2" width={20} />
 				{copiedStates.pubkey ? 'Copied!' : 'Copy Public Key to Clipboard'}
@@ -279,7 +279,7 @@
 			<button
 				type="button"
 				class="btn btn-sm text-gray-500 justify-start"
-				on:click={() => copyToClipboard(nip19.npubEncode($userProfile.data?.pubkey || ''), 'npub')}
+				onclick={() => copyToClipboard(nip19.npubEncode($userProfile.data?.pubkey || ''), 'npub')}
 			>
 				<Icon icon={copiedStates.npub ? "mdi:check" : "mdi:key-plus"} class="text-pink-600 dark:text-teal-400 mr-2" width={20} />
 				{copiedStates.npub ? 'Copied!' : 'Copy Npub to Clipboard'}
@@ -292,7 +292,7 @@
 				<button
 					type="button"
 					class="btn btn-sm text-gray-500 hover:text-pink-600 dark:hover:text-teal-400"
-					on:click={() => showPrivateKey = !showPrivateKey}
+					onclick={() => showPrivateKey = !showPrivateKey}
 				>
 					<Icon icon={showPrivateKey ? "mdi:eye-off" : "mdi:eye"} class="mr-2" width={16} />
 					{showPrivateKey ? 'Hide' : 'Show'}
@@ -311,7 +311,7 @@
 				<button
 					type="button"
 					class="btn btn-sm text-gray-500 justify-start"
-					on:click={() => copyToClipboard($userProfile.data?.privateKey || '', 'privateKey')}
+					onclick={() => copyToClipboard($userProfile.data?.privateKey || '', 'privateKey')}
 				>
 					<Icon icon={copiedStates.privateKey ? "mdi:check" : "mdi:key-outline"} class="text-pink-600 dark:text-teal-400 mr-2" width={20} />
 					{copiedStates.privateKey ? 'Copied!' : 'Copy Private Key to Clipboard'}
@@ -325,7 +325,7 @@
 				<button
 					type="button"
 					class="btn btn-sm text-gray-500 hover:text-pink-600 dark:hover:text-teal-400"
-					on:click={() => showNsec = !showNsec}
+					onclick={() => showNsec = !showNsec}
 				>
 					<Icon icon={showNsec ? "mdi:eye-off" : "mdi:eye"} class="mr-2" width={16} />
 					{showNsec ? 'Hide' : 'Show'}
@@ -344,7 +344,7 @@
 				<button
 					type="button"
 					class="btn btn-sm text-gray-500 justify-start"
-					on:click={() => copyToClipboard(nip19.nsecEncode($userProfile.data?.privateKey || ''), 'nsec')}
+					onclick={() => copyToClipboard(nip19.nsecEncode($userProfile.data?.privateKey || ''), 'nsec')}
 				>
 					<Icon icon={copiedStates.nsec ? "mdi:check" : "mdi:key-star"} class="text-pink-600 dark:text-teal-400 mr-2" width={20} />
 					{copiedStates.nsec ? 'Copied!' : 'Copy Nsec to Clipboard'}
@@ -357,7 +357,7 @@
 			<button
 				type="button"
 				class="btn w-full bg-pink-400 dark:bg-teal-400 text-black font-medium py-3 px-4 rounded-xl hover:bg-pink-500 dark:hover:bg-teal-500 transition-colors"
-				on:click={exportKeys}
+				onclick={exportKeys}
 			>
 				<Icon icon="mdi:download" class="mr-2" width={20} />
 				Export All Keys (keys.json)
@@ -383,7 +383,7 @@
 			<button
 				type="button"
 				class="btn w-full bg-pink-400 dark:bg-teal-400 text-black font-medium py-3 px-4 rounded-xl hover:bg-pink-500 dark:hover:bg-teal-500 transition-colors"
-				on:click={backupSettings}
+				onclick={backupSettings}
 			>
 				<Icon icon="mdi:backup-restore" class="mr-2" width={20} />
 				Create Full Backup
@@ -397,12 +397,12 @@
 				accept=".json"
 				class="hidden"
 				bind:this={fileInput}
-				on:change={restoreSettings}
+				onchange={restoreSettings}
 			/>
 			<button
 				type="button"
 				class="btn w-full bg-zinc-200 dark:bg-zinc-700 text-black dark:text-white font-medium py-3 px-4 rounded-xl hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
-				on:click={() => {
+				onclick={() => {
 					// Firefox: open dedicated restore page (popup closes when file picker opens)
 					// Chrome: use inline file picker
 					// @ts-ignore

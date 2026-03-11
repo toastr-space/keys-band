@@ -16,6 +16,7 @@
 	
 	import type { PopupParams } from '$lib/types';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
+	type AuthorizationPromptKind = 'popup' | 'sidepanel' | 'sidebar';
 
 	// Initialize Floating UI for Skeleton Labs components
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
@@ -23,6 +24,49 @@
 	let parameter: PopupParams | null = null;
 	let isAuthorizationRequest = false;
 	let accountDropdownMenuOpen = false;
+	const browserName = (globalThis as typeof globalThis & { __BROWSER__?: 'chrome' | 'firefox' })
+		.__BROWSER__;
+
+	const isSidePanelPrompt = () => document.getElementById('sidepanel') !== null;
+
+	const getPromptContext = (): AuthorizationPromptKind => {
+		if (isSidePanelPrompt()) {
+			return browserName === 'firefox' ? 'sidebar' : 'sidepanel';
+		}
+
+		return 'popup';
+	};
+
+	const resetAuthorizationRequest = () => {
+		parameter = null;
+		isAuthorizationRequest = false;
+		if (isSidePanelPrompt()) {
+			history.replaceState({}, '', 'sidepanel.html');
+		}
+	};
+
+	const handleAuthorizationResponse = async (accepted: boolean, duration: number) => {
+		const promptContext = getPromptContext();
+		const sendAuthorizationResponse = browserController.sendAuthorizationResponse as (
+			yes: boolean,
+			choice: number,
+			url: string | undefined,
+			requestId: string | undefined,
+			promptContext?: AuthorizationPromptKind
+		) => Promise<void>;
+
+		await sendAuthorizationResponse(
+			accepted,
+			duration,
+			parameter?.url,
+			parameter?.requestId || '',
+			promptContext
+		);
+
+		if (promptContext !== 'popup') {
+			resetAuthorizationRequest();
+		}
+	};
 
 	const accountDropdownMenu: PopupSettings = {
 		event: 'click',
@@ -90,7 +134,7 @@
 
 	onMount(() => {
 		// Check if we're in a side panel (not a popup)
-		const isSidePanel = document.getElementById('sidepanel') !== null;
+		const isSidePanel = isSidePanelPrompt();
 
 		// Set default popup dimensions only if not authorization request and not side panel
 		if (!isAuthorizationRequest && !isSidePanel) {
@@ -158,21 +202,11 @@
 					eventData={parameter.data}
 					isPopup={true}
 					domain={urlToDomain(parameter.url || '')}
-					oncancel={(event) =>
-						browserController.sendAuthorizationResponse(
-							false,
-							event.detail.duration,
-							parameter?.url,
-							parameter?.requestId || ''
-						)}
-					onaccepted={(event) => {
+					oncancel={async (event) =>
+						await handleAuthorizationResponse(false, event.detail.duration)}
+					onaccepted={async (event) => {
 						console.log('Accepted event received in PopupApp:', event.detail);
-						browserController.sendAuthorizationResponse(
-							true,
-							event.detail.duration,
-							parameter?.url,
-							parameter?.requestId || ''
-						);
+						await handleAuthorizationResponse(true, event.detail.duration);
 					}}
 				/>
 			</div>

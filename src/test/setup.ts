@@ -8,11 +8,15 @@ beforeEach(() => {
 vi.mock('webextension-polyfill', () => ({
 	default: {
 		runtime: {
+			getURL: vi.fn((path: string) => `moz-extension://test/${path}`),
 			onMessage: {
 				addListener: vi.fn(),
 				removeListener: vi.fn()
 			},
 			sendMessage: vi.fn()
+		},
+		scripting: {
+			executeScript: vi.fn().mockResolvedValue(undefined)
 		},
 		tabs: {
 			query: vi.fn().mockResolvedValue([{ id: 1, url: 'https://example.com' }]),
@@ -26,6 +30,15 @@ vi.mock('webextension-polyfill', () => ({
 				addListener: vi.fn(),
 				removeListener: vi.fn()
 			}
+		},
+		windows: {
+			create: vi.fn(),
+			remove: vi.fn(),
+			getAll: vi.fn().mockResolvedValue([])
+		},
+		sidebarAction: {
+			setPanel: vi.fn(),
+			open: vi.fn()
 		},
 		storage: {
 			local: {

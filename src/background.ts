@@ -13,22 +13,61 @@ import { browserController } from '$lib/controllers';
 
 const background = backgroundController();
 const session = sessionController();
+const AUTHORIZATION_POLL_INTERVAL = 100;
 
+type QueuedRequest = {
+	message: Message;
+	resolver: (value?: any) => void;
+	sender?: MessageSender;
+};
 
+const configureActionPanelBehavior = () => {
+	if (typeof chrome !== 'undefined' && chrome.sidePanel) {
+		chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+	}
+};
 
 web.runtime.onInstalled.addListener(() => {
 	BrowserUtil.injectJsinAllTabs('content.js');
-	// Configure side panel behavior - allow opening via action click when popup is not shown
-	if (typeof chrome !== 'undefined' && chrome.sidePanel) {
-		chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
-	}
+	configureActionPanelBehavior();
 });
-web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
+web.runtime.onStartup.addListener(() => {
+	BrowserUtil.injectJsinAllTabs('content.js');
+	configureActionPanelBehavior();
+});
 web.tabs.onActivated.addListener(async (activeInfo) => browserController.switchIcon(activeInfo));
-BrowserUtil.getCurrentTab().then((tab) => browserController.switchIcon({ tabId: tab.id as number }));
+BrowserUtil.getCurrentTab().then((tab) =>
+	browserController.switchIcon({ tabId: tab.id as number })
+);
+
+if (__BROWSER__ === 'firefox' && web.browserAction?.onClicked && web.sidebarAction?.open) {
+	web.browserAction.onClicked.addListener(async () => {
+		try {
+			await web.sidebarAction.open();
+		} catch (error) {
+			console.error('Error opening Firefox sidebar from toolbar click:', error);
+		}
+	});
+}
 
 const responders: Responders = {};
-const requestQueue: any[] = [];
+const requestQueue: QueuedRequest[] = [];
+
+const getPendingRequestsCount = () => Object.keys(responders).length + requestQueue.length;
+
+const hasPendingAuthorizationRequest = () => getPendingRequestsCount() > 0;
+
+const updatePendingRequestsBadge = async () => {
+	await browserController.setPendingRequestsBadge(getPendingRequestsCount());
+};
+
+const buildRejectedResponse = (message: Message) =>
+	buildResponseMessage(message, {
+		error: {
+			message: 'User rejected the request',
+			stack: 'User rejected the request'
+		}
+	});
 
 const hasWebSiteAlreadyLogged = async (domain: string): Promise<Profile> => {
 	const allUsers = get(await profileController.loadProfiles()) as Profile[];
@@ -70,8 +109,8 @@ const makeResponse = async (type: string, data: any) => {
 				if (relay?.url) {
 					const access = relay.access ?? 2; // Default to READ_WRITE (2)
 					res[relay.url] = {
-						read: access === 0 || access === 2,  // READ (0) or READ_WRITE (2)
-						write: access === 1 || access === 2  // WRITE (1) or READ_WRITE (2)
+						read: access === 0 || access === 2, // READ (0) or READ_WRITE (2)
+						write: access === 1 || access === 2 // WRITE (1) or READ_WRITE (2)
 					};
 				}
 			});
@@ -155,8 +194,7 @@ async function manageResult(message: Message, sender: any) {
 	}
 
 	try {
-		// Only try to remove the window if the tab and windowId exist
-		if (sender && sender.tab && sender.tab.windowId) {
+		if (message.promptContext === 'popup' && sender?.tab?.windowId) {
 			web.windows.remove(sender.tab.windowId);
 		}
 	} catch (error) {
@@ -167,8 +205,9 @@ async function manageResult(message: Message, sender: any) {
 			console.error('Error removing window:', error);
 		}
 	}
-	
+
 	delete responders[message.requestId as string];
+	await updatePendingRequestsBadge();
 	return;
 }
 
@@ -189,20 +228,28 @@ const isAllow = async (domain: string): Promise<AllowKind> => {
 	const permission: Authorization = site.permission as Authorization;
 
 	if (permission.accept) {
-		if (permission.always) return AllowKind.AlWaysAllow;
-		else {
-			if (permission.authorizationStop && new Date(permission.authorizationStop) > new Date()) {
-				return AllowKind.AllowForSession;
-			} else return AllowKind.Nothing;
+		if (permission.always) {
+			return AllowKind.AlWaysAllow;
 		}
-	} else if (permission.reject) {
-		if (permission.always) return AllowKind.AlwaysReject;
-		else {
-			if (permission.authorizationStop && new Date(permission.authorizationStop) > new Date())
-				return AllowKind.RejectForSession;
-			else return AllowKind.Nothing;
+
+		if (permission.authorizationStop && new Date(permission.authorizationStop) > new Date()) {
+			return AllowKind.AllowForSession;
 		}
-	} else return AllowKind.Nothing;
+
+		return AllowKind.Nothing;
+	}
+
+	if (permission.reject) {
+		if (permission.always) {
+			return AllowKind.AlwaysReject;
+		}
+
+		if (permission.authorizationStop && new Date(permission.authorizationStop) > new Date()) {
+			return AllowKind.RejectForSession;
+		}
+	}
+
+	return AllowKind.Nothing;
 };
 
 const buildResponseMessage = (message: Message, response: any): any => {
@@ -224,59 +271,66 @@ const buildResponseMessage = (message: Message, response: any): any => {
 async function manageRequest(
 	message: Message,
 	resolver: any = null,
-	next: boolean = false
+	next: boolean = false,
+	sender?: MessageSender
 ): Promise<any> {
-	return new Promise(async (res) => {
-
-		
-		const resolve: Promise<any> | any = resolver || res;
+	return new Promise(async (res: (value?: any) => void) => {
+		const resolve: (value?: any) => void = resolver || res;
 
 		try {
 			const user = await background.getUserProfile();
 
-			
 			const domain = urlToDomain(message.url || '');
 
-
-			if (next === false) {
+			if (!next) {
 				// Check if we already have a request for this domain+type queued OR pending via popup
-				const existingInQueue = requestQueue.find(
-					(item) => item.message.url === message.url && item.message.type === message.type
-				);
-				const existingPending = Object.values(responders).some(
-					(r) => r.domain === domain && r.type === message.type
-				);
+				let existingInQueue = false;
+				for (const queuedRequest of requestQueue) {
+					if (
+						queuedRequest.message.url === message.url &&
+						queuedRequest.message.type === message.type
+					) {
+						existingInQueue = true;
+						break;
+					}
+				}
+
+				let existingPending = false;
+				for (const requestId in responders) {
+					const responder = responders[requestId];
+					if (responder.domain === domain && responder.type === message.type) {
+						existingPending = true;
+						break;
+					}
+				}
+
 				if (existingInQueue || existingPending) {
 					return;
 				}
-				requestQueue.push({ message, resolver: resolve });
-				return;
+
+				if (!hasPendingAuthorizationRequest()) {
+					next = true;
+				} else {
+					requestQueue.push({ message, resolver: resolve, sender });
+					await updatePendingRequestsBadge();
+					return;
+				}
 			}
 
 			const previousProfile = await hasWebSiteAlreadyLogged(domain);
 
-
 			if (user.data?.privateKey === undefined) {
-	
-				return resolve(
-					buildResponseMessage(message, {
-						error: {
-							message: 'User rejected the request',
-							stack: 'User rejected the request'
-						}
-					})
-				);
+				return resolve(buildRejectedResponse(message));
 			}
 
 			let access: AllowKind = await isAllow(domain);
 
-			
-			if (message.type === 'getPublicKey')
-				if (previousProfile.id !== user.id) access = AllowKind.Nothing;
+			if (message.type === 'getPublicKey' && previousProfile.id !== user.id) {
+				access = AllowKind.Nothing;
+			}
 
 			switch (access) {
 				case AllowKind.AlWaysAllow:
-	
 					await pushHistory(true, message);
 					return resolve(
 						buildResponseMessage(
@@ -285,18 +339,9 @@ async function manageRequest(
 						)
 					);
 				case AllowKind.AlwaysReject:
-	
 					await pushHistory(false, message);
-					return resolve(
-						buildResponseMessage(message, {
-							error: {
-								message: 'User rejected the request',
-								stack: 'User rejected the request'
-							}
-						})
-					);
+					return resolve(buildRejectedResponse(message));
 				case AllowKind.AllowForSession:
-	
 					await pushHistory(true, message);
 					return resolve(
 						buildResponseMessage(
@@ -305,21 +350,11 @@ async function manageRequest(
 						)
 					);
 				case AllowKind.RejectForSession:
-	
 					await pushHistory(false, message);
-					return resolve(
-						buildResponseMessage(message, {
-							error: {
-								message: 'User rejected the request',
-								stack: 'User rejected the request'
-							}
-						})
-					);
+					return resolve(buildRejectedResponse(message));
 				case AllowKind.Nothing:
-	
 					break;
 			}
-
 
 			responders[message.id] = {
 				resolve,
@@ -327,6 +362,7 @@ async function manageRequest(
 				type: message.type,
 				data: message.params.event || message.params
 			};
+			await updatePendingRequestsBadge();
 
 			const dataId = await session.add({
 				action: 'login',
@@ -337,7 +373,8 @@ async function manageRequest(
 				previousProfile
 			});
 
-			await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
+			const promptUrl = 'popup.html?query=' + btoa(dataId);
+			await BrowserUtil.openAuthorizationPrompt(promptUrl, sender);
 		} catch (error) {
 			console.error('[Background] Error in manageRequest:', error);
 			throw error;
@@ -346,65 +383,50 @@ async function manageRequest(
 }
 
 const proceedNextRequest = async () => {
-	const allWindows = await web.windows.getAll();
-	const popupWindows = allWindows.filter((win) => win.type === 'popup');
-	
-	// Check if any popup has authorization query parameter
-	let authorizationPopupExists = false;
-	for (const popup of popupWindows) {
-		if (popup.tabs && popup.tabs.length > 0) {
-			const url = popup.tabs[0].url || '';
-			if (url.includes('popup.html?query=')) {
-				authorizationPopupExists = true;
-				break;
-			}
+	if (Object.keys(responders).length === 0 && requestQueue.length > 0) {
+		const nextRequest = requestQueue.shift();
+		if (!nextRequest) {
+			return;
 		}
-	}
-	
 
-	
-	if (!authorizationPopupExists && requestQueue.length > 0) {
-
-		const { message, resolver } = requestQueue.shift();
-		manageRequest(message, resolver, true);
+		const { message, resolver, sender } = nextRequest;
+		await updatePendingRequestsBadge();
+		manageRequest(message, resolver, true, sender);
 	}
 };
 
-setInterval(async () => proceedNextRequest(), 100);
+setInterval(async () => proceedNextRequest(), AUTHORIZATION_POLL_INTERVAL);
 
-web.runtime.onMessage.addListener((message: Message, sender: MessageSender, sendResponse: (response?: unknown) => void) => {
-
-
-	if (message.prompt) {
-
-		manageResult(message, sender);
-		sendResponse({ message: true });
-	} else {
-
-
-		// Call manageRequest immediately instead of using setInterval
-		manageRequest(message)
-			.then(async (data) => {
-				sendResponse(data);
-			})
-			.catch((err) => {
-				console.error('[Background] Error in manageRequest:', err);
-				sendResponse({
-					id: message.id,
-					type: message.type,
-					ext: 'keys.band',
-					response: {
-						error: {
-							message: 'Internal error',
-							stack: err.toString()
+web.runtime.onMessage.addListener(
+	(message: Message, sender: MessageSender, sendResponse: (response?: unknown) => void) => {
+		if (message.prompt) {
+			manageResult(message, sender);
+			sendResponse({ message: true });
+		} else {
+			// Call manageRequest immediately instead of using setInterval
+			manageRequest(message, null, false, sender)
+				.then(async (data) => {
+					sendResponse(data);
+				})
+				.catch((err) => {
+					console.error('[Background] Error in manageRequest:', err);
+					sendResponse({
+						id: message.id,
+						type: message.type,
+						ext: 'keys.band',
+						response: {
+							error: {
+								message: 'Internal error',
+								stack: err.toString()
+							}
 						}
-					}
+					});
+				})
+				.finally(() => {
+					proceedNextRequest();
 				});
-			})
-			.finally(() => {
-				proceedNextRequest();
-			});
-	}
+		}
 
-	return true;
-});
+		return true;
+	}
+);
