@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { timeAgo, tr } from '$lib/utility';
+	import { timeAgo, describeCapability } from '$lib/utility';
 	import { userProfile } from '$lib/stores/data';
 
 	import type { WebSiteHistory } from '$lib/types';
@@ -35,7 +35,7 @@
 					<Icon icon="mdi:close" class="text-gray-800 dark:text-gray-400" />
 				{/if}
 				<span class="text-sm text-black dark:text-white opacity-70">
-					{tr(siteHistory.type)}
+					{describeCapability(siteHistory.type)}
 				</span>
 			</div>
 			<div

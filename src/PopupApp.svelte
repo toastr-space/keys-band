@@ -9,9 +9,11 @@
 	import { profileController } from '$lib/controllers/profile.controller';
 	import { PageSettings, PageHome, PageAddProfile } from '$lib/Pages';
 	import Authorization from '$lib/components/Authorization.svelte';
+	import VaultGate from '$lib/components/VaultGate.svelte';
+	import { vaultController, type VaultStatus } from '$lib/controllers/vault.controller';
 	import AccountDropdownMenu from '$lib/components/AccountDropdownMenu.svelte';
 	import { browserController } from '$lib/controllers';
-	import { urlToDomain, NostrUtil } from '$lib/utility';
+	import { NostrUtil } from '$lib/utility';
 	import { sessionData, userProfile } from '$lib/stores/data';
 	
 	import type { PopupParams } from '$lib/types';
@@ -21,6 +23,7 @@
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 
 	let parameter: PopupParams | null = null;
+	let vaultStatus: VaultStatus = 'locked';
 	let isAuthorizationRequest = false;
 	let accountDropdownMenuOpen = false;
 
@@ -52,6 +55,18 @@
 		
 		await profileController.loadProfiles();
 		const urlParams = new URLSearchParams(document.location.search);
+
+		// Nothing else is shown until the vault is unlocked. This must run before the request
+		// data below is read, because reading it removes it.
+		vaultStatus = await vaultController.status();
+		if (vaultStatus !== 'unlocked') return;
+		await vaultController.markActivity();
+		// opened by the background only to unlock for a pending request
+		if (urlParams.get('unlock')) {
+			window.close();
+			return;
+		}
+
 		const queryParam = urlParams?.get('query');
 		
 		console.log('[Popup] Query param:', queryParam);
@@ -86,7 +101,7 @@
 		}
 	}
 
-	const promise = handleData();
+	let promise = handleData();
 
 	onMount(() => {
 		// Check if we're in a side panel (not a popup)
@@ -106,7 +121,9 @@
 		<ProgressRadial stroke={20} width="w-16 mx-auto" value={undefined} />
 	</div>
 {:then}
-	{#if isAuthorizationRequest && parameter}
+	{#if vaultStatus !== 'unlocked'}
+		<VaultGate status={vaultStatus} onunlocked={() => (promise = handleData())} />
+	{:else if isAuthorizationRequest && parameter}
 		<!-- Authorization popup -->
 		<div class="w-full h-screen flex flex-col p-4 mx-auto items-center dark:bg-[#222222] bg-white overflow-hidden">
 			{#if 'previousProfile' in parameter && parameter.previousProfile.id !== $userProfile.id}
@@ -156,8 +173,7 @@
 				<Authorization
 					popupType={parameter.type}
 					eventData={parameter.data}
-					isPopup={true}
-					domain={urlToDomain(parameter.url || '')}
+					domain={parameter.url || ''}
 					oncancel={(event) =>
 						browserController.sendAuthorizationResponse(
 							false,
