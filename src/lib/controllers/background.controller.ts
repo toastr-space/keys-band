@@ -5,7 +5,7 @@ import type { Profile, WebSite, WebSiteHistory } from '$lib/types/profile';
 
 import { userProfile } from '$lib/stores/data';
 import { profileController } from './profile.controller';
-import { ProfileUtil } from '$lib/utility';
+import { ProfileUtil, setPermission } from '$lib/utility';
 
 export const backgroundController = (): BackgroundController => {
 	const getUserProfile = async (): Promise<Profile> => {
@@ -14,10 +14,10 @@ export const backgroundController = (): BackgroundController => {
 		return Promise.resolve(user);
 	};
 
-	const addHistory = async (info: { acceptance: boolean; type: string }, domain: string) => {
+	const addHistory = async (info: { acceptance: boolean; type: string }, origin: string) => {
 		const user = await getUserProfile();
 		const webSites = user.data?.webSites || {};
-		const site = ProfileUtil.getWebSiteOrCreate(domain, user);
+		const site = ProfileUtil.getWebSiteOrCreate(origin, user);
 
 		site.history = [
 			...(site.history as WebSiteHistory[]),
@@ -29,27 +29,26 @@ export const backgroundController = (): BackgroundController => {
 			}
 		];
 
-		if (user.data) user.data.webSites = { ...webSites, [domain]: site };
-		else user.data = { webSites: { [domain]: site } };
+		if (user.data) user.data.webSites = { ...webSites, [origin]: site };
+		else user.data = { webSites: { [origin]: site } };
 
 		await profileController.saveProfile(user);
 	};
 
 	const updatePermisison = async (
 		duration: PermissionDuration,
-		webSite: WebSite,
-		domain: string,
-		type: string
+		origin: string,
+		capability: string
 	) => {
 		const user = await getUserProfile();
-		const webSites: { [url: string]: WebSite } = user.data?.webSites || {};
+		const webSites: { [origin: string]: WebSite } = user.data?.webSites || {};
 
-		const site = ProfileUtil.getNewWebSitePermission(duration, webSite);
-		if (user.data) user.data.webSites = { ...webSites, [domain]: site };
-		else user.data = { webSites: { [domain]: site } };
+		const site = setPermission(ProfileUtil.getWebSiteOrCreate(origin, user), capability, duration);
+		if (user.data) user.data.webSites = { ...webSites, [origin]: site };
+		else user.data = { webSites: { [origin]: site } };
 
 		await profileController.saveProfile(user);
-		await addHistory({ acceptance: duration.accept, type }, domain);
+		await addHistory({ acceptance: duration.accept, type: capability }, origin);
 	};
 
 	return { updatePermisison, getUserProfile, addHistory };

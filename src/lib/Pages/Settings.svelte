@@ -7,6 +7,13 @@
 	import { profileController } from '$lib/controllers/profile.controller';
 	import { nip19 } from 'nostr-tools';
 	import { web } from '$lib/utility';
+	import {
+		vaultController,
+		validatePin,
+		LOCK_NEVER,
+		LOCK_ON_BROWSER_CLOSE
+	} from '$lib/controllers/vault.controller';
+	import { createBackup, restoreBackup } from '$lib/controllers/backup.controller';
 
 	let relays = $state<Relay[]>([]);
 	let relayInput = $state('');
@@ -23,6 +30,102 @@
 	let fileInput: HTMLInputElement;
 	let showRestoreTextarea = $state(false);
 	let restoreJsonText = $state('');
+
+	// Security
+	const lockOptions = [
+		{ value: 5, name: 'After 5 minutes idle' },
+		{ value: 15, name: 'After 15 minutes idle' },
+		{ value: 60, name: 'After 1 hour idle' },
+		{ value: 240, name: 'After 4 hours idle' },
+		{ value: LOCK_ON_BROWSER_CLOSE, name: 'When the browser closes' },
+		{ value: LOCK_NEVER, name: 'Never (stay unlocked across restarts)' }
+	];
+	let savedLockAfter = $state(15);
+	let lockSelection = $state(15);
+	let neverConfirmed = $state(false);
+	let neverPassphrase = $state('');
+	let hasPin = $state(false);
+	let newPin = $state('');
+	let confirmNewPin = $state('');
+	let currentPassphrase = $state('');
+	let newPassphrase = $state('');
+	let confirmNewPassphrase = $state('');
+	let exportPassphrase = $state('');
+	let showExportForm = $state(false);
+	let securityMessage = $state('');
+	let securityError = $state(false);
+
+	vaultController.getSettings().then((settings) => {
+		savedLockAfter = lockSelection = settings.lockAfterMinutes;
+	});
+	vaultController.hasPin().then((value) => (hasPin = value)).catch(() => {});
+
+	const securityResult = (message: string, isError = false) => {
+		securityMessage = message;
+		securityError = isError;
+	};
+
+	const lockNow = async () => {
+		await vaultController.lock();
+		location.reload();
+	};
+
+	const saveLockAfter = async (minutes: number) => {
+		await vaultController.setSettings({ lockAfterMinutes: minutes });
+		savedLockAfter = lockSelection = minutes;
+	};
+
+	// "Never" is the only weaker choice that needs explicit confirmation; others apply at once
+	const selectLockAfter = async () => {
+		const minutes = Number(lockSelection);
+		neverConfirmed = false;
+		neverPassphrase = '';
+		if (minutes !== LOCK_NEVER) await saveLockAfter(minutes);
+	};
+
+	const confirmNever = async () => {
+		if (!neverConfirmed) return securityResult('Tick the box to confirm you understand the risk', true);
+		if (!(await vaultController.verifyPassphrase(neverPassphrase)))
+			return securityResult('Wrong passphrase', true);
+		neverPassphrase = '';
+		await saveLockAfter(LOCK_NEVER);
+		securityResult('Keys.Band will now stay unlocked across browser restarts');
+	};
+
+	const changePin = async () => {
+		try {
+			const problem = validatePin(newPin);
+			if (problem) throw new Error(problem);
+			if (newPin !== confirmNewPin) throw new Error('PINs do not match');
+			await vaultController.changePin(newPin);
+			newPin = confirmNewPin = '';
+			securityResult(hasPin ? 'PIN changed' : 'PIN set up');
+			hasPin = true;
+		} catch (error) {
+			securityResult(error instanceof Error ? error.message : 'Failed to change PIN', true);
+		}
+	};
+
+	const removePin = async () => {
+		try {
+			await vaultController.changePin(null);
+			hasPin = false;
+			securityResult('PIN removed. Keys.Band now always unlocks with your passphrase.');
+		} catch (error) {
+			securityResult(error instanceof Error ? error.message : 'Failed to remove PIN', true);
+		}
+	};
+
+	const changePassphrase = async () => {
+		try {
+			if (newPassphrase !== confirmNewPassphrase) throw new Error('New passphrases do not match');
+			await vaultController.changePassphrase(currentPassphrase, newPassphrase);
+			currentPassphrase = newPassphrase = confirmNewPassphrase = '';
+			securityResult('Passphrase changed. Make a new backup: older backups still open with the old passphrase.');
+		} catch (error) {
+			securityResult(error instanceof Error ? error.message : 'Failed to change passphrase', true);
+		}
+	};
 
 	// Watch for changes in userProfile and update relays
 	$effect(() => {
@@ -53,8 +156,15 @@
 		}
 	};
 
-	const exportKeys = () => {
+	const exportKeys = async () => {
 		try {
+			// a plaintext key file needs the passphrase, not just an unlocked session
+			if (!(await vaultController.verifyPassphrase(exportPassphrase))) {
+				alert('Wrong passphrase');
+				return;
+			}
+			exportPassphrase = '';
+			showExportForm = false;
 			// Create export data
 			const exportData = $profiles.map(profile => ({
 				name: profile.name || 'Unknown',
@@ -83,18 +193,7 @@
 	// Backup all settings
 	const backupSettings = async () => {
 		try {
-			const currentProfileId = (await browser.get('currentProfile'))?.currentProfile;
-			const currentTheme = (await browser.get('theme'))?.theme;
-			const currentDuration = (await browser.get('duration'))?.duration;
-
-			const backupData = {
-				version: 1,
-				exportDate: new Date().toISOString(),
-				profiles: $profiles,
-				currentProfile: currentProfileId,
-				theme: currentTheme,
-				duration: currentDuration
-			};
+			const backupData = await createBackup();
 
 			const blob = new Blob([JSON.stringify(backupData, null, 2)], {
 				type: 'application/json'
@@ -133,35 +232,11 @@
 			const text = await file.text();
 			console.log('[Restore] File content length:', text.length);
 			const backupData = JSON.parse(text);
-			console.log('[Restore] Parsed data:', Object.keys(backupData));
+			const count = await restoreBackup(backupData);
 
-			// Validate backup format
-			if (!backupData.version || !backupData.profiles) {
-				throw new Error('Invalid backup file format');
-			}
-
-			console.log('[Restore] Restoring', backupData.profiles.length, 'profiles...');
-
-			// Restore profiles
-			if (Array.isArray(backupData.profiles)) {
-				await browser.set({ profiles: backupData.profiles });
-				profiles.set(backupData.profiles);
-			}
-
-			// Restore current profile
-			if (backupData.currentProfile) {
-				await browser.set({ currentProfile: backupData.currentProfile });
-				const restoredProfile = backupData.profiles.find(
-					(p: Profile) => p.id === backupData.currentProfile
-				);
-				if (restoredProfile) {
-					userProfile.set(restoredProfile);
-				}
-			}
-
-			// Restore theme
+			// reload stores from storage; a restored vault stays locked until its passphrase is entered
+			await profileController.loadProfiles();
 			if (backupData.theme) {
-				await browser.set({ theme: backupData.theme });
 				theme.set(backupData.theme);
 				if (backupData.theme === 'dark') {
 					document.documentElement.classList.add('dark');
@@ -169,16 +244,11 @@
 					document.documentElement.classList.remove('dark');
 				}
 			}
-
-			// Restore duration
-			if (backupData.duration) {
-				await browser.set({ duration: backupData.duration });
-				duration.set(backupData.duration as Duration);
-			}
+			if (backupData.duration) duration.set(backupData.duration as Duration);
 
 			console.log('[Restore] Success!');
 			restoreStatus = 'success';
-			restoreMessage = `Restored ${backupData.profiles.length} profile(s) successfully!`;
+			restoreMessage = `Restored ${count} profile(s) successfully!`;
 
 			// Reset file input
 			input.value = '';
@@ -354,15 +424,147 @@
 		
 		<!-- Export Keys -->
 		<div class="border-t border-gray-200 dark:border-zinc-700 mt-4 pt-4">
-			<button
-				type="button"
-				class="btn w-full bg-pink-400 dark:bg-teal-400 text-black font-medium py-3 px-4 rounded-xl hover:bg-pink-500 dark:hover:bg-teal-500 transition-colors"
-				on:click={exportKeys}
-			>
-				<Icon icon="mdi:download" class="mr-2" width={20} />
-				Export All Keys (keys.json)
-			</button>
+			{#if showExportForm}
+				<p class="text-gray-500 dark:text-gray-400 text-sm mb-2">
+					keys.json contains your unencrypted nsec keys. Enter your passphrase to continue.
+				</p>
+				<form class="flex gap-2" on:submit|preventDefault={exportKeys}>
+					<input
+						type="password"
+						class="form-input rounded-xl flex-grow bg-white dark:bg-stone-900 text-black dark:text-white"
+						placeholder="Passphrase"
+						bind:value={exportPassphrase}
+					/>
+					<button type="submit" class="btn bg-pink-400 dark:bg-teal-400 text-black rounded-xl px-4">Export</button>
+				</form>
+			{:else}
+				<button
+					type="button"
+					class="btn w-full bg-pink-400 dark:bg-teal-400 text-black font-medium py-3 px-4 rounded-xl hover:bg-pink-500 dark:hover:bg-teal-500 transition-colors"
+					on:click={() => (showExportForm = true)}
+				>
+					<Icon icon="mdi:download" class="mr-2" width={20} />
+					Export All Keys (keys.json)
+				</button>
+			{/if}
 		</div>
+	</div>
+
+	<!-- Security Section -->
+	<div
+		class="justify-center items-stretch kb-surface self-stretch flex w-full flex-col mt-3 p-4 rounded-2xl gap-2"
+	>
+		<div
+			class="text-gray-800 dark:text-gray-400 text-opacity-70 text-xs font-semibold leading-4 tracking-[2.4000000000000004px]"
+		>
+			SECURITY
+		</div>
+		<button
+			type="button"
+			class="btn w-full bg-pink-400 dark:bg-teal-400 text-black font-medium py-3 px-4 rounded-xl mt-2"
+			on:click={lockNow}
+		>
+			<Icon icon="mdi:lock" class="mr-2" width={20} />
+			Lock now
+		</button>
+
+		<label class="text-sm text-black dark:text-white mt-2" for="lock-after">Lock automatically</label>
+		<select
+			id="lock-after"
+			class="form-select rounded-xl bg-white dark:bg-stone-900 text-black dark:text-white"
+			bind:value={lockSelection}
+			on:change={selectLockAfter}
+		>
+			{#each lockOptions as option}
+				<option value={option.value}>{option.name}</option>
+			{/each}
+		</select>
+
+		{#if Number(lockSelection) === LOCK_NEVER && savedLockAfter !== LOCK_NEVER}
+			<form
+				class="flex flex-col gap-2 p-3 rounded-xl border border-red-500 bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-200 text-sm"
+				on:submit|preventDefault={confirmNever}
+			>
+				<div class="flex items-center gap-2 font-semibold">
+					<Icon icon="mdi:alert" width={20} /> This removes most of the passphrase's protection
+				</div>
+				<p>
+					To stay unlocked after the browser restarts, Keys.Band must save its unlock key
+					<strong>unencrypted</strong> in this browser's profile on disk. Anyone or anything that can
+					read your files could then take your Nostr private key without your passphrase: malware, a
+					copy or backup of your browser profile, or a stolen computer without full-disk encryption.
+					Anyone who uses this browser can also sign as you.
+				</p>
+				<p>Choosing “Lock now” deletes the saved key until you unlock again.</p>
+				<label class="flex items-start gap-2">
+					<input type="checkbox" class="mt-1" bind:checked={neverConfirmed} />
+					<span>I understand that my private key will be readable from this computer's disk.</span>
+				</label>
+				<input
+					type="password"
+					placeholder="Passphrase to confirm"
+					class="form-input rounded-xl bg-white dark:bg-stone-900 text-black dark:text-white"
+					bind:value={neverPassphrase}
+				/>
+				<div class="flex gap-2">
+					<button type="button" class="btn flex-grow bg-zinc-200 dark:bg-zinc-700 text-black dark:text-white rounded-xl py-2" on:click={() => (lockSelection = savedLockAfter)}>
+						Keep locking
+					</button>
+					<button type="submit" class="btn flex-grow bg-red-600 text-white rounded-xl py-2">Stay unlocked</button>
+				</div>
+			</form>
+		{:else if savedLockAfter === LOCK_NEVER}
+			<p class="text-xs p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+				Weaker security: Keys.Band never locks by itself and its unlock key is saved unencrypted on
+				this computer. Choose another option to remove it.
+			</p>
+		{:else if savedLockAfter === LOCK_ON_BROWSER_CLOSE}
+			<p class="text-xs p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+				Weaker security: Keys.Band stays unlocked whenever the browser is open, even while you are
+				away from your computer.
+			</p>
+		{:else}
+			<p class="text-xs text-gray-500 dark:text-gray-400">
+				The passphrase is required after every browser restart{hasPin ? ' and after 5 wrong PINs' : ''}.
+			</p>
+		{/if}
+
+		<form class="flex flex-col gap-2 mt-3" on:submit|preventDefault={changePin}>
+			<span class="text-sm text-black dark:text-white">{hasPin ? 'Change PIN' : 'Set up a PIN for quick unlock'}</span>
+			{#if !hasPin}
+				<p class="text-xs p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+					A PIN is quicker but weaker than your passphrase: while the browser is open, someone with
+					access to your computer and some technical skill could guess it. After 5 wrong PINs or a
+					browser restart the passphrase is required.
+				</p>
+			{/if}
+			<div class="flex gap-2">
+				<input type="password" inputmode="numeric" maxlength="8" placeholder="New PIN" class="form-input rounded-xl w-full bg-white dark:bg-stone-900 text-black dark:text-white" bind:value={newPin} />
+				<input type="password" inputmode="numeric" maxlength="8" placeholder="Again" class="form-input rounded-xl w-full bg-white dark:bg-stone-900 text-black dark:text-white" bind:value={confirmNewPin} />
+			</div>
+			<button type="submit" class="btn bg-zinc-200 dark:bg-zinc-700 text-black dark:text-white rounded-xl py-2">
+				{hasPin ? 'Change PIN' : 'Set up PIN'}
+			</button>
+			{#if hasPin}
+				<button type="button" class="btn text-sm text-gray-600 dark:text-gray-400 py-1" on:click={removePin}>
+					Remove PIN (always unlock with passphrase)
+				</button>
+			{/if}
+		</form>
+
+		<form class="flex flex-col gap-2 mt-3" on:submit|preventDefault={changePassphrase}>
+			<span class="text-sm text-black dark:text-white">Change passphrase</span>
+			<input type="password" placeholder="Current passphrase" class="form-input rounded-xl bg-white dark:bg-stone-900 text-black dark:text-white" bind:value={currentPassphrase} />
+			<input type="password" placeholder="New passphrase (12+ characters)" class="form-input rounded-xl bg-white dark:bg-stone-900 text-black dark:text-white" bind:value={newPassphrase} />
+			<input type="password" placeholder="New passphrase again" class="form-input rounded-xl bg-white dark:bg-stone-900 text-black dark:text-white" bind:value={confirmNewPassphrase} />
+			<button type="submit" class="btn bg-zinc-200 dark:bg-zinc-700 text-black dark:text-white rounded-xl py-2">Change passphrase</button>
+		</form>
+
+		{#if securityMessage}
+			<div class="text-sm mt-1 {securityError ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'}">
+				{securityMessage}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Backup & Restore Section -->
@@ -375,7 +577,8 @@
 			BACKUP & RESTORE
 		</div>
 		<p class="text-gray-500 dark:text-gray-400 text-sm mt-2">
-			Create a complete backup of all your profiles, permissions, and settings.
+			Create a complete backup of all your profiles, permissions, and settings. Keys in the
+			backup stay encrypted with your passphrase.
 		</p>
 
 		<!-- Backup Button -->

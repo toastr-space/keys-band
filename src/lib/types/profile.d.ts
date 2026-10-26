@@ -9,7 +9,7 @@ interface Profile {
 	data?: {
 		pubkey?: string;
 		privateKey?: string;
-		webSites?: { [url: string]: WebSite };
+		webSites?: { [origin: string]: WebSite };
 		relays?: Relay[];
 	};
 }
@@ -36,7 +36,8 @@ interface WebSiteHistory {
 
 interface WebSite {
 	auth: boolean;
-	permission?: Authorization;
+	// keyed by capability, e.g. 'getPublicKey', 'signEvent:1', 'nip04.decrypt'
+	permissions?: { [capability: string]: Authorization };
 	history?: WebSiteHistory[];
 }
 

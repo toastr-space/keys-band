@@ -52,12 +52,11 @@ interface PermissionDuration {
 interface BackgroundController {
 	updatePermisison: (
 		duration: PermissionDuration,
-		site: WebSite,
-		domain: string,
-		type: string
+		origin: string,
+		capability: string
 	) => Promise<void>;
 	getUserProfile: () => Promise<Profile>;
-	addHistory: (info: { acceptance: boolean; type: string }, domain: string) => Promise<void>;
+	addHistory: (info: { acceptance: boolean; type: string }, origin: string) => Promise<void>;
 }
 
 enum AllowKind {
@@ -69,11 +68,15 @@ enum AllowKind {
 }
 
 interface Responders {
+	// keyed by a background-generated request id, never by the page-supplied id
 	[key: string]: {
 		resolve: (value?: any) => void;
 		type: string;
 		data: any;
-		domain: string;
+		origin: string;
+		capability: string;
+		pageRequestId: string;
+		windowId?: number;
 	};
 }
 

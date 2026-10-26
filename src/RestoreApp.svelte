@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { browser } from '$lib/stores/data';
-	import type { Profile, Duration } from '$lib/types';
+	import { restoreBackup } from '$lib/controllers/backup.controller';
 
 	let restoreStatus = $state<'idle' | 'success' | 'error'>('idle');
 	let restoreMessage = $state('');
@@ -16,39 +15,16 @@
 		try {
 			const text = await file.text();
 			const backupData = JSON.parse(text);
+			const count = await restoreBackup(backupData);
 
-			// Validate backup format
-			if (!backupData.version || !backupData.profiles) {
-				throw new Error('Invalid backup file format');
-			}
-
-			// Restore profiles
-			if (Array.isArray(backupData.profiles)) {
-				await browser.set({ profiles: backupData.profiles });
-			}
-
-			// Restore current profile
-			if (backupData.currentProfile) {
-				await browser.set({ currentProfile: backupData.currentProfile });
-			}
-
-			// Restore theme
-			if (backupData.theme) {
-				await browser.set({ theme: backupData.theme });
-				if (backupData.theme === 'dark') {
-					document.documentElement.classList.add('dark');
-				} else {
-					document.documentElement.classList.remove('dark');
-				}
-			}
-
-			// Restore duration
-			if (backupData.duration) {
-				await browser.set({ duration: backupData.duration });
+			if (backupData.theme === 'dark') {
+				document.documentElement.classList.add('dark');
+			} else if (backupData.theme) {
+				document.documentElement.classList.remove('dark');
 			}
 
 			restoreStatus = 'success';
-			restoreMessage = `Restored ${backupData.profiles.length} profile(s) successfully! You can close this tab.`;
+			restoreMessage = `Restored ${count} profile(s) successfully! You can close this tab.`;
 
 			// Reset file input
 			input.value = '';
