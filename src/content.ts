@@ -33,14 +33,13 @@ if ((window as any).__KEYS_BAND_CONTENT_LOADED__) {
       return;
     }
     if (event.data.response === undefined || event.data.response === null) {
-      const data = event.data || {};
-      data["url"] = event.origin;
+      // Forward only the NIP-07 request fields; anything else the page adds (e.g. prompt,
+      // requestId, response) must never reach the background script
+      const { id, type, params } = event.data;
+      if (typeof id !== 'string' || typeof type !== 'string') return;
+      const data = { id, type, params, ext: 'keys.band' };
 
-
-
-      web.runtime.sendMessage({ ...data }, (response: unknown) => {
-
-
+      web.runtime.sendMessage(data, (response: unknown) => {
         // Check for runtime errors
         if (web.runtime.lastError) {
           console.error('[Content] Runtime error:', web.runtime.lastError);

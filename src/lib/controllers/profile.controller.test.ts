@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateProfileId, validateProfile } from './profile.controller';
+import { generateProfileId, validateProfile, withoutKeys } from './profile.controller';
 import type { Profile } from '$lib/types/profile';
 
 vi.mock('$lib/stores/data', () => ({
@@ -89,6 +89,24 @@ describe('Profile Controller - Unit Tests', () => {
 			expect(() => {
 				validateProfile(invalidProfile);
 			}).toThrow('Profile name must be at least 2 characters');
+		});
+	});
+
+	describe('locked vault', () => {
+		it('accepts a profile whose key is not loaded', () => {
+			expect(() =>
+				validateProfile({ id: 'test-id', name: 'Test', data: { pubkey: 'test-pubkey' } })
+			).not.toThrow();
+		});
+
+		it('strips private keys before profiles are stored', () => {
+			const stored = withoutKeys([
+				{ id: 'a', name: 'A', data: { pubkey: 'pa', privateKey: 'secret', relays: [] } },
+				{ id: 'b', name: 'B' }
+			]);
+			expect(JSON.stringify(stored)).not.toContain('secret');
+			expect(stored[0].data).toEqual({ pubkey: 'pa', relays: [] });
+			expect(stored[1]).toEqual({ id: 'b', name: 'B' });
 		});
 	});
 

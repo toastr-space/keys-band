@@ -1,4 +1,4 @@
-import { getDuration, urlToDomain } from '$lib/utility';
+import { getDuration, urlToOrigin, activeGrants } from '$lib/utility';
 import { web } from '$lib/utility';
 import type { Tabs, Windows } from 'webextension-polyfill';
 
@@ -92,14 +92,14 @@ const createBrowserController = (): Browser => {
 			// Attempt to get the tab - this will fail if the tab no longer exists
 			const tab = await web.tabs.get(activeInfo.tabId);
 			const user: Profile = await backgroundController().getUserProfile();
-			const domain = urlToDomain(tab.url || '');
-			const webSites = user.data?.webSites as { [key: string]: WebSite };
+			const origin = urlToOrigin(tab.url || '');
+			const site: WebSite | undefined = user.data?.webSites?.[origin];
 
 			// Use browserAction for Firefox (MV2) or action for Chrome (MV3)
 			const actionApi = web.action || web.browserAction;
 			if (!actionApi) return;
 
-			if (webSites !== undefined && domain in webSites) {
+			if (activeGrants(site).some((grant) => grant.permission.accept)) {
 				actionApi.setIcon({
 					tabId: tab.id,
 					path: 'assets/logo-on.png'

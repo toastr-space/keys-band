@@ -4,6 +4,7 @@ import { NostrUtil } from '$lib/utility';
 import { getPublicKey } from 'nostr-tools';
 import type { Duration, Profile, ProfileController, Relay } from '$lib/types/profile.d';
 import { duration, profiles, userProfile, theme, browser } from '$lib/stores/data';
+import { vaultController } from './vault.controller';
 
 // Constants
 const DEFAULT_DURATION: Duration = {
@@ -92,7 +93,7 @@ const switchTheme = async (themeName: string): Promise<void> => {
 
 // PROFILE MANAGEMENT
 const validateProfile = (profile: Profile): void => {
-	if (!profile.id || !profile.data?.privateKey) {
+	if (!profile.id || !profile.data?.pubkey) {
 		throw new Error('Invalid profile: missing required fields');
 	}
 	if (!profile.name || profile.name.length < MIN_PROFILE_NAME_LENGTH) {
@@ -150,6 +151,7 @@ const createProfile = async (
 		};
 
 		validateProfile(profile);
+		await vaultController.addKey(profile.id as string, privateKey);
 
 		// Update profiles array
 		const currentProfiles = get(profiles);
@@ -167,8 +169,8 @@ const createProfile = async (
 const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefined> => {
 	try {
 		if (profile.data !== undefined) {
-			if (profile.data?.pubkey === undefined || profile.id === undefined) {
-				profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
+			if ((profile.data?.pubkey === undefined || profile.id === undefined) && profile.data.privateKey) {
+				profile.data.pubkey = getPublicKey(profile.data.privateKey);
 				profile.id = profile.data.pubkey;
 			}
 			await browser.set({ currentProfile: profile.id });
@@ -226,15 +228,22 @@ const loadProfiles = async (): Promise<Writable<Profile[]>> => {
 	}
 
 	const data = await browser.get('currentProfile');
+	// Keys exist in memory only while the vault is unlocked. Profiles saved before the vault
+	// existed still carry their key until setup moves it into the vault.
+	const vaultStatus = await vaultController.status();
+	const keys = vaultStatus === 'unlocked' ? await vaultController.getKeys() : null;
 
 	for (const profile of get(profiles)) {
 		if (
 			profile.data !== undefined &&
-			(profile.data?.pubkey === undefined || profile.id === undefined)
+			(profile.data?.pubkey === undefined || profile.id === undefined) &&
+			profile.data.privateKey
 		) {
-			profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
+			profile.data.pubkey = getPublicKey(profile.data.privateKey);
 			profile.id = profile.data.pubkey;
 		}
+		if (profile.data && vaultStatus !== 'uninitialized')
+			profile.data.privateKey = keys?.[profile.id as string];
 		if (profile.id === data?.currentProfile) {
 			userProfile.set(profile);
 			await NostrUtil.prepareRelayPool();
@@ -267,9 +276,18 @@ const saveProfile = async (profile: Profile): Promise<void> => {
 	}
 };
 
+// Private keys live only in the encrypted vault, never in the stored profiles
+const withoutKeys = (list: Profile[]): Profile[] =>
+	list.map((profile) => {
+		if (!profile.data) return profile;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const { privateKey, ...data } = profile.data;
+		return { ...profile, data };
+	});
+
 const saveProfiles = async (): Promise<void> => {
 	try {
-		await browser.set({ profiles: get(profiles) });
+		await browser.set({ profiles: withoutKeys(get(profiles)) });
 	} catch (error) {
 		handleError('Save profiles', error);
 	}
@@ -282,6 +300,7 @@ const deleteProfile = async (profile: Profile, method?: ProfileDeleteMethod): Pr
 
 		profiles.set(filteredProfiles);
 		await saveProfiles();
+		await vaultController.removeKey(profile.id as string);
 
 		// If deleted profile was current, clear it
 		const currentProfile = get(userProfile);
@@ -428,6 +447,7 @@ export {
 	removeRelayFromProfile,
 
 	// Utilities
+	withoutKeys,
 	validateProfile,
 	generateProfileId
 };

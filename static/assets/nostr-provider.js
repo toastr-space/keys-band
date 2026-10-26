@@ -38,7 +38,9 @@ window.nostr = {
   },
 
   _call(type, params) {
-    let id = Math.random().toString().slice(-4);
+    let id = crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2) + Date.now().toString(36);
     return new Promise((resolve, reject) => {
       this._requests[id] = { resolve, reject };
       window.postMessage(

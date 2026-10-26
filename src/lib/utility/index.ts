@@ -9,7 +9,7 @@ import {
 	createProfileMetadata,
 	prepareRelayPool
 } from './nostr-utils';
-import { getWebSiteOrCreate, getNewWebSitePermission } from './profile-utils';
+import { getWebSiteOrCreate } from './profile-utils';
 
 export const BrowserUtil = {
 	...browserController
@@ -24,6 +24,7 @@ export const NostrUtil = {
 	createProfileMetadata,
 	prepareRelayPool
 };
-export const ProfileUtil = { getWebSiteOrCreate, getNewWebSitePermission };
+export const ProfileUtil = { getWebSiteOrCreate };
 
 export * from '$lib/utility/utils';
+export * from '$lib/utility/permissions';

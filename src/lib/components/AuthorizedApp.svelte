@@ -1,19 +1,18 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { timeAgo } from '$lib/utility';
+	import { activeGrants } from '$lib/utility';
 
 	import { createEventDispatcher } from 'svelte';
-	import { timeStop, isAlways, isAccepted } from '$lib/stores/data';
+	import { userProfile } from '$lib/stores/data';
 
 	export let domain = '';
 
 	const dispatcher = createEventDispatcher();
 
-	$: time = $isAlways
-		? $isAccepted
-			? 'Trusted'
-			: 'Never'
-		: timeAgo.format($timeStop).replace('in ', 'Expire in ');
+	$: allowed = activeGrants($userProfile.data?.webSites?.[domain]).filter(
+		(grant) => grant.permission.accept
+	).length;
+	$: time = allowed > 0 ? `${allowed} allowed` : 'Asks each time';
 </script>
 
 <div
@@ -27,10 +26,10 @@
 		</div>
 		<div
 			class="text-xs leading-4 whitespace-nowrap"
-			class:text-pink-600={$isAccepted}
-			class:text-gray-400={!$isAccepted}
-			class:dark:text-teal-400={$isAccepted}
-			class:dark:text-gray-600={!$isAccepted}
+			class:text-pink-600={allowed > 0}
+			class:text-gray-400={allowed === 0}
+			class:dark:text-teal-400={allowed > 0}
+			class:dark:text-gray-600={allowed === 0}
 		>
 			{time}
 		</div>
