@@ -9,7 +9,7 @@ interface Profile {
 	data?: {
 		pubkey?: string;
 		privateKey?: string;
-		webSites?: { [url: string]: WebSite };
+		webSites?: { [origin: string]: WebSite };
 		relays?: Relay[];
 	};
 }
@@ -36,7 +36,8 @@ interface WebSiteHistory {
 
 interface WebSite {
 	auth: boolean;
-	permission?: Authorization;
+	// keyed by capability, e.g. 'getPublicKey', 'signEvent:1', 'nip04.decrypt'
+	permissions?: { [capability: string]: Authorization };
 	history?: WebSiteHistory[];
 }
 
@@ -79,8 +80,8 @@ interface Browser {
 	get: (key: string) => Promise<{ [key: string]: unknown }>;
 	set: (items: { [key: string]: unknown }) => Promise<void>;
 	getCurrentTab: () => Promise<Tabs.Tab>;
-	injectJsInTab: (tab: Tabs.Tab, jsFileName: string) => Promise<void>;
-	injectJsinAllTabs: (jsFileName: string) => Promise<void>;
+	injectJsInTab: (tab: Tabs.Tab, jsFileName: string, world?: 'MAIN') => Promise<void>;
+	injectJsinAllTabs: () => Promise<void>;
 	createWindow: (url: string) => Promise<Windows.Window>;
 	switchIcon: (activeInfo: { tabId: number }) => Promise<void>;
 	sendAuthorizationResponse: (
@@ -113,9 +114,10 @@ interface ProfileController {
 	loadProfiles: () => Promise<Writable<Profile[]>>;
 	loadTheme: () => Promise<void>;
 	removeRelayFromProfile: (relay: Relay) => Promise<void>;
-	saveProfile: (profile: Profile) => Promise<void>;
-	saveProfiles: () => Promise<void>;
-	settingProfile: (profile: Profile) => Promise<void>;
+	refreshProfiles: () => void;
+	mutateProfiles: (change: (stored: Profile[]) => Profile[] | void) => Promise<Profile[]>;
+	updateProfile: (id: string, change: (profile: Profile) => void) => Promise<Profile[]>;
+	migrateStoredProfiles: () => Promise<Profile[]>;
 	switchTheme: (themeName: string) => Promise<void>;
 }
 

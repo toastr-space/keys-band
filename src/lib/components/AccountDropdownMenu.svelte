@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Profile } from '$lib/types/profile';
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { Avatar } from '@skeletonlabs/skeleton';
 	import { tick } from 'svelte';
 
@@ -17,6 +17,16 @@
 	} = $props();
 
 	const load = (profile: Profile) => profileController.loadProfile(profile);
+
+	// the account whose deletion is waiting for confirmation
+	let confirmDelete = $state<string | undefined>(undefined);
+
+	const remove = async (profile: Profile) => {
+		await profileController.deleteProfile(profile);
+		confirmDelete = undefined;
+		await tick();
+		accountDropdownMenuOpen = true;
+	};
 </script>
 
 <div data-popup="accountDropdownMenu">
@@ -31,12 +41,13 @@
 					>
 						<div class="flex-grow min-w-0">
 							<button
+								data-close-menu
 								class="w-full flex items-center gap-0 pl-0 mx-0 py-2 text-left bg-transparent hover:bg-white/60 dark:hover:bg-white/5 text-black dark:text-white transition-colors rounded-md cursor-pointer"
 								on:click={() => load(profile)}
 							>
 								<span class="rounded-full bg-zinc-700 ring-1 ring-zinc-600">
 									<Avatar
-										src={profile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
+										src={profile?.metadata?.picture || 'assets/logo-on-64.png'}
 										width="w-8"
 										rounded="rounded-full"
 									/>
@@ -59,11 +70,7 @@
 							<div class="flex items-center pr-2 max-w-12">
 								<button
 									class="bg-transparent btn-xs hover:bg-white/60 dark:hover:bg-white/10 rounded-lg flex items-center justify-center transition-all delete-btn-visible"
-									on:click={async () => {
-										await profileController.deleteProfile(profile);
-										await tick();
-										accountDropdownMenuOpen = true;
-									}}
+									on:click={() => (confirmDelete = profile.id)}
 									title="Delete profile"
 								>
 									<Icon
@@ -75,12 +82,32 @@
 							</div>
 						{/if}
 					</li>
+					{#if canEdit && confirmDelete === profile.id}
+						<li class="px-3 py-2 text-sm text-black dark:text-white">
+							<p>
+								Delete {profile.name}? Its private key is removed from Keys.Band for good; you can only
+								get it back from your own nsec backup.
+							</p>
+							<div class="flex gap-2 mt-2">
+								<button
+									class="btn btn-sm flex-grow bg-zinc-200 dark:bg-zinc-700 rounded-lg"
+									on:click={() => (confirmDelete = undefined)}
+								>
+									Cancel
+								</button>
+								<button class="btn btn-sm flex-grow bg-red-600 text-white rounded-lg" on:click={() => remove(profile)}>
+									Delete
+								</button>
+							</div>
+						</li>
+					{/if}
 				{/each}
 				{#if canEdit}
 					<li
 						class="justify-center items-stretch self-stretch border-t-[1px] flex w-full mb-2 flex-col py-1 mt-1 px-3   dark:border-t-white/10 border-solid hover:bg-white/80 dark:hover:bg-white/10 transition-colors rounded-lg"
 					> 
 						<button
+							data-close-menu
 							on:click={() => {
 								currentPage.set(Page.AddProfile);
 							}}

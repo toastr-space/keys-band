@@ -3,16 +3,19 @@
 	import { computePosition, autoUpdate, offset, shift, flip, arrow } from '@floating-ui/dom';
 	import { onMount } from 'svelte';
 	import { derived } from 'svelte/store';
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	
 	import { AppPage } from '$lib/components/App';
 	import { profileController } from '$lib/controllers/profile.controller';
 	import { PageSettings, PageHome, PageAddProfile } from '$lib/Pages';
 	import Authorization from '$lib/components/Authorization.svelte';
+	import VaultGate from '$lib/components/VaultGate.svelte';
+	import { vaultController, type VaultStatus } from '$lib/controllers/vault.controller';
 	import AccountDropdownMenu from '$lib/components/AccountDropdownMenu.svelte';
 	import { browserController } from '$lib/controllers';
-	import { urlToDomain, NostrUtil } from '$lib/utility';
-	import { sessionData, userProfile } from '$lib/stores/data';
+	import { NostrUtil, web } from '$lib/utility';
+	import { userProfile } from '$lib/stores/data';
+	import { pendingRequests } from '$lib/controllers/session.controller';
 	
 	import type { PopupParams } from '$lib/types';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
@@ -21,6 +24,7 @@
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 
 	let parameter: PopupParams | null = null;
+	let vaultStatus: VaultStatus = 'locked';
 	let isAuthorizationRequest = false;
 	let accountDropdownMenuOpen = false;
 
@@ -52,41 +56,56 @@
 		
 		await profileController.loadProfiles();
 		const urlParams = new URLSearchParams(document.location.search);
-		const queryParam = urlParams?.get('query');
-		
-		console.log('[Popup] Query param:', queryParam);
-		
-		if (queryParam) {
-			try {
-				const dataId = atob(queryParam);
-				console.log('[Popup] Decoded dataId:', dataId);
-				
-				parameter = (await sessionData.getById(dataId)) || null;
-				console.log('[Popup] Session data retrieved:', parameter);
-				
-				isAuthorizationRequest = !!parameter;
-				console.log('[Popup] Is authorization request:', isAuthorizationRequest);
-				
-				if (isAuthorizationRequest) {
-					document.body.style.minWidth = '383px';
-					document.body.style.minHeight = '460px';
-					document.body.style.width = '100%';
-					document.body.style.height = '100%';
-					document.title = 'Keys.Band - Authorization';
-					console.log('[Popup] Set authorization popup dimensions');
-				}
-			} catch (e) {
-				console.error('[Popup] Error parsing query param:', e);
-				parameter = null;
-				isAuthorizationRequest = false;
+
+		// Nothing else is shown, not even what a site is asking for, until the vault is unlocked
+		vaultStatus = await vaultController.status();
+		if (vaultStatus !== 'unlocked') return;
+		await vaultController.markActivity();
+		// opened by the background only to unlock for a pending request
+		if (urlParams.get('unlock')) {
+			window.close();
+			return;
+		}
+
+		const requestId = urlParams.get('request');
+		if (requestId && /^[0-9a-f-]{36}$/.test(requestId)) {
+			// the background removes the request once it has been answered
+			parameter = await pendingRequests.get(requestId);
+			isAuthorizationRequest = !!parameter;
+			if (isAuthorizationRequest) {
+				document.body.style.minWidth = '383px';
+				document.body.style.minHeight = '460px';
+				document.body.style.width = '100%';
+				document.body.style.height = '100%';
+				document.title = 'Keys.Band - Authorization';
 			}
 		} else {
-			console.log('[Popup] No query param - normal popup mode');
 			isAuthorizationRequest = false;
+			// update names, pictures and relay lists while the user looks at the popup
+			profileController.refreshProfiles();
 		}
 	}
 
-	const promise = handleData();
+	let promise = handleData();
+
+	// Show the lock screen as soon as the vault locks elsewhere ("Lock now" in another window, or
+	// auto-lock), so an open popup or side panel never keeps showing or using an unlocked vault
+	const recheck = async () => {
+		if ((await vaultController.status()) !== vaultStatus) promise = handleData();
+	};
+
+	onMount(() => {
+		const onStorageChanged = (changes: Record<string, unknown>, area: string) => {
+			if (area === 'session' && 'vaultSession' in changes) recheck();
+		};
+		web.storage.onChanged.addListener(onStorageChanged);
+		// auto-lock takes effect the next time the vault is checked
+		const timer = setInterval(recheck, 15_000);
+		return () => {
+			web.storage.onChanged.removeListener(onStorageChanged);
+			clearInterval(timer);
+		};
+	});
 
 	onMount(() => {
 		// Check if we're in a side panel (not a popup)
@@ -106,7 +125,9 @@
 		<ProgressRadial stroke={20} width="w-16 mx-auto" value={undefined} />
 	</div>
 {:then}
-	{#if isAuthorizationRequest && parameter}
+	{#if vaultStatus !== 'unlocked'}
+		<VaultGate status={vaultStatus} onunlocked={() => (promise = handleData())} />
+	{:else if isAuthorizationRequest && parameter}
 		<!-- Authorization popup -->
 		<div class="w-full h-screen flex flex-col p-4 mx-auto items-center dark:bg-[#222222] bg-white overflow-hidden">
 			{#if 'previousProfile' in parameter && parameter.previousProfile.id !== $userProfile.id}
@@ -132,7 +153,7 @@
 						<span class="flex flex-row gap-2 items-center justify-between w-full">
 							<span class="rounded-full bg-zinc-700 ring-1 ring-zinc-600 p-0.5">
 								<Avatar
-									src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
+									src={$userProfile?.metadata?.picture || 'assets/logo-on-64.png'}
 									width="w-10"
 									rounded="rounded-full"
 								/>
@@ -156,8 +177,7 @@
 				<Authorization
 					popupType={parameter.type}
 					eventData={parameter.data}
-					isPopup={true}
-					domain={urlToDomain(parameter.url || '')}
+					domain={parameter.url || ''}
 					oncancel={(event) =>
 						browserController.sendAuthorizationResponse(
 							false,

@@ -39,26 +39,6 @@ const TRANSLATIONS = {
 } as const;
 
 /**
- * Extracts domain from URL
- * @param url - Full URL string
- * @returns Domain name or empty string if invalid
- */
-export function urlToDomain(url: string): string {
-	if (!url || typeof url !== 'string') {
-		return '';
-	}
-	
-	try {
-		const urlObj = new URL(url);
-		return urlObj.hostname;
-	} catch {
-		// Fallback to simple split for relative URLs
-		const parts = url.split('/');
-		return parts.length > 2 ? parts[2] : '';
-	}
-}
-
-/**
  * Gets expiration date based on duration choice
  * @param choice - Duration choice number (0-5)
  * @returns Date object representing expiration time

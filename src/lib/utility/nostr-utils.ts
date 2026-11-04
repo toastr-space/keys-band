@@ -128,7 +128,7 @@ const pushRelays = async (profile: Profile): Promise<void> => {
 		const new_relay = ['r', relay.url];
 		if (relay.access === RelayAccess.READ) new_relay.push('read');
 		else if (relay.access === RelayAccess.WRITE) new_relay.push('write');
-		rlays.push(['r', relay.url]);
+		rlays.push(new_relay);
 	}
 	event['tags'] = rlays;
 	return new Promise((resolve) => {

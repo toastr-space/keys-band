@@ -1,11 +1,8 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { popup } from '@skeletonlabs/skeleton';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
-	import { createEventDispatcher, onMount } from 'svelte';
-
-	import { duration } from '$lib/stores/data';
-	import { profileController } from '$lib/controllers/profile.controller';
+	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher();
 
@@ -42,6 +39,8 @@
 	];
 
 	let durationDropdownMenuOpen = false;
+	// Every prompt starts at "One time"; a previous "Always" must never become the default
+	let selected: Duration = durationOptions[0];
 
 	const durationDropdownMenu: PopupSettings = {
 		event: 'click',
@@ -51,14 +50,10 @@
 	};
 
 	const selectDuration = (selectedDuration: Duration) => {
-		profileController.updateDuration(selectedDuration);
+		selected = selectedDuration;
 		durationDropdownMenuOpen = false;
 		dispatch('durationChange', { value: selectedDuration.value });
 	};
-
-	onMount(() => {
-		selectDuration($duration);
-	});
 </script>
 
 <div
@@ -76,7 +71,7 @@
 			use:popup={durationDropdownMenu}
 			on:click={() => (durationDropdownMenuOpen = !durationDropdownMenuOpen)}
 		>
-			{$duration.name}
+			{selected.name}
 			<Icon
 				icon={durationDropdownMenuOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
 				width={28}
@@ -105,7 +100,7 @@
 									>
 										{option.name}
 									</div>
-									{#if $duration.name === option.name}
+									{#if selected.name === option.name}
 										<Icon icon="mdi:check" width={22} class="text-pink-600 dark:text-teal-400" />
 									{/if}
 								</button>

@@ -1,28 +1,72 @@
 <script lang="ts">
-	import { accept } from '$lib/services/authorization';
-	import { tr } from '$lib/utility/utils';
+	import { onMount } from 'svelte';
+	import { capabilityFor, describeCapability, loginDetails } from '$lib/utility/permissions';
 
 	import Duration from './Duration.svelte';
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let durationChoice = $state(0);
 	let showRawEvent = $state(false);
+	// Confirm ignores clicks until the window has been visible and focused for a moment, so a
+	// click meant for the page underneath (e.g. the second half of a double-click) cannot land on it
+	const ARM_DELAY_MS = 800;
+	let armed = $state(false);
 
 	let {
 		domain,
 		popupType,
 		eventData,
-		isPopup = false,
 		onaccepted,
 		oncancel
 	}: {
 		domain: string;
 		popupType: string;
 		eventData?: any;
-		isPopup?: boolean;
 		onaccepted?: (event: { detail: { duration: number } }) => void;
 		oncancel?: (event: { detail: { duration: number } }) => void;
 	} = $props();
+
+	const capability = $derived(capabilityFor(popupType, eventData));
+	const details = $derived(popupType === 'signEvent' ? loginDetails(eventData) : []);
+	const site = $derived.by(() => {
+		try {
+			const url = new URL(domain);
+			return { scheme: url.protocol, host: url.host, insecure: url.protocol === 'http:' };
+		} catch {
+			return { scheme: '', host: domain, insecure: false };
+		}
+	});
+
+	onMount(() => {
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const arm = () => {
+			clearTimeout(timer);
+			if (document.visibilityState === 'visible' && document.hasFocus())
+				timer = setTimeout(() => (armed = true), ARM_DELAY_MS);
+		};
+		const disarm = () => {
+			clearTimeout(timer);
+			armed = false;
+		};
+		const onVisibility = () => (document.visibilityState === 'visible' ? arm() : disarm());
+		window.addEventListener('focus', arm);
+		window.addEventListener('blur', disarm);
+		document.addEventListener('visibilitychange', onVisibility);
+		arm();
+		return () => {
+			clearTimeout(timer);
+			window.removeEventListener('focus', arm);
+			window.removeEventListener('blur', disarm);
+			document.removeEventListener('visibilitychange', onVisibility);
+		};
+	});
+	const contentPreview = $derived(
+		popupType === 'signEvent' && typeof eventData?.content === 'string'
+			? eventData.content.length > 280
+				? eventData.content.slice(0, 280) + '…'
+				: eventData.content
+			: ''
+	);
 
 	function handleDurationChange(event: { detail: { value: number } }) {
 		durationChoice = event.detail.value;
@@ -118,9 +162,22 @@
 			>
 				AUTHORIZATION
 			</div>
-			<div class="text-black dark:text-white text-2xl font-semibold leading-7 whitespace-nowrap mt-2">
-				{domain}
+			<!-- the whole origin, wrapped, so a look-alike such as primal.net.example.com is never cut short -->
+			<div class="mt-2 break-all leading-7">
+				<span class="text-gray-500 dark:text-gray-400 text-base">{site.scheme}//</span><span
+					class="text-black dark:text-white text-2xl font-semibold">{site.host}</span
+				>
 			</div>
+			{#if site.insecure}
+				<div class="mt-2 text-xs p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+					Not secure (http): anyone on your network can change what this page sends.
+				</div>
+			{/if}
+			{#if site.host.includes('xn--')}
+				<div class="mt-2 text-xs p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+					This address uses international characters; check it is the site you expect.
+				</div>
+			{/if}
 			<div class="text-black dark:text-white text-base leading-5 whitespace-nowrap mt-2">
 				would like to:
 			</div>
@@ -129,13 +186,33 @@
 				<div
 					class="text-black dark:text-white text-base leading-5 self-stretch grow whitespace-nowrap"
 				>
-					{#if isPopup}
-						{tr(popupType)}
-					{:else}
-						{tr('permission')}
-					{/if}
+					{capability ? describeCapability(capability) : popupType}
 				</div>
 			</div>
+			{#if details.length > 0}
+				<div class="mt-3 p-2 rounded-lg bg-black/5 dark:bg-white/5 text-sm text-black dark:text-white break-all">
+					{#each details as line}
+						<div>{line}</div>
+					{/each}
+				</div>
+			{/if}
+			{#if popupType === 'signEvent' && eventData}
+				{#if contentPreview}
+					<div
+						class="mt-3 p-2 rounded-lg bg-black/5 dark:bg-white/5 text-sm text-black dark:text-white whitespace-pre-wrap break-words max-h-[120px] overflow-auto"
+					>
+						{contentPreview}
+					</div>
+				{/if}
+				<div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+					{eventData.tags?.length || 0} tag(s)
+				</div>
+			{/if}
+			{#if capability}
+				<div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+					A remembered choice applies only to “{describeCapability(capability)}” on {domain}.
+				</div>
+			{/if}
 
 			<!-- Raw Event Dropdown -->
 			{#if eventData && (popupType === 'signEvent' || popupType === 'nip04.encrypt' || popupType === 'nip04.decrypt')}
@@ -168,30 +245,14 @@
 		<div class="items-stretch flex w-full gap-3 mt-3">
 			<button
 				class="btn text-black dark:text-white bg-surface-400 font-medium leading-5 whitespace-nowrap justify-center bg-opacity-20 px-8 py-3 rounded-full"
-				onclick={async () => {
-					try {
-						await accept(false, domain, durationChoice);
-						oncancel?.({ detail: { duration: durationChoice } });
-					} catch (error) {
-						console.error('Error in reject:', error);
-					}
-				}}
+				onclick={() => oncancel?.({ detail: { duration: durationChoice } })}
 			>
 				Reject
 			</button>
 			<button
 				class="btn bg-pink-400 dark:bg-teal-400 flex gap-2 px-20 py-3 rounded-full w-full place-content-center max-md:px-5"
-				onclick={async () => {
-					console.log('Confirm button clicked!', { domain, durationChoice });
-					try {
-						const ok = await accept(true, domain, durationChoice);
-						console.log('Accept result:', ok);
-						onaccepted?.({ detail: { duration: durationChoice } });
-						console.log('Callback onaccepted called');
-					} catch (error) {
-						console.error('Error in confirm:', error);
-					}
-				}}
+				disabled={!armed}
+				onclick={() => armed && onaccepted?.({ detail: { duration: durationChoice } })}
 			>
 				<div class="text-black text-base font-medium leading-5">Confirm</div>
 				<Icon icon="mdi:check" width={20} class="text-black" />

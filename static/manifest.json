@@ -3,6 +3,7 @@
 	"name": "Keys.Band",
 	"version": "1.6.0",
 	"description": "Nostr Nip07 implementation",
+	"minimum_chrome_version": "111",
 	"action": {
 		"default_popup": "popup.html"
 	},
@@ -25,13 +26,16 @@
 		{
 			"matches": ["<all_urls>"],
 			"js": ["content.js"],
-			"run_at": "document_end"
+			"run_at": "document_start"
+		},
+		{
+			"matches": ["<all_urls>"],
+			"js": ["assets/nostr-provider.js"],
+			"run_at": "document_start",
+			"world": "MAIN"
 		}
 	],
-	"web_accessible_resources": [
-		{
-			"resources": ["assets/nostr-provider.js"],
-			"matches": ["https://*/*", "<all_urls>"]
-		}
-	]
+	"content_security_policy": {
+		"extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self' wss: ws:; base-uri 'none'; form-action 'none'"
+	}
 }

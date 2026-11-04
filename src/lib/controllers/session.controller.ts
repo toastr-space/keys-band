@@ -1,35 +1,27 @@
-import { browser } from '$lib/stores/data';
+import { web } from '$lib/utility/utils';
 import type { PopupParams } from '$lib/types';
 
-export const sessionController = () => {
-	const loadData = async (): Promise<{ [key: string]: any }> => {
-		const datas = await browser.get('sessionData');
-		if (datas?.sessionData) return datas?.sessionData;
-		return {};
-	};
+// Requests waiting in an approval popup. They are kept in storage.session, which is memory-only
+// and not readable by content scripts, so an event or message text never reaches disk. Each
+// request has its own key, so the background and the popup never overwrite each other.
+const PREFIX = 'pending:';
 
-	const popAtIndex = async (index: string): Promise<any> => {
-		const data = await loadData();
-		const value = data[index];
-		delete data[index];
-		browser.set({ sessionData: data });
-		return value;
-	};
+export const pendingRequests = {
+	set: async (id: string, params: PopupParams) => {
+		await web.storage.session.set({ [PREFIX + id]: params });
+	},
 
-	const add = async (event: PopupParams): Promise<string> => {
-		const randomId = Math.random().toString(36).substring(7);
-		const data = await loadData();
-		data[randomId] = event;
-		browser.set({ sessionData: data });
-		return randomId;
-	};
+	get: async (id: string): Promise<PopupParams | null> =>
+		((await web.storage.session.get(PREFIX + id)) as Record<string, PopupParams>)[PREFIX + id] ??
+		null,
 
-	const remove = async (id: string): Promise<void | any> => popAtIndex(id);
-	const getById = async (id: string): Promise<any> => await popAtIndex(id);
+	remove: async (id: string) => {
+		await web.storage.session.remove(PREFIX + id);
+	},
 
-	return {
-		add,
-		remove,
-		getById
-	};
+	/** Drops requests whose popup belonged to an earlier run of the background. */
+	clear: async () => {
+		const keys = Object.keys(await web.storage.session.get(null)).filter((k) => k.startsWith(PREFIX));
+		if (keys.length > 0) await web.storage.session.remove(keys);
+	}
 };

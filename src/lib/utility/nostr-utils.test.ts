@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkNSEC, getRelaysList } from './nostr-utils';
+import { finishEvent } from 'nostr-tools';
+import { checkNSEC, getRelaysList, pushRelays } from './nostr-utils';
 
 vi.mock('nostr-tools', () => ({
-	SimplePool: vi.fn(),
-	finishEvent: vi.fn(),
+	SimplePool: vi.fn(function () {
+		return { publish: vi.fn(), ensureRelay: vi.fn(), get: vi.fn() };
+	}),
+	finishEvent: vi.fn((event) => event),
 	getPublicKey: vi.fn(),
 	nip19: {
 		decode: vi.fn()
@@ -53,5 +56,29 @@ describe('Nostr Utils - Console Executable Functions', () => {
 		expect(Array.isArray(relays)).toBe(true);
 		expect(relays.length).toBeGreaterThan(0);
 		expect(relays.every(relay => typeof relay === 'string' && relay.startsWith('wss://'))).toBe(true);
+	});
+});
+
+describe('Nostr Utils - pushRelays', () => {
+	it('keeps each relay\'s read/write marker in the published relay list', async () => {
+		await pushRelays({
+			id: 'p',
+			data: {
+				pubkey: 'p',
+				privateKey: 'k',
+				relays: [
+					{ url: 'wss://read.example', access: 0, enabled: true, created_at: new Date() },
+					{ url: 'wss://write.example', access: 1, enabled: true, created_at: new Date() },
+					{ url: 'wss://both.example', access: 2, enabled: true, created_at: new Date() }
+				]
+			}
+		});
+		const event = vi.mocked(finishEvent).mock.calls.at(-1)?.[0];
+		expect(event?.kind).toBe(10002);
+		expect(event?.tags).toEqual([
+			['r', 'wss://read.example', 'read'],
+			['r', 'wss://write.example', 'write'],
+			['r', 'wss://both.example']
+		]);
 	});
 });

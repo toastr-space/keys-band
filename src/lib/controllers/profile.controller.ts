@@ -4,6 +4,7 @@ import { NostrUtil } from '$lib/utility';
 import { getPublicKey } from 'nostr-tools';
 import type { Duration, Profile, ProfileController, Relay } from '$lib/types/profile.d';
 import { duration, profiles, userProfile, theme, browser } from '$lib/stores/data';
+import { vaultController } from './vault.controller';
 
 // Constants
 const DEFAULT_DURATION: Duration = {
@@ -90,9 +91,78 @@ const switchTheme = async (themeName: string): Promise<void> => {
 	}
 };
 
+// PROFILE STORAGE
+//
+// Profiles are written by the background and by every extension page. Each change re-reads the
+// stored list and saves it under a Web Lock that all of them share, so no context can overwrite
+// another's change (a revoked permission, say) with an older copy.
+
+const PROFILES_LOCK = 'keys.band-profiles';
+let localLock: Promise<unknown> = Promise.resolve();
+
+const withProfilesLock = <T>(fn: () => Promise<T>): Promise<T> => {
+	if (typeof navigator !== 'undefined' && navigator.locks)
+		return navigator.locks.request(PROFILES_LOCK, fn) as Promise<T>;
+	// without Web Locks there is only this context to coordinate
+	const run = localLock.then(fn, fn);
+	localLock = run.catch(() => {});
+	return run;
+};
+
+// Private keys live only in the encrypted vault, never in the stored profiles
+const withoutKeys = (list: Profile[]): Profile[] =>
+	list.map((profile) => {
+		if (!profile.data) return profile;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const { privateKey, ...data } = profile.data;
+		return { ...profile, data };
+	});
+
+const readStoredProfiles = async (): Promise<Profile[]> =>
+	((await browser.get('profiles'))?.profiles as Profile[]) || [];
+
+/** Puts saved profiles into this context's stores, keeping the keys it has already loaded. */
+const syncStores = (saved: Profile[]) => {
+	const keys = new Map(get(profiles).map((p) => [p.id, p.data?.privateKey]));
+	const merged = saved.map((p) =>
+		p.data && keys.get(p.id) ? { ...p, data: { ...p.data, privateKey: keys.get(p.id) } } : p
+	);
+	profiles.set(merged);
+	const currentId = get(userProfile)?.id;
+	if (currentId) userProfile.set(merged.find((p) => p.id === currentId) ?? ({} as Profile));
+};
+
+/** Applies `change` to the stored profiles and saves the result. */
+const mutateProfiles = (change: (stored: Profile[]) => Profile[] | void): Promise<Profile[]> =>
+	withProfilesLock(async () => {
+		const stored = await readStoredProfiles();
+		const saved = withoutKeys(change(stored) ?? stored);
+		await browser.set({ profiles: saved });
+		syncStores(saved);
+		return saved;
+	});
+
+/** Applies `change` to one stored profile; does nothing if it no longer exists. */
+const updateProfile = (id: string, change: (profile: Profile) => void): Promise<Profile[]> =>
+	mutateProfiles((stored) => {
+		const profile = stored.find((p) => p.id === id);
+		if (profile) change(profile);
+	});
+
+/** Fills in ids that very old versions did not store; run while their keys are still stored. */
+const migrateStoredProfiles = (): Promise<Profile[]> =>
+	mutateProfiles((stored) => {
+		for (const profile of stored) {
+			if (profile.data?.privateKey && (!profile.id || !profile.data.pubkey)) {
+				profile.data.pubkey = getPublicKey(profile.data.privateKey);
+				profile.id = profile.data.pubkey;
+			}
+		}
+	});
+
 // PROFILE MANAGEMENT
 const validateProfile = (profile: Profile): void => {
-	if (!profile.id || !profile.data?.privateKey) {
+	if (!profile.id || !profile.data?.pubkey) {
 		throw new Error('Invalid profile: missing required fields');
 	}
 	if (!profile.name || profile.name.length < MIN_PROFILE_NAME_LENGTH) {
@@ -143,20 +213,20 @@ const createProfile = async (
 			metadata: metadata || {},
 			data: {
 				pubkey: generateProfileId(privateKey),
-				privateKey,
 				webSites: {},
 				relays: relays || []
 			}
 		};
 
 		validateProfile(profile);
-
-		// Update profiles array
-		const currentProfiles = get(profiles);
-		const updatedProfiles = [...currentProfiles, profile];
-
-		profiles.set(updatedProfiles);
-		await saveProfiles();
+		await vaultController.addKey(profile.id as string, privateKey);
+		await mutateProfiles((stored) => {
+			if (stored.some((p) => p.id === profile.id || p.name === profile.name))
+				throw new Error('Name or key already exists');
+			stored.push(profile);
+		});
+		// load the new key into this context
+		await loadProfiles();
 
 		return true;
 	} catch (error) {
@@ -164,51 +234,13 @@ const createProfile = async (
 	}
 };
 
+/** Makes `profile` the active account. */
 const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefined> => {
 	try {
 		if (profile.data !== undefined) {
-			if (profile.data?.pubkey === undefined || profile.id === undefined) {
-				profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
-				profile.id = profile.data.pubkey;
-			}
 			await browser.set({ currentProfile: profile.id });
 			userProfile.set(profile);
-			if (profile.data?.relays?.length || 1 > 0) {
-				NostrUtil.getRelays(profile.data?.pubkey as string, true).then((event) => {
-					if (event?.tags) {
-						const networkRelays: Relay[] = [];
-						if (event.tags.length > 0)
-							event.tags.forEach((relay) => {
-								networkRelays.push({
-									url: relay[1],
-									enabled: true,
-									created_at: new Date(),
-									access:
-										relay.length > 2 ? (relay[2] === 'read' ? 0 : relay[2] === 'write' ? 1 : 2) : 2
-								});
-							});
-						
-						// Merge network relays with existing local relays, avoiding duplicates
-						if (profile.data) {
-							const existingRelays = profile.data.relays || [];
-							const existingUrls = new Set(existingRelays.map(r => r.url));
-							
-							// Only add network relays that don't already exist locally
-							const newRelays = networkRelays.filter(relay => !existingUrls.has(relay.url));
-							
-							profile.data.relays = [...existingRelays, ...newRelays];
-						}
-						
-						if (profile.id === get(userProfile).id) userProfile.set(profile);
-						saveProfile(profile);
-					}
-				});
-			}
-			NostrUtil.getMetadata(profile.data.pubkey as string).then((metaData) => {
-				profile.metadata = metaData;
-				saveProfile(profile);
-				if (profile.id === get(userProfile).id) userProfile.set(profile);
-			});
+			refreshFromRelays(profile.id as string);
 			return profile;
 		}
 	} catch (err) {
@@ -217,75 +249,80 @@ const loadProfile = async (profile: Profile): Promise<boolean | Profile | undefi
 	}
 };
 
-const loadProfiles = async (): Promise<Writable<Profile[]>> => {
-	const value = await browser.get('profiles');
-	if (value?.profiles) profiles.set((value?.profiles as Profile[]) || []);
-	else {
-		browser.set({ profiles: [] });
-		profiles.set([]);
-	}
-
-	const data = await browser.get('currentProfile');
-
-	for (const profile of get(profiles)) {
-		if (
-			profile.data !== undefined &&
-			(profile.data?.pubkey === undefined || profile.id === undefined)
-		) {
-			profile.data.pubkey = getPublicKey(profile.data.privateKey as string);
-			profile.id = profile.data.pubkey;
-		}
-		if (profile.id === data?.currentProfile) {
-			userProfile.set(profile);
-			await NostrUtil.prepareRelayPool();
-			await loadProfile(profile);
-		}
-
-		NostrUtil.getMetadata(profile?.data?.pubkey as string).then((metaData) => {
-			if ((profile.id as string) !== (data.currentProfile as string)) {
-				profile.metadata = metaData;
-				saveProfile(profile);
+/**
+ * Fetches a profile's metadata and relay list from relays and saves just those fields. Only the
+ * popup calls this; the background never contacts relays for profile data.
+ */
+const refreshFromRelays = async (id: string): Promise<void> => {
+	const pubkey = get(profiles).find((p) => p.id === id)?.data?.pubkey;
+	if (!pubkey) return;
+	try {
+		const [metaData, relayEvent] = await Promise.all([
+			NostrUtil.getMetadata(pubkey),
+			NostrUtil.getRelays(pubkey, true).catch(() => null)
+		]);
+		const networkRelays: Relay[] = (relayEvent?.tags || []).map((relay) => ({
+			url: relay[1],
+			enabled: true,
+			created_at: new Date(),
+			access: relay.length > 2 ? (relay[2] === 'read' ? 0 : relay[2] === 'write' ? 1 : 2) : 2
+		}));
+		await updateProfile(id, (profile) => {
+			if (metaData && Object.keys(metaData).length > 0) profile.metadata = metaData;
+			if (profile.data && networkRelays.length > 0) {
+				// Merge network relays with existing local relays, avoiding duplicates
+				const existingRelays = profile.data.relays || [];
+				const existingUrls = new Set(existingRelays.map((r) => r.url));
+				profile.data.relays = [
+					...existingRelays,
+					...networkRelays.filter((relay) => !existingUrls.has(relay.url))
+				];
 			}
 		});
+	} catch (error) {
+		console.error('Refreshing profile from relays failed:', error);
 	}
+};
+
+const refreshProfiles = () => {
+	for (const profile of get(profiles)) if (profile.id) refreshFromRelays(profile.id);
+};
+
+/** Reads the profiles into this context's stores, with keys while the vault is unlocked. */
+const loadProfiles = async (): Promise<Writable<Profile[]>> => {
+	const stored = await readStoredProfiles();
+	const data = await browser.get('currentProfile');
+	// Keys exist in memory only while the vault is unlocked. Profiles saved before the vault
+	// existed still carry their key until setup moves it into the vault.
+	const vaultStatus = await vaultController.status();
+	const keys = vaultStatus === 'unlocked' ? await vaultController.getKeys() : null;
+
+	for (const profile of stored) {
+		if (
+			profile.data !== undefined &&
+			(profile.data?.pubkey === undefined || profile.id === undefined) &&
+			profile.data.privateKey
+		) {
+			profile.data.pubkey = getPublicKey(profile.data.privateKey);
+			profile.id = profile.data.pubkey;
+		}
+		if (profile.data && vaultStatus !== 'uninitialized')
+			profile.data.privateKey = keys?.[profile.id as string];
+	}
+
+	profiles.set(stored);
+	userProfile.set(stored.find((p) => p.id === data?.currentProfile) ?? ({} as Profile));
 	return profiles;
-};
-
-const saveProfile = async (profile: Profile): Promise<void> => {
-	try {
-		validateProfile(profile);
-
-		const currentProfiles = get(profiles);
-		const updatedProfiles = currentProfiles.map((p) => (p.id === profile.id ? profile : p));
-
-		profiles.set(updatedProfiles);
-		await saveProfiles();
-
-		console.log(`Profile saved: ${profile.name}`);
-	} catch (error) {
-		handleError('Save profile', error);
-	}
-};
-
-const saveProfiles = async (): Promise<void> => {
-	try {
-		await browser.set({ profiles: get(profiles) });
-	} catch (error) {
-		handleError('Save profiles', error);
-	}
 };
 
 const deleteProfile = async (profile: Profile, method?: ProfileDeleteMethod): Promise<void> => {
 	try {
-		const currentProfiles = get(profiles);
-		const filteredProfiles = currentProfiles.filter((p) => p.id !== profile.id);
-
-		profiles.set(filteredProfiles);
-		await saveProfiles();
+		const wasCurrent = get(userProfile).id === profile.id;
+		await mutateProfiles((stored) => stored.filter((p) => p.id !== profile.id));
+		await vaultController.removeKey(profile.id as string);
 
 		// If deleted profile was current, clear it
-		const currentProfile = get(userProfile);
-		if (currentProfile.id === profile.id) {
+		if (wasCurrent) {
 			userProfile.set({} as Profile);
 			await browser.set({ currentProfile: null });
 		}
@@ -293,16 +330,6 @@ const deleteProfile = async (profile: Profile, method?: ProfileDeleteMethod): Pr
 		console.log(`Profile deleted: ${profile.name} (method: ${method})`);
 	} catch (error) {
 		handleError('Delete profile', error);
-	}
-};
-
-const settingProfile = async (profile: Profile): Promise<void> => {
-	try {
-		validateProfile(profile);
-
-		await Promise.all([saveProfile(profile), loadProfile(profile)]);
-	} catch (error) {
-		handleError('Setting profile', error);
 	}
 };
 
@@ -333,29 +360,23 @@ const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 		if (!relayUrl || typeof relayUrl !== 'string') {
 			throw new Error('Invalid relay URL');
 		}
-
-		const sanitizedUrl = sanitizeRelayUrl(relayUrl);
+		const id = get(userProfile).id;
+		if (!id) throw new Error('No account selected');
 
 		const relay: Relay = {
-			url: sanitizedUrl,
+			url: sanitizeRelayUrl(relayUrl),
 			enabled: true,
 			created_at: new Date()
 		};
 
-		userProfile.update((profile) => {
-			if (!profile.data) {
-				profile.data = { relays: [relay], webSites: {}, pubkey: '', privateKey: '' };
-			} else if (!profile.data.relays) {
-				profile.data.relays = [relay];
-			} else {
-				profile.data.relays.push(relay);
-			}
-			return profile;
+		await updateProfile(id, (profile) => {
+			if (!profile.data) profile.data = {};
+			profile.data.relays = [
+				...(profile.data.relays || []).filter((r) => r.url !== relay.url),
+				relay
+			];
 		});
-
-		const updatedProfile = get(userProfile);
-		await saveProfile(updatedProfile);
-		NostrUtil.pushRelays(updatedProfile);
+		NostrUtil.pushRelays(get(userProfile));
 
 		console.log(`Relay added: ${relayUrl}`);
 	} catch (error) {
@@ -365,16 +386,15 @@ const addRelayToProfile = async (relayUrl: string): Promise<void> => {
 
 const removeRelayFromProfile = async (relay: Relay): Promise<void> => {
 	try {
-		userProfile.update((profile) => {
+		const id = get(userProfile).id;
+		if (!id) throw new Error('No account selected');
+
+		await updateProfile(id, (profile) => {
 			if (profile.data?.relays) {
 				profile.data.relays = profile.data.relays.filter((r) => r.url !== relay.url);
 			}
-			return profile;
 		});
-
-		const updatedProfile = get(userProfile);
-		await saveProfile(updatedProfile);
-		NostrUtil.pushRelays(updatedProfile);
+		NostrUtil.pushRelays(get(userProfile));
 
 		console.log(`Relay removed: ${relay.url}`);
 	} catch (error) {
@@ -394,10 +414,11 @@ export const profileController: ProfileController = {
 	createProfile,
 	loadProfile,
 	loadProfiles,
-	saveProfile,
-	saveProfiles,
+	refreshProfiles,
+	mutateProfiles,
+	updateProfile,
+	migrateStoredProfiles,
 	deleteProfile,
-	settingProfile,
 	isExistingProfile,
 
 	// Relay management
@@ -417,10 +438,11 @@ export {
 	createProfile,
 	loadProfile,
 	loadProfiles,
-	saveProfile,
-	saveProfiles,
+	refreshProfiles,
+	mutateProfiles,
+	updateProfile,
+	migrateStoredProfiles,
 	deleteProfile,
-	settingProfile,
 	isExistingProfile,
 
 	// Relay management
@@ -428,6 +450,7 @@ export {
 	removeRelayFromProfile,
 
 	// Utilities
+	withoutKeys,
 	validateProfile,
 	generateProfileId
 };

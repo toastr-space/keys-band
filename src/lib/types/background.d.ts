@@ -36,12 +36,6 @@ interface PopupParams {
 	previousProfile?: Profile;
 }
 
-interface SessionManager {
-	add?: (data: any) => Promise<string>;
-	remove?: (id: string) => Promise<void>;
-	getById: (id: string) => Promise<any>;
-}
-
 interface PermissionDuration {
 	always: boolean;
 	accept: boolean;
@@ -51,13 +45,17 @@ interface PermissionDuration {
 
 interface BackgroundController {
 	updatePermisison: (
-		duration: PermissionDuration,
-		site: WebSite,
-		domain: string,
-		type: string
+		profileId: string,
+		origin: string,
+		capability: string,
+		duration: PermissionDuration
 	) => Promise<void>;
 	getUserProfile: () => Promise<Profile>;
-	addHistory: (info: { acceptance: boolean; type: string }, domain: string) => Promise<void>;
+	addHistory: (
+		profileId: string,
+		origin: string,
+		info: { acceptance: boolean; type: string }
+	) => Promise<void>;
 }
 
 enum AllowKind {
@@ -68,23 +66,12 @@ enum AllowKind {
 	Nothing
 }
 
-interface Responders {
-	[key: string]: {
-		resolve: (value?: any) => void;
-		type: string;
-		data: any;
-		domain: string;
-	};
-}
-
 export {
 	Message,
 	MessageSender,
 	MessageType,
 	PopupParams,
 	AllowKind,
-	SessionManager,
 	BackgroundController,
-	PermissionDuration,
-	Responders
+	PermissionDuration
 };

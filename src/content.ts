@@ -20,27 +20,21 @@ if ((window as any).__KEYS_BAND_CONTENT_LOADED__) {
 
   const web = getBrowser()!;
 
-  if (window.nostr === undefined) {
-    const script = document.createElement("script");
-    script.setAttribute("async", "false");
-    script.setAttribute("type", "text/javascript");
-    script.setAttribute("src", web.runtime.getURL("assets/nostr-provider.js"));
-    document.head.appendChild(script);
-  }
+  // window.nostr itself comes from assets/nostr-provider.js, which the browser runs in the page
+  // ("world": "MAIN" in the manifest). This script only relays its messages.
 
   window.addEventListener("message", (event) => {
     if (event.source !== window || !event.data || event.data.ext !== "keys.band") {
       return;
     }
     if (event.data.response === undefined || event.data.response === null) {
-      const data = event.data || {};
-      data["url"] = event.origin;
+      // Forward only the NIP-07 request fields; anything else the page adds (e.g. prompt,
+      // requestId, response) must never reach the background script
+      const { id, type, params } = event.data;
+      if (typeof id !== 'string' || typeof type !== 'string') return;
+      const data = { id, type, params, ext: 'keys.band' };
 
-
-
-      web.runtime.sendMessage({ ...data }, (response: unknown) => {
-
-
+      web.runtime.sendMessage(data, (response: unknown) => {
         // Check for runtime errors
         if (web.runtime.lastError) {
           console.error('[Content] Runtime error:', web.runtime.lastError);

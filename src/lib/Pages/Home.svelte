@@ -1,60 +1,33 @@
 <script lang="ts">
-	import Authorization from '$lib/components/Authorization.svelte';
+	import SitePermissions from '$lib/components/SitePermissions.svelte';
 	import RecentActivity from '$lib/components/RecentActivity.svelte';
 	import AuthorizedApp from '$lib/components/AuthorizedApp.svelte';
 
 	import { AppPageItem } from '$lib/components/App';
-	import { urlToDomain } from '$lib/utility/utils';
+	import { urlToOrigin } from '$lib/utility/permissions';
 	import { browserController } from '$lib/controllers';
 	import { currentTab } from '$lib/stores/data';
 
-	let showAuthorization = $state(false);
+	let showPermissions = $state(false);
+	const origin = $derived(urlToOrigin($currentTab?.url || ''));
 </script>
 
 <AppPageItem name="home">
 	<div class="w-full h-full flex flex-col">
-		{#if !showAuthorization}
+		{#if !showPermissions}
 			<AuthorizedApp
-				domain={urlToDomain($currentTab?.url || '')}
+				domain={origin}
 				on:showAuthorization={() => {
-					showAuthorization = !showAuthorization;
+					showPermissions = !showPermissions;
 				}}
 			/>
-			<RecentActivity domain={urlToDomain($currentTab?.url || '')} />
+			<RecentActivity domain={origin} />
 		{:else}
-			<Authorization
-				domain={urlToDomain($currentTab?.url || '')}
-				isPopup={false}
-				popupType={'permission'}
-				oncancel={async (event) => {
-					console.log('Cancel callback called in Home');
-					try {
-						await browserController.sendAuthorizationResponse(
-							false,
-							event.detail.duration,
-							$currentTab?.url,
-							undefined
-						);
-						await browserController.switchIcon({ tabId: $currentTab?.id as number });
-					} catch (error) {
-						console.error('Error processing cancel:', error);
-					}
-					showAuthorization = false;
-				}}
-				onaccepted={async (event) => {
-					console.log('Accept callback called in Home');
-					try {
-						await browserController.sendAuthorizationResponse(
-							true,
-							event.detail.duration,
-							$currentTab?.url,
-							undefined
-						);
-						await browserController.switchIcon({ tabId: $currentTab?.id as number });
-					} catch (error) {
-						console.error('Error processing accept:', error);
-					}
-					showAuthorization = false;
+			<SitePermissions
+				{origin}
+				onclose={async () => {
+					showPermissions = false;
+					await browserController.switchIcon({ tabId: $currentTab?.id as number });
 				}}
 			/>
 		{/if}
