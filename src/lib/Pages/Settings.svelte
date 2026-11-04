@@ -11,7 +11,8 @@
 		vaultController,
 		validatePin,
 		LOCK_NEVER,
-		LOCK_ON_BROWSER_CLOSE
+		LOCK_ON_BROWSER_CLOSE,
+		lockWeakness
 	} from '$lib/controllers/vault.controller';
 	import { createBackup } from '$lib/controllers/backup.controller';
 
@@ -43,10 +44,11 @@
 	let savedLockAfter = $state(15);
 	let lockSelection = $state(15);
 	let neverConfirmed = $state(false);
-	let neverPassphrase = $state('');
+	let lockPassphrase = $state('');
 	let hasPin = $state(false);
 	let newPin = $state('');
 	let confirmNewPin = $state('');
+	let pinPassphrase = $state('');
 	let currentPassphrase = $state('');
 	let newPassphrase = $state('');
 	let confirmNewPassphrase = $state('');
@@ -70,26 +72,37 @@
 		location.reload();
 	};
 
-	const saveLockAfter = async (minutes: number) => {
-		await vaultController.setSettings({ lockAfterMinutes: minutes });
+	const saveLockAfter = async (minutes: number, passphrase?: string) => {
+		await vaultController.setSettings({ lockAfterMinutes: minutes }, passphrase);
 		savedLockAfter = lockSelection = minutes;
 	};
 
-	// "Never" is the only weaker choice that needs explicit confirmation; others apply at once
+	// a stricter choice applies at once; a weaker one waits for the passphrase below
+	const isWeaker = (minutes: number) => lockWeakness(minutes) > lockWeakness(savedLockAfter);
+
 	const selectLockAfter = async () => {
 		const minutes = Number(lockSelection);
 		neverConfirmed = false;
-		neverPassphrase = '';
-		if (minutes !== LOCK_NEVER) await saveLockAfter(minutes);
+		lockPassphrase = '';
+		if (!isWeaker(minutes)) await saveLockAfter(minutes);
 	};
 
-	const confirmNever = async () => {
-		if (!neverConfirmed) return securityResult('Tick the box to confirm you understand the risk', true);
-		if (!(await vaultController.verifyPassphrase(neverPassphrase)))
-			return securityResult('Wrong passphrase', true);
-		neverPassphrase = '';
-		await saveLockAfter(LOCK_NEVER);
-		securityResult('Keys.Band will now stay unlocked across browser restarts');
+	const confirmWeakerLock = async () => {
+		const minutes = Number(lockSelection);
+		if (minutes === LOCK_NEVER && !neverConfirmed)
+			return securityResult('Tick the box to confirm you understand the risk', true);
+		try {
+			await saveLockAfter(minutes, lockPassphrase);
+			securityResult(
+				minutes === LOCK_NEVER
+					? 'Keys.Band will now stay unlocked across browser restarts'
+					: 'Lock setting changed'
+			);
+		} catch (error) {
+			securityResult(error instanceof Error ? error.message : 'Failed to change the lock setting', true);
+		} finally {
+			lockPassphrase = '';
+		}
 	};
 
 	const changePin = async () => {
@@ -97,11 +110,12 @@
 			const problem = validatePin(newPin);
 			if (problem) throw new Error(problem);
 			if (newPin !== confirmNewPin) throw new Error('PINs do not match');
-			await vaultController.changePin(newPin);
-			newPin = confirmNewPin = '';
+			await vaultController.changePin(newPin, pinPassphrase);
+			newPin = confirmNewPin = pinPassphrase = '';
 			securityResult(hasPin ? 'PIN changed' : 'PIN set up');
 			hasPin = true;
 		} catch (error) {
+			pinPassphrase = '';
 			securityResult(error instanceof Error ? error.message : 'Failed to change PIN', true);
 		}
 	};
@@ -420,37 +434,51 @@
 			{/each}
 		</select>
 
-		{#if Number(lockSelection) === LOCK_NEVER && savedLockAfter !== LOCK_NEVER}
+		{#if Number(lockSelection) !== savedLockAfter && isWeaker(Number(lockSelection))}
 			<form
-				class="flex flex-col gap-2 p-3 rounded-xl border border-red-500 bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-200 text-sm"
-				on:submit|preventDefault={confirmNever}
+				class="flex flex-col gap-2 p-3 rounded-xl border text-sm {Number(lockSelection) === LOCK_NEVER
+					? 'border-red-500 bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-200'
+					: 'border-amber-500 bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200'}"
+				on:submit|preventDefault={confirmWeakerLock}
 			>
-				<div class="flex items-center gap-2 font-semibold">
-					<Icon icon="mdi:alert" width={20} /> This removes most of the passphrase's protection
-				</div>
-				<p>
-					To stay unlocked after the browser restarts, Keys.Band must save its unlock key
-					<strong>unencrypted</strong> in this browser's profile on disk. Anyone or anything that can
-					read your files could then take your Nostr private key without your passphrase: malware, a
-					copy or backup of your browser profile, or a stolen computer without full-disk encryption.
-					Anyone who uses this browser can also sign as you.
-				</p>
-				<p>Choosing “Lock now” deletes the saved key until you unlock again.</p>
-				<label class="flex items-start gap-2">
-					<input type="checkbox" class="mt-1" bind:checked={neverConfirmed} />
-					<span>I understand that my private key will be readable from this computer's disk.</span>
-				</label>
+				{#if Number(lockSelection) === LOCK_NEVER}
+					<div class="flex items-center gap-2 font-semibold">
+						<Icon icon="mdi:alert" width={20} /> This removes most of the passphrase's protection
+					</div>
+					<p>
+						To stay unlocked after the browser restarts, Keys.Band must save its unlock key
+						<strong>unencrypted</strong> in this browser's profile on disk. Anyone or anything that can
+						read your files could then take your Nostr private key without your passphrase: malware, a
+						copy or backup of your browser profile, or a stolen computer without full-disk encryption.
+						Anyone who uses this browser can also sign as you.
+					</p>
+					<p>Choosing “Lock now” deletes the saved key until you unlock again.</p>
+					<label class="flex items-start gap-2">
+						<input type="checkbox" class="mt-1" bind:checked={neverConfirmed} />
+						<span>I understand that my private key will be readable from this computer's disk.</span>
+					</label>
+				{:else}
+					<p>
+						Keys.Band will stay unlocked for longer while you are away from your computer. Enter your
+						passphrase to confirm.
+					</p>
+				{/if}
 				<input
 					type="password"
 					placeholder="Passphrase to confirm"
 					class="form-input rounded-xl bg-white dark:bg-stone-900 text-black dark:text-white"
-					bind:value={neverPassphrase}
+					bind:value={lockPassphrase}
 				/>
 				<div class="flex gap-2">
 					<button type="button" class="btn flex-grow bg-zinc-200 dark:bg-zinc-700 text-black dark:text-white rounded-xl py-2" on:click={() => (lockSelection = savedLockAfter)}>
-						Keep locking
+						Keep current setting
 					</button>
-					<button type="submit" class="btn flex-grow bg-red-600 text-white rounded-xl py-2">Stay unlocked</button>
+					<button
+						type="submit"
+						class="btn flex-grow rounded-xl py-2 text-white {Number(lockSelection) === LOCK_NEVER ? 'bg-red-600' : 'bg-amber-600'}"
+					>
+						{Number(lockSelection) === LOCK_NEVER ? 'Stay unlocked' : 'Confirm'}
+					</button>
 				</div>
 			</form>
 		{:else if savedLockAfter === LOCK_NEVER}
@@ -482,6 +510,7 @@
 				<input type="password" inputmode="numeric" maxlength="8" placeholder="New PIN" class="form-input rounded-xl w-full bg-white dark:bg-stone-900 text-black dark:text-white" bind:value={newPin} />
 				<input type="password" inputmode="numeric" maxlength="8" placeholder="Again" class="form-input rounded-xl w-full bg-white dark:bg-stone-900 text-black dark:text-white" bind:value={confirmNewPin} />
 			</div>
+			<input type="password" placeholder="Your passphrase" class="form-input rounded-xl bg-white dark:bg-stone-900 text-black dark:text-white" bind:value={pinPassphrase} />
 			<button type="submit" class="btn bg-zinc-200 dark:bg-zinc-700 text-black dark:text-white rounded-xl py-2">
 				{hasPin ? 'Change PIN' : 'Set up PIN'}
 			</button>

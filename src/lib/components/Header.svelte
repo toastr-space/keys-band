@@ -16,6 +16,8 @@
 		event: 'click',
 		target: 'accountDropdownMenu',
 		placement: 'bottom',
+		// only these close the menu, so deleting an account can ask for confirmation first
+		closeQuery: '[data-close-menu]',
 		state: async () => {
 			accountDropdownMenuOpen = false;
 		}

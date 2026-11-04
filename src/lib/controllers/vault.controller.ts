@@ -58,6 +58,11 @@ export interface VaultSettings {
 export const LOCK_ON_BROWSER_CLOSE = 0;
 // stays unlocked across browser restarts: the vault key is saved unencrypted on disk
 export const LOCK_NEVER = -1;
+export const LOCK_CHOICES = [5, 15, 60, 240, LOCK_ON_BROWSER_CLOSE, LOCK_NEVER];
+
+/** Higher is weaker: a longer idle time, then "when the browser closes", then "never". */
+export const lockWeakness = (minutes: number): number =>
+	minutes === LOCK_NEVER ? 3e9 : minutes === LOCK_ON_BROWSER_CLOSE ? 2e9 : minutes;
 
 export const MIN_PASSPHRASE_LENGTH = 12;
 export const MAX_PIN_ATTEMPTS = 5;
@@ -245,7 +250,18 @@ export const createVaultController = (
 
 	const canUnlockWithPin = async (): Promise<boolean> => !!(await session.get()).pinWrap;
 
-	const setSettings = async (settings: VaultSettings) => {
+	/**
+	 * A weaker lock setting needs the passphrase, so someone who finds Keys.Band unlocked cannot make
+	 * it stay that way. A stronger one does not.
+	 */
+	const setSettings = async (settings: VaultSettings, passphrase?: string) => {
+		if (!LOCK_CHOICES.includes(settings.lockAfterMinutes)) throw new Error('Unknown lock setting');
+		const current = await getSettings();
+		if (
+			lockWeakness(settings.lockAfterMinutes) > lockWeakness(current.lockAfterMinutes) &&
+			!(await verifyPassphrase(passphrase ?? ''))
+		)
+			throw new Error('Enter your passphrase to keep Keys.Band unlocked for longer');
 		await web.storage.local.set({ vaultSettings: settings });
 		if (settings.lockAfterMinutes !== LOCK_NEVER) await setPersistedVaultKey(null);
 		else {
@@ -345,10 +361,15 @@ export const createVaultController = (
 
 	const hasPin = async (): Promise<boolean> => !!(await unlocked()).contents.pin;
 
-	/** Sets, changes or (with null) removes the PIN. */
-	const changePin = async (pin: string | null) => {
+	/**
+	 * Sets, changes or (with null) removes the PIN. Setting one needs the passphrase, so someone who
+	 * finds Keys.Band unlocked cannot choose a PIN of their own; removing it makes unlocking stricter.
+	 */
+	const changePin = async (pin: string | null, passphrase?: string) => {
 		const problem = pin === null ? null : validatePin(pin);
 		if (problem) throw new Error(problem);
+		if (pin !== null && !(await verifyPassphrase(passphrase ?? '')))
+			throw new Error('Enter your passphrase to set a PIN');
 		const { vaultKey, stored, contents } = await unlocked();
 		await writeContents(vaultKey, stored.salt, stored.kdf, { ...contents, pin });
 		await session.set({});

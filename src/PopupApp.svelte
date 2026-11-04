@@ -13,7 +13,7 @@
 	import { vaultController, type VaultStatus } from '$lib/controllers/vault.controller';
 	import AccountDropdownMenu from '$lib/components/AccountDropdownMenu.svelte';
 	import { browserController } from '$lib/controllers';
-	import { NostrUtil } from '$lib/utility';
+	import { NostrUtil, web } from '$lib/utility';
 	import { userProfile } from '$lib/stores/data';
 	import { pendingRequests } from '$lib/controllers/session.controller';
 	
@@ -87,6 +87,25 @@
 	}
 
 	let promise = handleData();
+
+	// Show the lock screen as soon as the vault locks elsewhere ("Lock now" in another window, or
+	// auto-lock), so an open popup or side panel never keeps showing or using an unlocked vault
+	const recheck = async () => {
+		if ((await vaultController.status()) !== vaultStatus) promise = handleData();
+	};
+
+	onMount(() => {
+		const onStorageChanged = (changes: Record<string, unknown>, area: string) => {
+			if (area === 'session' && 'vaultSession' in changes) recheck();
+		};
+		web.storage.onChanged.addListener(onStorageChanged);
+		// auto-lock takes effect the next time the vault is checked
+		const timer = setInterval(recheck, 15_000);
+		return () => {
+			web.storage.onChanged.removeListener(onStorageChanged);
+			clearInterval(timer);
+		};
+	});
 
 	onMount(() => {
 		// Check if we're in a side panel (not a popup)

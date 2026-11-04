@@ -88,6 +88,15 @@ describe('restoring a backup', () => {
 		expect(parseBackup({ ...legacyBackup({}), vaultSettings: { lockAfterMinutes: 60 } }).lockAfterMinutes).toBe(60);
 	});
 
+	it('applies a backup lock setting only if it is not weaker than the current one', async () => {
+		expect((await vault.getSettings()).lockAfterMinutes).toBe(15);
+		await applyRestore(parseBackup({ ...legacyBackup({}), vaultSettings: { lockAfterMinutes: 240 } }));
+		expect((await vault.getSettings()).lockAfterMinutes).toBe(15);
+		await applyRestore(parseBackup({ ...legacyBackup({}), vaultSettings: { lockAfterMinutes: 5 } }));
+		expect((await vault.getSettings()).lockAfterMinutes).toBe(5);
+		await vault.setSettings({ lockAfterMinutes: 15 }, PASS);
+	});
+
 	it('replacing the keys needs the current passphrase', async () => {
 		await loadProfiles();
 		const backup = JSON.parse(JSON.stringify(await createBackup()));

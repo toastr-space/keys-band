@@ -15,6 +15,8 @@
 	let fetchingProfile = $state(false);
 	let error = $state(false);
 	let generated = $state(false);
+	// the key "Generate Key" created; a pasted key never gets a new profile published for it
+	let generatedKey = '';
 	let relays: any[] = [];
 	let metadata: any;
 
@@ -66,7 +68,7 @@
 				});
 
 			await profileController.createProfile(name, key, metadata, relays_list);
-			if (generated === true) await NostrUtil.createProfileMetadata(name, key);
+			if (generatedKey && key === generatedKey) await NostrUtil.createProfileMetadata(name, key);
 
 			name = '';
 			key = '';
@@ -74,6 +76,7 @@
 			fetchingProfile = false;
 			error = false;
 			generated = false;
+			generatedKey = '';
 			relays = [];
 			currentPage.set(Page.Home);
 		} catch (err) {
@@ -95,7 +98,7 @@
 		</div>
 		<div class="grid grid-flow-row auto-rows-max gap-2">
 			<div class="col-span-6 mt-4">
-				<InputField placeholder="Enter private key (nSec)" bind:value={key} />
+				<InputField placeholder="Enter private key (nSec)" bind:value={key} secret />
 			</div>
 			{#if fetchingProfile}
 				<div class="col-span-6 flex w-full flex-col items-center gap-2 mt-2">
@@ -125,6 +128,7 @@
 			on:click={() => {
 				let sk = generatePrivateKey();
 				key = nip19.nsecEncode(sk);
+				generatedKey = key;
 				generated = true;
 				name = '';
 				metadata = undefined;

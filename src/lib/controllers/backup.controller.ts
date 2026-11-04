@@ -5,7 +5,7 @@ import type { Authorization, Profile, Relay, WebSite } from '$lib/types';
 import { browser, profiles } from '$lib/stores/data';
 import { activeGrants, urlToOrigin } from '$lib/utility/permissions';
 import { mutateProfiles, withoutKeys } from './profile.controller';
-import { vaultController } from './vault.controller';
+import { vaultController, lockWeakness } from './vault.controller';
 
 /** A full backup. Keys are only included inside the encrypted vault. */
 export const createBackup = async () => ({
@@ -175,6 +175,11 @@ export const applyRestore = async (
 	await mutateProfiles(() => restored);
 	await browser.set({ currentProfile: plan.currentProfile ?? restored[0].id });
 	if (plan.theme) await browser.set({ theme: plan.theme });
-	if (plan.lockAfterMinutes) await vaultController.setSettings({ lockAfterMinutes: plan.lockAfterMinutes });
+	// a lock setting weaker than the current one needs the passphrase, so it is left for Settings
+	if (
+		plan.lockAfterMinutes &&
+		lockWeakness(plan.lockAfterMinutes) <= lockWeakness((await vaultController.getSettings()).lockAfterMinutes)
+	)
+		await vaultController.setSettings({ lockAfterMinutes: plan.lockAfterMinutes });
 	return restored.length;
 };

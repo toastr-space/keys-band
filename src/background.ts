@@ -23,6 +23,17 @@ web.runtime.onInstalled.addListener(() => {
 web.tabs.onActivated.addListener(async (activeInfo) => browserController.switchIcon(activeInfo));
 BrowserUtil.getCurrentTab().then((tab) => browserController.switchIcon({ tabId: tab.id as number }));
 
+// Chrome 140+: storage.local (profiles, permissions, the encrypted vault) is for the extension's own
+// pages only, not content scripts, so a compromised web page process cannot read or change it.
+// Firefox does not support this yet.
+try {
+	(web.storage.local as unknown as { setAccessLevel?: (o: { accessLevel: string }) => Promise<void> })
+		.setAccessLevel?.({ accessLevel: 'TRUSTED_CONTEXTS' })
+		.catch(() => {});
+} catch {
+	// not supported by this browser
+}
+
 // Earlier versions kept approval requests in storage.local, and prompts from an earlier run of the
 // background can no longer be answered
 web.storage.local.remove('sessionData').catch(() => {});

@@ -133,7 +133,7 @@ describe('locking and unlocking', () => {
 	});
 
 	it('can stay unlocked until the browser closes', async () => {
-		await vault.setSettings({ lockAfterMinutes: 0 });
+		await vault.setSettings({ lockAfterMinutes: 0 }, PASS);
 		clock += 1000 * 60_000;
 		expect(await vault.status()).toBe('unlocked');
 	});
@@ -158,7 +158,7 @@ describe('changing keys and secrets', () => {
 	});
 
 	it('changes the PIN', async () => {
-		await vault.changePin('1234');
+		await vault.changePin('1234', PASS);
 		await vault.lock();
 		await expect(vault.unlockWithPin(PIN)).rejects.toThrow('Wrong PIN');
 		await vault.unlockWithPin('1234');
@@ -198,6 +198,33 @@ describe('changing keys and secrets', () => {
 	});
 });
 
+describe('changes that weaken protection need the passphrase', () => {
+	it('setting or changing a PIN needs the passphrase; removing it does not', async () => {
+		await expect(vault.changePin('1111')).rejects.toThrow('passphrase');
+		await expect(vault.changePin('1111', 'not the passphrase')).rejects.toThrow('passphrase');
+		await vault.lock();
+		await vault.unlockWithPin(PIN); // still the old PIN
+		await vault.changePin(null);
+		expect(await vault.hasPin()).toBe(false);
+	});
+
+	it('a weaker lock setting needs the passphrase; a stricter one does not', async () => {
+		await expect(vault.setSettings({ lockAfterMinutes: 60 })).rejects.toThrow('passphrase');
+		await expect(vault.setSettings({ lockAfterMinutes: LOCK_ON_BROWSER_CLOSE })).rejects.toThrow('passphrase');
+		await expect(vault.setSettings({ lockAfterMinutes: LOCK_NEVER }, 'wrong')).rejects.toThrow('passphrase');
+		expect(local.persistedVaultKey ?? null).toBeNull();
+
+		await vault.setSettings({ lockAfterMinutes: 60 }, PASS);
+		await vault.setSettings({ lockAfterMinutes: 5 });
+		expect((await vault.getSettings()).lockAfterMinutes).toBe(5);
+	});
+
+	it('rejects unknown lock settings', async () => {
+		await expect(vault.setSettings({ lockAfterMinutes: 7 }, PASS)).rejects.toThrow('Unknown lock setting');
+		await expect(vault.setSettings({ lockAfterMinutes: NaN }, PASS)).rejects.toThrow('Unknown lock setting');
+	});
+});
+
 describe('optional PIN', () => {
 	it('works without a PIN: only the passphrase unlocks', async () => {
 		clear(local);
@@ -222,7 +249,7 @@ describe('optional PIN', () => {
 		expect(await vault.canUnlockWithPin()).toBe(false);
 
 		await vault.unlockWithPassphrase(PASS);
-		await vault.changePin('2468');
+		await vault.changePin('2468', PASS);
 		await vault.lock();
 		await vault.unlockWithPin('2468');
 	});
@@ -236,7 +263,7 @@ describe('stay unlocked across restarts (LOCK_NEVER)', () => {
 	});
 
 	it('survives a browser restart, with the PIN still working afterwards', async () => {
-		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER });
+		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER }, PASS);
 		expect(local.persistedVaultKey).toMatch(/^[0-9a-f]{64}$/);
 		restartBrowser();
 		clock += 30 * 24 * 60 * 60_000;
@@ -246,7 +273,7 @@ describe('stay unlocked across restarts (LOCK_NEVER)', () => {
 	});
 
 	it('locking deletes the saved key until the next unlock', async () => {
-		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER });
+		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER }, PASS);
 		await vault.lock();
 		expect(local.persistedVaultKey).toBeNull();
 		restartBrowser();
@@ -260,7 +287,7 @@ describe('stay unlocked across restarts (LOCK_NEVER)', () => {
 	});
 
 	it('choosing any other option deletes the saved key', async () => {
-		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER });
+		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER }, PASS);
 		await vault.setSettings({ lockAfterMinutes: LOCK_ON_BROWSER_CLOSE });
 		expect(local.persistedVaultKey).toBeNull();
 		restartBrowser();
@@ -268,7 +295,7 @@ describe('stay unlocked across restarts (LOCK_NEVER)', () => {
 	});
 
 	it('ignores a saved key when the setting is off or the key is wrong', async () => {
-		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER });
+		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER }, PASS);
 		const saved = local.persistedVaultKey;
 		await vault.setSettings({ lockAfterMinutes: 15 });
 		local.persistedVaultKey = saved;
@@ -276,7 +303,7 @@ describe('stay unlocked across restarts (LOCK_NEVER)', () => {
 		expect(await vault.status()).toBe('locked');
 
 		await vault.unlockWithPassphrase(PASS);
-		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER });
+		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER }, PASS);
 		local.persistedVaultKey = 'f'.repeat(64);
 		restartBrowser();
 		expect(await vault.status()).toBe('locked');
@@ -284,7 +311,7 @@ describe('stay unlocked across restarts (LOCK_NEVER)', () => {
 	});
 
 	it('a restored backup never stays unlocked from the old key', async () => {
-		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER });
+		await vault.setSettings({ lockAfterMinutes: LOCK_NEVER }, PASS);
 		await vault.importEncrypted((await vault.exportEncrypted()) as any);
 		expect(local.persistedVaultKey).toBeNull();
 		expect(await vault.status()).toBe('locked');

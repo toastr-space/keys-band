@@ -4,13 +4,14 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import VaultGate from '$lib/components/VaultGate.svelte';
 	import { profileController } from '$lib/controllers/profile.controller';
-	import { vaultController, type VaultStatus } from '$lib/controllers/vault.controller';
+	import { vaultController, lockWeakness, type VaultStatus } from '$lib/controllers/vault.controller';
 	import { applyRestore, parseBackup, type RestorePlan } from '$lib/controllers/backup.controller';
 	import { profiles } from '$lib/stores/data';
 
 	let loading = $state(true);
 	let vaultStatus = $state<VaultStatus>('locked');
 	let canRestore = $state(false);
+	let currentLock = $state(15);
 	let plan = $state<RestorePlan | null>(null);
 	let includePermissions = $state(false);
 	let currentPassphrase = $state('');
@@ -25,6 +26,7 @@
 		await profileController.loadTheme();
 		await profileController.loadProfiles();
 		vaultStatus = await vaultController.status();
+		currentLock = (await vaultController.getSettings()).lockAfterMinutes;
 		canRestore = vaultStatus === 'unlocked' || (vaultStatus === 'uninitialized' && get(profiles).length === 0);
 		loading = false;
 	};
@@ -145,10 +147,10 @@
 						</label>
 					{/if}
 
-					{#if plan.ignoredLockSetting}
+					{#if plan.ignoredLockSetting || (plan.lockAfterMinutes && lockWeakness(plan.lockAfterMinutes) > lockWeakness(currentLock))}
 						<p class="text-xs text-gray-500 dark:text-gray-400">
-							The backup's lock setting is weaker than the default and is not restored. You can choose it
-							in Settings.
+							The backup's lock setting keeps Keys.Band unlocked longer than your current one, so it is
+							not restored. You can change it in Settings.
 						</p>
 					{/if}
 

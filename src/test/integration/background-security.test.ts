@@ -35,9 +35,12 @@ const h = vi.hoisted(() => {
 		state.windows.push(win);
 		return { id: win.id };
 	});
-	return { state, closeWindow, windowsCreate };
+	// plain record: the global test setup clears vi.fn call history before every test
+	const accessLevels: unknown[] = [];
+	const setAccessLevel = async (options: unknown) => void accessLevels.push(options);
+	return { state, closeWindow, windowsCreate, setAccessLevel, accessLevels };
 });
-const { state, closeWindow, windowsCreate } = h;
+const { state, closeWindow, windowsCreate, accessLevels } = h;
 
 vi.mock('webextension-polyfill', () => {
 	const ev = () => ({ addListener: vi.fn() });
@@ -77,7 +80,7 @@ vi.mock('webextension-polyfill', () => {
 				}
 			},
 			storage: {
-				local: area(h.state.store, 'local'),
+				local: { ...area(h.state.store, 'local'), setAccessLevel: h.setAccessLevel },
 				session: area(h.state.session, 'session'),
 				onChanged: {
 					addListener: (fn: any) => h.state.storageListeners.add(fn),
@@ -193,6 +196,12 @@ beforeAll(async () => {
 	await import('../../background');
 	vault = (await import('$lib/controllers/vault.controller')).vaultController;
 	profileController = await import('$lib/controllers/profile.controller');
+});
+
+describe('storage access', () => {
+	it('keeps storage.local away from content scripts where the browser supports it', () => {
+		expect(accessLevels).toEqual([{ accessLevel: 'TRUSTED_CONTEXTS' }]);
+	});
 });
 
 describe('encrypted key storage (review 1, finding 1)', () => {
