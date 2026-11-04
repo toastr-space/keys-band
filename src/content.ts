@@ -20,13 +20,8 @@ if ((window as any).__KEYS_BAND_CONTENT_LOADED__) {
 
   const web = getBrowser()!;
 
-  if (window.nostr === undefined) {
-    const script = document.createElement("script");
-    script.setAttribute("async", "false");
-    script.setAttribute("type", "text/javascript");
-    script.setAttribute("src", web.runtime.getURL("assets/nostr-provider.js"));
-    document.head.appendChild(script);
-  }
+  // window.nostr itself comes from assets/nostr-provider.js, which the browser runs in the page
+  // ("world": "MAIN" in the manifest). This script only relays its messages.
 
   window.addEventListener("message", (event) => {
     if (event.source !== window || !event.data || event.data.ext !== "keys.band") {

@@ -1,6 +1,5 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
-	import { get } from 'svelte/store';
+	import Icon from '$lib/components/Icon.svelte';
 
 	import { userProfile } from '$lib/stores/data';
 	import { profileController } from '$lib/controllers/profile.controller';
@@ -11,14 +10,14 @@
 	const grants = $derived(activeGrants($userProfile.data?.webSites?.[origin]));
 
 	async function revoke(capability?: string) {
-		// reload first so grants the background saved while this popup was open are not overwritten
-		await profileController.loadProfiles();
-		const user = get(userProfile);
-		if (!user.data) return;
-		const site = ProfileUtil.getWebSiteOrCreate(origin, user);
-		user.data.webSites = { ...(user.data.webSites || {}), [origin]: revokePermission(site, capability) };
-		await profileController.saveProfile(user);
-		userProfile.set(user);
+		const id = $userProfile.id;
+		if (!id) return;
+		// applied to the stored profile under the shared lock, so no other save can undo it
+		await profileController.updateProfile(id, (profile) => {
+			if (!profile.data) return;
+			const site = ProfileUtil.getWebSiteOrCreate(origin, profile);
+			profile.data.webSites = { ...(profile.data.webSites || {}), [origin]: revokePermission(site, capability) };
+		});
 	}
 </script>
 
@@ -33,7 +32,7 @@
 			<Icon icon="mdi:close" width={22} />
 		</button>
 	</div>
-	<div class="text-black dark:text-white text-lg font-semibold leading-7 truncate mt-2">
+	<div class="text-black dark:text-white text-lg font-semibold leading-7 break-all mt-2">
 		{origin || 'No website'}
 	</div>
 

@@ -21,14 +21,20 @@
 		{
 			"matches": ["<all_urls>"],
 			"js": ["content.js"],
-			"run_at": "document_end"
+			"run_at": "document_start"
+		},
+		{
+			"matches": ["<all_urls>"],
+			"js": ["assets/nostr-provider.js"],
+			"run_at": "document_start",
+			"world": "MAIN"
 		}
 	],
-	"web_accessible_resources": ["assets/nostr-provider.js"],
+	"content_security_policy": "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self' wss: ws:; base-uri 'none'; form-action 'none'",
 	"browser_specific_settings": {
 		"gecko": {
 			"id": "keys-band@toastr.space",
-			"strict_min_version": "115.0"
+			"strict_min_version": "128.0"
 		}
 	}
 }

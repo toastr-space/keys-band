@@ -27,14 +27,18 @@ const createBrowserController = (): Browser => {
 		const tabs = await web.tabs.query({ active: true, currentWindow: true });
 		return tabs[0];
 	};
-	const injectJsInTab = async (tab: Tabs.Tab, jsFileName: string): Promise<void> => {
+	const injectJsInTab = async (tab: Tabs.Tab, jsFileName: string, world?: 'MAIN'): Promise<void> => {
 		try {
 			// Use scripting API for Chrome (MV3) or tabs.executeScript for Firefox (MV2)
 			if (web.scripting) {
 				await web.scripting.executeScript({
 					target: { tabId: tab.id as number },
-					files: [jsFileName]
-				});
+					files: [jsFileName],
+					...(world ? { world } : {})
+				} as Parameters<typeof web.scripting.executeScript>[0]);
+			} else if (world) {
+				// tabs.executeScript cannot reach the page itself; such tabs get it on their next load
+				return;
 			} else if (web.tabs.executeScript) {
 				await web.tabs.executeScript(tab.id as number, {
 					file: jsFileName
@@ -67,7 +71,8 @@ const createBrowserController = (): Browser => {
 			return Promise.reject(e);
 		}
 	};
-	const injectJsinAllTabs = async (jsFileName: string): Promise<void> => {
+	/** Adds the content script, and the provider where possible, to tabs opened before install. */
+	const injectJsinAllTabs = async (): Promise<void> => {
 		const tabs = await web.tabs.query({});
 		for (const tab of tabs) {
 			try {
@@ -81,7 +86,8 @@ const createBrowserController = (): Browser => {
 					tab.url.startsWith('file://') ||
 					tab.url === 'about:blank')
 					continue;
-				await injectJsInTab(tab, jsFileName);
+				await injectJsInTab(tab, 'content.js');
+				await injectJsInTab(tab, 'assets/nostr-provider.js', 'MAIN');
 			} catch (e) {
 				console.log('Error injecting Nostr Provider', e);
 			}

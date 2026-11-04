@@ -4,7 +4,7 @@
 
 	import type { WebSiteHistory } from '$lib/types';
 
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	export let domain: string = '';
 

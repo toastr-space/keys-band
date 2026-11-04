@@ -1,65 +1,74 @@
-import type { Message, MessageSender, Responders } from '$lib/types';
-import type { Profile, WebSite } from '$lib/types/profile';
-import type { PermissionDuration } from '$lib/types/background';
+import type { Message, MessageSender, PopupParams } from '$lib/types';
+import type { Profile } from '$lib/types/profile';
 
 import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
 import { web, BrowserUtil, ProfileUtil, urlToOrigin, capabilityFor, getAllowKind } from '$lib/utility';
-import { userProfile } from '$lib/stores/data';
+import { profiles } from '$lib/stores/data';
 import { AllowKind } from '$lib/types';
 import { get } from 'svelte/store';
-import { profileController } from '$lib/controllers/profile.controller';
-import { sessionController } from '$lib/controllers/session.controller';
+import { pendingRequests } from '$lib/controllers/session.controller';
 import { backgroundController } from '$lib/controllers/background.controller';
 import { browserController } from '$lib/controllers';
 import { vaultController } from '$lib/controllers/vault.controller';
 
 const background = backgroundController();
-const session = sessionController();
-
-
 
 web.runtime.onInstalled.addListener(() => {
-	BrowserUtil.injectJsinAllTabs('content.js');
+	BrowserUtil.injectJsinAllTabs();
 	// Configure side panel behavior - allow opening via action click when popup is not shown
 	if (typeof chrome !== 'undefined' && chrome.sidePanel) {
 		chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
 	}
 });
-web.runtime.onStartup.addListener(() => BrowserUtil.injectJsinAllTabs('content.js'));
 web.tabs.onActivated.addListener(async (activeInfo) => browserController.switchIcon(activeInfo));
 BrowserUtil.getCurrentTab().then((tab) => browserController.switchIcon({ tabId: tab.id as number }));
 
-const responders: Responders = {};
-const requestQueue: any[] = [];
+// Earlier versions kept approval requests in storage.local, and prompts from an earlier run of the
+// background can no longer be answered
+web.storage.local.remove('sessionData').catch(() => {});
+pendingRequests.clear().catch(() => {});
 
-const hasWebSiteAlreadyLogged = async (origin: string): Promise<Profile> => {
-	const allUsers = get(await profileController.loadProfiles()) as Profile[];
+// At most this many requests per site, and in total, wait for an approval window
+const MAX_QUEUED_PER_ORIGIN = 5;
+const MAX_QUEUED = 50;
+
+interface Pending {
+	request: Message;
+	capability: string;
+	origin: string;
+}
+
+interface Queued extends Pending {
+	resolve: (response: any) => void;
+}
+
+interface Decision {
+	decision: 'allow' | 'reject' | 'ask';
+	user: Profile;
+	previousProfile: Profile;
+}
+
+/** The account that last gave this site its public key, or the current account. */
+const lastLoggedInProfile = (origin: string, current: Profile): Profile => {
 	let lastDate = new Date(0);
-	let currentProfile: Profile | undefined;
-	for (const user of allUsers) {
-		const webSites = user.data?.webSites as { [key: string]: WebSite };
-		if (webSites !== undefined && origin in webSites) {
-			const history = webSites[origin].history || [];
-			for (const h of history) {
-				if (h.type === 'getPublicKey') {
-					const date = new Date(h.created_at);
-					if (date > lastDate) {
-						currentProfile = user as Profile;
-						lastDate = date;
-					}
-				}
+	let found: Profile | undefined;
+	for (const user of get(profiles)) {
+		for (const h of user.data?.webSites?.[origin]?.history || []) {
+			const date = new Date(h.created_at);
+			if (h.type === 'getPublicKey' && date > lastDate) {
+				found = user;
+				lastDate = date;
 			}
 		}
 	}
-
-	return currentProfile || (await background.getUserProfile());
+	return found || current;
 };
 
-const makeResponse = async (type: string, data: any) => {
+/** Answers a request with `user`'s key: the account the decision was made for. */
+const makeResponse = async (type: string, data: any, user: Profile) => {
 	await vaultController.markActivity();
-	await profileController.loadProfiles();
-	const user = get(userProfile);
-	const privateKey: string = user.data?.privateKey || '';
+	const privateKey = user.data?.privateKey;
+	if (!privateKey) throw new Error('No private key available');
 	let res: any;
 
 	switch (type) {
@@ -124,6 +133,13 @@ const REJECTED = {
 	}
 };
 
+const TOO_MANY = {
+	error: {
+		message: 'Too many pending requests',
+		stack: 'Too many pending requests'
+	}
+};
+
 const buildResponseMessage = (pageRequestId: string, type: string, response: any): any => {
 	return {
 		id: pageRequestId,
@@ -137,60 +153,33 @@ const buildResponseMessage = (pageRequestId: string, type: string, response: any
 const requestData = (message: Message): any =>
 	message.type === 'signEvent' ? message.params?.event : message.params;
 
-async function manageResult(message: Message, sender: MessageSender) {
-	const requestId = message.requestId as string;
-	const responderData = responders[requestId];
-	// Only the popup window opened for this exact request may answer it
-	if (
-		!responderData ||
-		responderData.windowId === undefined ||
-		sender.tab?.windowId !== responderData.windowId
-	)
-		return;
-	delete responders[requestId];
+/** Applies a remembered decision, if there is one, and records it in the site's history. */
+const decide = async ({ request, capability, origin }: Pending): Promise<Decision> => {
+	const user = await background.getUserProfile();
+	const previousProfile = lastLoggedInProfile(origin, user);
+	if (!user.id || !user.data?.privateKey) return { decision: 'reject', user, previousProfile };
 
-	const response = message.response;
-	const accepted = response?.error === false && response?.permission?.accept === true;
-	const { pageRequestId, type, origin, capability, windowId } = responderData;
+	let access: AllowKind = getAllowKind(ProfileUtil.getWebSiteOrCreate(origin, user), capability);
+	// a site that knows another account must ask before it learns this one
+	if (request.type === 'getPublicKey' && previousProfile.id !== user.id) access = AllowKind.Nothing;
 
-	try {
-		if (response?.permission) {
-			const duration: PermissionDuration = {
-				always: response.permission.always === true,
-				accept: accepted,
-				reject: !accepted,
-				duration: new Date(response.permission.duration)
-			};
-			await background.updatePermisison(duration, origin, capability);
-		}
-
-		responderData.resolve(
-			buildResponseMessage(
-				pageRequestId,
-				type,
-				accepted ? await makeResponse(type, responderData.data) : REJECTED
-			)
-		);
-	} catch (e) {
-		console.error(e);
-		responderData.resolve(buildResponseMessage(pageRequestId, type, REJECTED));
+	if (access === AllowKind.AlWaysAllow || access === AllowKind.AllowForSession) {
+		await background.addHistory(user.id, origin, { acceptance: true, type: capability });
+		return { decision: 'allow', user, previousProfile };
 	}
-
-	web.windows.remove(windowId).catch(() => {
-		// Window was already closed, nothing to do
-	});
-}
-
-// Closing the authorization popup without answering rejects the request instead of leaving it hanging
-web.windows.onRemoved.addListener((windowId: number) => {
-	for (const [requestId, responderData] of Object.entries(responders)) {
-		if (responderData.windowId !== windowId) continue;
-		delete responders[requestId];
-		responderData.resolve(
-			buildResponseMessage(responderData.pageRequestId, responderData.type, REJECTED)
-		);
+	if (access === AllowKind.AlwaysReject || access === AllowKind.RejectForSession) {
+		await background.addHistory(user.id, origin, { acceptance: false, type: capability });
+		return { decision: 'reject', user, previousProfile };
 	}
-});
+	return { decision: 'ask', user, previousProfile };
+};
+
+const respond = async ({ request }: Pending, { decision, user }: Decision) =>
+	buildResponseMessage(
+		request.id,
+		request.type,
+		decision === 'allow' ? await makeResponse(request.type, requestData(request), user) : REJECTED
+	);
 
 // While locked (or before the vault is set up) requests wait for the user to unlock in a popup.
 // Concurrent requests share one unlock popup.
@@ -224,133 +213,131 @@ const ensureUnlocked = async (): Promise<boolean> => {
 	return unlockWaiter;
 };
 
-const pushHistory = async (yes: boolean, origin: string, capability: string) => {
-	await background.addHistory(
-		{
-			acceptance: yes,
-			type: capability
-		},
-		origin
-	);
+// Requests that need an answer from the user wait here and are shown one approval window at a time
+const queue: Queued[] = [];
+let active: (Queued & { requestId: string; windowId?: number; answered?: boolean }) | null = null;
+let showing = false;
+
+const askUser = (pending: Pending): Promise<any> => {
+	const fromOrigin =
+		queue.filter((q) => q.origin === pending.origin).length + (active?.origin === pending.origin ? 1 : 0);
+	if (fromOrigin >= MAX_QUEUED_PER_ORIGIN || queue.length >= MAX_QUEUED)
+		return Promise.resolve(buildResponseMessage(pending.request.id, pending.request.type, TOO_MANY));
+	return new Promise((resolve) => {
+		queue.push({ ...pending, resolve });
+		showNextPrompt();
+	});
 };
 
-/*eslint no-async-promise-executor: 0*/
-async function manageRequest(
-	message: Message,
-	capability: string,
-	resolver: any = null,
-	next: boolean = false
-): Promise<any> {
-	return new Promise(async (res) => {
-		const resolve: Promise<any> | any = resolver || res;
-
-		try {
-			let user = await background.getUserProfile();
-			const origin = message.url as string;
-
-			if (next === false) {
-				// Check if we already have a request for this origin+capability queued OR pending via popup
-				const existingInQueue = requestQueue.find(
-					(item) => item.message.url === origin && item.capability === capability
-				);
-				const existingPending = Object.values(responders).some(
-					(r) => r.origin === origin && r.capability === capability
-				);
-				if (existingInQueue || existingPending) {
-					return;
-				}
-				requestQueue.push({ message, capability, resolver: resolve });
-				return;
-			}
-
-			if (!user.id || !(await ensureUnlocked())) {
-				return resolve(buildResponseMessage(message.id, message.type, REJECTED));
-			}
-			// reload so the profile carries its key from the now unlocked vault
-			user = await background.getUserProfile();
-			if (!user.data?.privateKey) {
-				return resolve(buildResponseMessage(message.id, message.type, REJECTED));
-			}
-
-			const previousProfile = await hasWebSiteAlreadyLogged(origin);
-
-			const site = ProfileUtil.getWebSiteOrCreate(origin, user);
-			let access: AllowKind = getAllowKind(site, capability);
-
-			if (message.type === 'getPublicKey')
-				if (previousProfile.id !== user.id) access = AllowKind.Nothing;
-
-			switch (access) {
-				case AllowKind.AlWaysAllow:
-				case AllowKind.AllowForSession:
-					await pushHistory(true, origin, capability);
-					return resolve(
-						buildResponseMessage(
-							message.id,
-							message.type,
-							await makeResponse(message.type, requestData(message))
-						)
-					);
-				case AllowKind.AlwaysReject:
-				case AllowKind.RejectForSession:
-					await pushHistory(false, origin, capability);
-					return resolve(buildResponseMessage(message.id, message.type, REJECTED));
-				case AllowKind.Nothing:
-					break;
-			}
-
+/** Opens the approval window for the next queued request, unless one is already open. */
+const showNextPrompt = async () => {
+	if (showing) return;
+	showing = true;
+	try {
+		while (!active && queue.length > 0) {
+			const next = queue.shift() as Queued;
 			const requestId = crypto.randomUUID();
-			responders[requestId] = {
-				resolve,
-				origin,
-				capability,
-				pageRequestId: message.id,
-				type: message.type,
-				data: requestData(message)
-			};
+			// counted as this site's open prompt from here on, so the queue limit stays exact
+			active = { ...next, requestId };
+			try {
+				// an earlier answer may cover this request now ("Always"), or the vault may have locked
+				const result = (await ensureUnlocked()) ? await decide(next) : null;
+				if (!result || result.decision !== 'ask') {
+					const response = result
+						? await respond(next, result)
+						: buildResponseMessage(next.request.id, next.request.type, REJECTED);
+					active = null;
+					next.resolve(response);
+					continue;
+				}
 
-			const dataId = await session.add({
-				action: 'login',
-				url: origin,
-				requestId,
-				type: message.type,
-				data: requestData(message) || {},
-				// only what the popup displays; never copy the previous profile's keys
-				previousProfile: { id: previousProfile.id, name: previousProfile.name }
-			});
-
-			const popup = await BrowserUtil.createWindow('popup.html?query=' + btoa(dataId));
-			if (responders[requestId]) responders[requestId].windowId = popup.id;
-		} catch (error) {
-			console.error('[Background] Error in manageRequest:', error);
-			throw error;
+				const params: PopupParams = {
+					url: next.origin,
+					requestId,
+					type: next.request.type,
+					data: requestData(next.request) || {},
+					// only what the popup displays; never copy the previous profile's keys
+					previousProfile: { id: result.previousProfile.id, name: result.previousProfile.name }
+				};
+				await pendingRequests.set(requestId, params);
+				const popup = await BrowserUtil.createWindow('popup.html?request=' + requestId);
+				if (active?.requestId === requestId) active.windowId = popup.id;
+			} catch (error) {
+				console.error('[Background] Could not show the approval window:', error);
+				if (active?.requestId === requestId) active = null;
+				pendingRequests.remove(requestId).catch(() => {});
+				next.resolve(buildResponseMessage(next.request.id, next.request.type, REJECTED));
+			}
 		}
-	});
+	} finally {
+		showing = false;
+	}
+};
+
+/** Ends the open approval with `response` and moves on to the next request. */
+const finishPrompt = (response: any, rejected: boolean) => {
+	const current = active;
+	if (!current) return;
+	active = null;
+	current.resolve(buildResponseMessage(current.request.id, current.request.type, response));
+	// a "no" also answers this site's queued requests for the same permission
+	if (rejected) {
+		for (const queued of queue.filter((q) => q.origin === current.origin && q.capability === current.capability)) {
+			queue.splice(queue.indexOf(queued), 1);
+			queued.resolve(buildResponseMessage(queued.request.id, queued.request.type, REJECTED));
+		}
+	}
+	pendingRequests.remove(current.requestId).catch(() => {});
+	if (current.windowId !== undefined) web.windows.remove(current.windowId).catch(() => {});
+	showNextPrompt();
+};
+
+async function manageResult(message: Message, sender: MessageSender) {
+	const current = active;
+	// Only the popup window opened for this exact request may answer it
+	if (
+		!current ||
+		current.answered ||
+		message.requestId !== current.requestId ||
+		current.windowId === undefined ||
+		sender.tab?.windowId !== current.windowId
+	)
+		return;
+	current.answered = true;
+
+	const response = message.response;
+	const accepted = response?.error === false && response?.permission?.accept === true;
+	let result: any = REJECTED;
+	try {
+		// the account selected in the popup when the user answered
+		const user = await background.getUserProfile();
+		if (response?.permission && user.id) {
+			await background.updatePermisison(user.id, current.origin, current.capability, {
+				always: response.permission.always === true,
+				accept: accepted,
+				reject: !accepted,
+				duration: new Date(response.permission.duration)
+			});
+		}
+		if (accepted) result = await makeResponse(current.request.type, requestData(current.request), user);
+	} catch (e) {
+		console.error(e);
+		result = REJECTED;
+	}
+	finishPrompt(result, !accepted);
 }
 
-const proceedNextRequest = async () => {
-	const allWindows = await web.windows.getAll();
-	const popupWindows = allWindows.filter((win) => win.type === 'popup');
+// Closing the approval window without answering rejects the request
+web.windows.onRemoved.addListener((windowId: number) => {
+	if (active && active.windowId === windowId && !active.answered) finishPrompt(REJECTED, true);
+});
 
-	// Check if any popup has authorization query parameter
-	let authorizationPopupExists = false;
-	for (const popup of popupWindows) {
-		if (popup.tabs && popup.tabs.length > 0) {
-			const url = popup.tabs[0].url || '';
-			if (url.includes('popup.html?query=')) {
-				authorizationPopupExists = true;
-				break;
-			}
-		}
-	}
-
-	if (!authorizationPopupExists && requestQueue.length > 0) {
-		const { message, capability, resolver } = requestQueue.shift();
-		manageRequest(message, capability, resolver, true);
-	}
+const handleRequest = async (request: Message, capability: string): Promise<any> => {
+	const pending: Pending = { request, capability, origin: request.url as string };
+	if (!(await ensureUnlocked())) return buildResponseMessage(request.id, request.type, REJECTED);
+	const result = await decide(pending);
+	return result.decision === 'ask' ? askUser(pending) : respond(pending, result);
 };
-
-setInterval(async () => proceedNextRequest(), 100);
 
 web.runtime.onMessage.addListener((message: any, sender: MessageSender, sendResponse: (response?: unknown) => void) => {
 	if (sender.id !== web.runtime.id || !message || typeof message !== 'object') return;
@@ -380,24 +367,17 @@ web.runtime.onMessage.addListener((message: any, sender: MessageSender, sendResp
 		return;
 	}
 
-	manageRequest(request, capability)
-		.then(async (data) => {
-			sendResponse(data);
-		})
+	handleRequest(request, capability)
 		.catch((err) => {
-			console.error('[Background] Error in manageRequest:', err);
-			sendResponse(
-				buildResponseMessage(request.id, request.type, {
-					error: {
-						message: 'Internal error',
-						stack: err.toString()
-					}
-				})
-			);
+			console.error('[Background] Error handling request:', err);
+			return buildResponseMessage(request.id, request.type, {
+				error: {
+					message: 'Internal error',
+					stack: String(err)
+				}
+			});
 		})
-		.finally(() => {
-			proceedNextRequest();
-		});
+		.then(sendResponse);
 
 	return true;
 });

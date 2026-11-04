@@ -3,7 +3,7 @@
 	import { currentPage } from '$lib/stores/data';
 	import { AppPageItem } from '$lib/components/App';
 	import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools';
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import InputField from '$lib/components/InputField.svelte';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { NostrUtil } from '$lib/utility';

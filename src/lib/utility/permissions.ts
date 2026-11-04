@@ -20,6 +20,7 @@ const KIND_NAMES: { [kind: number]: string } = {
 	10002: 'Relay list',
 	22242: 'Relay authentication',
 	24133: 'Nostr Connect',
+	24242: 'Blossom authorization',
 	27235: 'HTTP authentication',
 	30023: 'Long-form article'
 };
@@ -58,11 +59,53 @@ const isValidEvent = (event: any): boolean =>
 	Array.isArray(event.tags) &&
 	event.tags.every((tag: unknown) => Array.isArray(tag) && tag.every((v) => typeof v === 'string'));
 
+const tagValue = (event: any, name: string): string | undefined =>
+	event.tags.find((tag: string[]) => tag[0] === name)?.[1];
+
+/** scheme://host[:port][/path] of a URL with one of the given protocols, or null. */
+const normalizeUrl = (url: string | undefined, protocols: string[], keepPath: boolean): string | null => {
+	if (!url) return null;
+	try {
+		const parsed = new URL(url);
+		if (!protocols.includes(parsed.protocol)) return null;
+		const path = keepPath ? parsed.pathname.replace(/\/+$/, '') : '';
+		return `${parsed.protocol}//${parsed.host}${path}`;
+	} catch {
+		return null;
+	}
+};
+
+/**
+ * Login-style events authenticate you to another service. Their capability names that service,
+ * so a remembered "Always" never covers other relays, servers or actions. Returns undefined for
+ * other kinds and null for a login event without a valid target.
+ */
+const loginScope = (event: any): string | null | undefined => {
+	switch (event.kind) {
+		case 22242: // NIP-42 relay authentication
+			return normalizeUrl(tagValue(event, 'relay'), ['ws:', 'wss:'], true);
+		case 27235: // NIP-98 HTTP authentication
+			return normalizeUrl(tagValue(event, 'u'), ['http:', 'https:'], false);
+		case 24242: {
+			// Blossom authorization: the action (upload, delete, ...)
+			const action = tagValue(event, 't');
+			return action && /^[a-z]{1,32}$/.test(action) ? action : null;
+		}
+		default:
+			return undefined;
+	}
+};
+
 /**
  * Maps a NIP-07 request to the capability it needs, or null when the request is unknown or malformed.
  */
 export function capabilityFor(type: string, data: any): string | null {
-	if (type === 'signEvent') return isValidEvent(data) ? `signEvent:${data.kind}` : null;
+	if (type === 'signEvent') {
+		if (!isValidEvent(data)) return null;
+		const scope = loginScope(data);
+		if (scope === null) return null;
+		return scope === undefined ? `signEvent:${data.kind}` : `signEvent:${data.kind}:${scope}`;
+	}
 	if (type === 'nip04.encrypt' || type === 'nip04.decrypt') {
 		const text = type === 'nip04.encrypt' ? data?.plaintext : data?.ciphertext;
 		return typeof data?.peer === 'string' && typeof text === 'string' ? type : null;
@@ -79,10 +122,37 @@ export function describeKind(kind: number): string {
  */
 export function describeCapability(capability: string): string {
 	if (capability.startsWith('signEvent:')) {
-		return 'Sign: ' + describeKind(Number(capability.slice('signEvent:'.length)));
+		const rest = capability.slice('signEvent:'.length);
+		const separator = rest.indexOf(':');
+		if (separator === -1) return 'Sign: ' + describeKind(Number(rest));
+		const kind = Number(rest.slice(0, separator));
+		const scope = rest.slice(separator + 1);
+		if (kind === 22242) return `Log in to relay ${scope}`;
+		if (kind === 27235) return `Log in to ${scope} (HTTP auth)`;
+		if (kind === 24242) return `Media server (Blossom): ${scope}`;
+		return `Sign: ${describeKind(kind)} (${scope})`;
 	}
 	if (capability === 'signEvent') return 'Sign Event';
 	return CAPABILITY_NAMES[capability] ?? capability;
+}
+
+/** What a login-style event would authorize, for the approval prompt. */
+export function loginDetails(event: any): string[] {
+	if (!isValidEvent(event)) return [];
+	const details: string[] = [];
+	const add = (label: string, value: string | undefined) => value && details.push(`${label}: ${value}`);
+	if (event.kind === 22242) add('Relay', tagValue(event, 'relay'));
+	if (event.kind === 27235) {
+		add('Method', tagValue(event, 'method'));
+		add('URL', tagValue(event, 'u'));
+	}
+	if (event.kind === 24242) {
+		add('Action', tagValue(event, 't'));
+		add('Server', tagValue(event, 'server'));
+		const expiration = Number(tagValue(event, 'expiration'));
+		if (expiration) details.push(`Valid until: ${new Date(expiration * 1000).toLocaleString()}`);
+	}
+	return details;
 }
 
 const isActive = (auth: Authorization | undefined, now: Date): boolean =>

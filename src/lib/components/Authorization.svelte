@@ -1,11 +1,16 @@
 <script lang="ts">
-	import { capabilityFor, describeCapability } from '$lib/utility/permissions';
+	import { onMount } from 'svelte';
+	import { capabilityFor, describeCapability, loginDetails } from '$lib/utility/permissions';
 
 	import Duration from './Duration.svelte';
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let durationChoice = $state(0);
 	let showRawEvent = $state(false);
+	// Confirm ignores clicks until the window has been visible and focused for a moment, so a
+	// click meant for the page underneath (e.g. the second half of a double-click) cannot land on it
+	const ARM_DELAY_MS = 800;
+	let armed = $state(false);
 
 	let {
 		domain,
@@ -22,6 +27,39 @@
 	} = $props();
 
 	const capability = $derived(capabilityFor(popupType, eventData));
+	const details = $derived(popupType === 'signEvent' ? loginDetails(eventData) : []);
+	const site = $derived.by(() => {
+		try {
+			const url = new URL(domain);
+			return { scheme: url.protocol, host: url.host, insecure: url.protocol === 'http:' };
+		} catch {
+			return { scheme: '', host: domain, insecure: false };
+		}
+	});
+
+	onMount(() => {
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const arm = () => {
+			clearTimeout(timer);
+			if (document.visibilityState === 'visible' && document.hasFocus())
+				timer = setTimeout(() => (armed = true), ARM_DELAY_MS);
+		};
+		const disarm = () => {
+			clearTimeout(timer);
+			armed = false;
+		};
+		const onVisibility = () => (document.visibilityState === 'visible' ? arm() : disarm());
+		window.addEventListener('focus', arm);
+		window.addEventListener('blur', disarm);
+		document.addEventListener('visibilitychange', onVisibility);
+		arm();
+		return () => {
+			clearTimeout(timer);
+			window.removeEventListener('focus', arm);
+			window.removeEventListener('blur', disarm);
+			document.removeEventListener('visibilitychange', onVisibility);
+		};
+	});
 	const contentPreview = $derived(
 		popupType === 'signEvent' && typeof eventData?.content === 'string'
 			? eventData.content.length > 280
@@ -124,9 +162,22 @@
 			>
 				AUTHORIZATION
 			</div>
-			<div class="text-black dark:text-white text-2xl font-semibold leading-7 whitespace-nowrap mt-2">
-				{domain}
+			<!-- the whole origin, wrapped, so a look-alike such as primal.net.example.com is never cut short -->
+			<div class="mt-2 break-all leading-7">
+				<span class="text-gray-500 dark:text-gray-400 text-base">{site.scheme}//</span><span
+					class="text-black dark:text-white text-2xl font-semibold">{site.host}</span
+				>
 			</div>
+			{#if site.insecure}
+				<div class="mt-2 text-xs p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+					Not secure (http): anyone on your network can change what this page sends.
+				</div>
+			{/if}
+			{#if site.host.includes('xn--')}
+				<div class="mt-2 text-xs p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+					This address uses international characters; check it is the site you expect.
+				</div>
+			{/if}
 			<div class="text-black dark:text-white text-base leading-5 whitespace-nowrap mt-2">
 				would like to:
 			</div>
@@ -138,6 +189,13 @@
 					{capability ? describeCapability(capability) : popupType}
 				</div>
 			</div>
+			{#if details.length > 0}
+				<div class="mt-3 p-2 rounded-lg bg-black/5 dark:bg-white/5 text-sm text-black dark:text-white break-all">
+					{#each details as line}
+						<div>{line}</div>
+					{/each}
+				</div>
+			{/if}
 			{#if popupType === 'signEvent' && eventData}
 				{#if contentPreview}
 					<div
@@ -193,7 +251,8 @@
 			</button>
 			<button
 				class="btn bg-pink-400 dark:bg-teal-400 flex gap-2 px-20 py-3 rounded-full w-full place-content-center max-md:px-5"
-				onclick={() => onaccepted?.({ detail: { duration: durationChoice } })}
+				disabled={!armed}
+				onclick={() => armed && onaccepted?.({ detail: { duration: durationChoice } })}
 			>
 				<div class="text-black text-base font-medium leading-5">Confirm</div>
 				<Icon icon="mdi:check" width={20} class="text-black" />

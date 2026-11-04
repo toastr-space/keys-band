@@ -1,9 +1,9 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import ToggleSwitch from '../components/ToggleSwitch.svelte';
 	import { AppPageItem } from '$lib/components/App';
-	import { userProfile, profiles, browser, theme, duration } from '$lib/stores/data';
-	import type { Relay, Profile, Duration } from '$lib/types';
+	import { userProfile, profiles } from '$lib/stores/data';
+	import type { Relay } from '$lib/types';
 	import { profileController } from '$lib/controllers/profile.controller';
 	import { nip19 } from 'nostr-tools';
 	import { web } from '$lib/utility';
@@ -13,23 +13,23 @@
 		LOCK_NEVER,
 		LOCK_ON_BROWSER_CLOSE
 	} from '$lib/controllers/vault.controller';
-	import { createBackup, restoreBackup } from '$lib/controllers/backup.controller';
+	import { createBackup } from '$lib/controllers/backup.controller';
 
 	let relays = $state<Relay[]>([]);
 	let relayInput = $state('');
-	let showPrivateKey = $state(false);
-	let showNsec = $state(false);
+	// the private key is shown only after the passphrase is entered, and only for a minute
+	const REVEAL_MS = 60_000;
+	let revealing = $state(false);
+	let revealPassphrase = $state('');
+	let revealError = $state('');
+	let revealed = $state<{ hex: string; nsec: string } | null>(null);
+	let hideTimer: ReturnType<typeof setTimeout> | undefined;
 	let copiedStates = $state({
 		pubkey: false,
 		npub: false,
 		privateKey: false,
 		nsec: false
 	});
-	let restoreStatus = $state<'idle' | 'success' | 'error'>('idle');
-	let restoreMessage = $state('');
-	let fileInput: HTMLInputElement;
-	let showRestoreTextarea = $state(false);
-	let restoreJsonText = $state('');
 
 	// Security
 	const lockOptions = [
@@ -143,6 +143,25 @@
 		profileController.removeRelayFromProfile(relay);
 	};
 
+	const hideKey = () => {
+		clearTimeout(hideTimer);
+		revealed = null;
+	};
+
+	const revealKey = async () => {
+		revealError = '';
+		const privateKey = $userProfile.data?.privateKey;
+		if (!privateKey) return (revealError = 'No private key available');
+		if (!(await vaultController.verifyPassphrase(revealPassphrase))) return (revealError = 'Wrong passphrase');
+		revealPassphrase = '';
+		revealing = false;
+		revealed = { hex: privateKey, nsec: nip19.nsecEncode(privateKey) };
+		clearTimeout(hideTimer);
+		hideTimer = setTimeout(hideKey, REVEAL_MS);
+	};
+
+	$effect(() => () => clearTimeout(hideTimer));
+
 	const copyToClipboard = async (text: string, key: keyof typeof copiedStates) => {
 		try {
 			await navigator.clipboard.writeText(text);
@@ -214,66 +233,6 @@
 		}
 	};
 
-	// Restore settings from backup file
-	const restoreSettings = async (event: Event) => {
-		console.log('[Restore] Event triggered:', event.type);
-		const input = event.target as HTMLInputElement;
-		const file = input.files?.[0];
-
-		console.log('[Restore] File selected:', file?.name, file?.size);
-
-		if (!file) {
-			console.log('[Restore] No file selected');
-			return;
-		}
-
-		try {
-			console.log('[Restore] Reading file...');
-			const text = await file.text();
-			console.log('[Restore] File content length:', text.length);
-			const backupData = JSON.parse(text);
-			const count = await restoreBackup(backupData);
-
-			// reload stores from storage; a restored vault stays locked until its passphrase is entered
-			await profileController.loadProfiles();
-			if (backupData.theme) {
-				theme.set(backupData.theme);
-				if (backupData.theme === 'dark') {
-					document.documentElement.classList.add('dark');
-				} else {
-					document.documentElement.classList.remove('dark');
-				}
-			}
-			if (backupData.duration) duration.set(backupData.duration as Duration);
-
-			console.log('[Restore] Success!');
-			restoreStatus = 'success';
-			restoreMessage = `Restored ${count} profile(s) successfully!`;
-
-			// Reset file input
-			input.value = '';
-
-			// Clear status after 3 seconds
-			setTimeout(() => {
-				restoreStatus = 'idle';
-				restoreMessage = '';
-			}, 3000);
-
-		} catch (error) {
-			console.error('[Restore] Failed:', error);
-			restoreStatus = 'error';
-			restoreMessage = error instanceof Error ? error.message : 'Failed to restore backup';
-
-			// Reset file input
-			input.value = '';
-
-			// Clear status after 3 seconds
-			setTimeout(() => {
-				restoreStatus = 'idle';
-				restoreMessage = '';
-			}, 3000);
-		}
-	};
 </script>
 
 <AppPageItem name="settings">
@@ -355,73 +314,54 @@
 				{copiedStates.npub ? 'Copied!' : 'Copy Npub to Clipboard'}
 			</button>
 		</div>
-		<!-- Get private key-->
-		<div class="flex flex-col gap-3 mt-2">
-			<div class="flex items-center justify-between">
-				<span class="text-black dark:text-white text-sm font-medium">Private Key</span>
-				<button
-					type="button"
-					class="btn btn-sm text-gray-500 hover:text-pink-600 dark:hover:text-teal-400"
-					on:click={() => showPrivateKey = !showPrivateKey}
-				>
-					<Icon icon={showPrivateKey ? "mdi:eye-off" : "mdi:eye"} class="mr-2" width={16} />
-					{showPrivateKey ? 'Hide' : 'Show'}
-				</button>
-			</div>
-			
-			{#if showPrivateKey}
-				<div class="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg p-3">
-					<div class="font-mono text-sm text-black dark:text-white break-all select-all">
-						{$userProfile.data?.privateKey || 'No private key available'}
+		<!-- Private key: needs the passphrase, like the export below -->
+		<div class="flex flex-col gap-2 mt-2">
+			<span class="text-black dark:text-white text-sm font-medium">Private Key</span>
+			{#if revealed}
+				{#each [['Hex', revealed.hex, 'privateKey'], ['Nsec', revealed.nsec, 'nsec']] as [label, value, copyKey]}
+					<div class="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg p-3">
+						<div class="text-xs text-gray-500 dark:text-gray-400">{label}</div>
+						<div class="font-mono text-sm text-black dark:text-white break-all select-all">{value}</div>
 					</div>
-				</div>
-			{/if}
-			
-			<div class="flex justify-start">
+					<button
+						type="button"
+						class="btn btn-sm text-gray-500 justify-start"
+						on:click={() => copyToClipboard(value, copyKey as keyof typeof copiedStates)}
+					>
+						<Icon icon={copiedStates[copyKey as keyof typeof copiedStates] ? 'mdi:check' : 'mdi:key-outline'} class="text-pink-600 dark:text-teal-400 mr-2" width={20} />
+						{copiedStates[copyKey as keyof typeof copiedStates] ? 'Copied!' : `Copy ${label} to Clipboard`}
+					</button>
+				{/each}
+				<p class="text-xs text-gray-500 dark:text-gray-400">
+					Hidden again after a minute. A copied key can stay in your clipboard history.
+				</p>
+				<button type="button" class="btn btn-sm text-gray-500 justify-start" on:click={hideKey}>
+					<Icon icon="mdi:eye-off" class="mr-2" width={16} />
+					Hide
+				</button>
+			{:else if revealing}
+				<form class="flex gap-2" on:submit|preventDefault={revealKey}>
+					<input
+						type="password"
+						class="form-input rounded-xl flex-grow bg-white dark:bg-stone-900 text-black dark:text-white"
+						placeholder="Passphrase"
+						bind:value={revealPassphrase}
+					/>
+					<button type="submit" class="btn bg-pink-400 dark:bg-teal-400 text-black rounded-xl px-4">Show</button>
+				</form>
+				{#if revealError}<div class="text-sm text-red-600 dark:text-red-400">{revealError}</div>{/if}
+			{:else}
 				<button
 					type="button"
 					class="btn btn-sm text-gray-500 justify-start"
-					on:click={() => copyToClipboard($userProfile.data?.privateKey || '', 'privateKey')}
+					on:click={() => (revealing = true)}
 				>
-					<Icon icon={copiedStates.privateKey ? "mdi:check" : "mdi:key-outline"} class="text-pink-600 dark:text-teal-400 mr-2" width={20} />
-					{copiedStates.privateKey ? 'Copied!' : 'Copy Private Key to Clipboard'}
+					<Icon icon="mdi:eye" class="text-pink-600 dark:text-teal-400 mr-2" width={20} />
+					Show or copy private key (asks for passphrase)
 				</button>
-			</div>
-		</div>
-		<!-- Get nsec -->
-		<div class="flex flex-col gap-3 mt-2">
-			<div class="flex items-center justify-between">
-				<span class="text-black dark:text-white text-sm font-medium">Nsec Key</span>
-				<button
-					type="button"
-					class="btn btn-sm text-gray-500 hover:text-pink-600 dark:hover:text-teal-400"
-					on:click={() => showNsec = !showNsec}
-				>
-					<Icon icon={showNsec ? "mdi:eye-off" : "mdi:eye"} class="mr-2" width={16} />
-					{showNsec ? 'Hide' : 'Show'}
-				</button>
-			</div>
-			
-			{#if showNsec}
-				<div class="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg p-3">
-					<div class="font-mono text-sm text-black dark:text-white break-all select-all">
-						{$userProfile.data?.privateKey ? nip19.nsecEncode($userProfile.data.privateKey) : 'No private key available'}
-					</div>
-				</div>
 			{/if}
-			
-			<div class="flex justify-start">
-				<button
-					type="button"
-					class="btn btn-sm text-gray-500 justify-start"
-					on:click={() => copyToClipboard(nip19.nsecEncode($userProfile.data?.privateKey || ''), 'nsec')}
-				>
-					<Icon icon={copiedStates.nsec ? "mdi:check" : "mdi:key-star"} class="text-pink-600 dark:text-teal-400 mr-2" width={20} />
-					{copiedStates.nsec ? 'Copied!' : 'Copy Nsec to Clipboard'}
-				</button>
-			</div>
 		</div>
-		
+
 		<!-- Export Keys -->
 		<div class="border-t border-gray-200 dark:border-zinc-700 mt-4 pt-4">
 			{#if showExportForm}
@@ -593,52 +533,17 @@
 			</button>
 		</div>
 
-		<!-- Restore Button -->
+		<!-- Restore Button: the restore page checks the vault and shows what a backup contains -->
 		<div class="mt-3">
-			<input
-				type="file"
-				accept=".json"
-				class="hidden"
-				bind:this={fileInput}
-				on:change={restoreSettings}
-			/>
 			<button
 				type="button"
 				class="btn w-full bg-zinc-200 dark:bg-zinc-700 text-black dark:text-white font-medium py-3 px-4 rounded-xl hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
-				on:click={() => {
-					// Firefox: open dedicated restore page (popup closes when file picker opens)
-					// Chrome: use inline file picker
-					// @ts-ignore
-					const isFirefox = typeof __BROWSER__ !== 'undefined' && __BROWSER__ === 'firefox';
-					if (isFirefox) {
-						// Firefox detected - open restore page in new tab
-						web.tabs.create({ url: web.runtime.getURL('restore.html') });
-					} else {
-						fileInput.click();
-					}
-				}}
+				on:click={() => web.tabs.create({ url: web.runtime.getURL('restore.html') })}
 			>
 				<Icon icon="mdi:upload" class="mr-2" width={20} />
 				Restore from Backup
 			</button>
 		</div>
-
-		<!-- Status Message -->
-		{#if restoreStatus !== 'idle'}
-			<div
-				class="mt-3 p-3 rounded-lg text-sm {restoreStatus === 'success'
-					? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-					: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}"
-			>
-				<div class="flex items-center gap-2">
-					<Icon
-						icon={restoreStatus === 'success' ? 'mdi:check-circle' : 'mdi:alert-circle'}
-						width={20}
-					/>
-					{restoreMessage}
-				</div>
-			</div>
-		{/if}
 	</div>
 
 	<div class="justify-center items-stretch self-stretch flex w-full flex-col mt-2 p-4 rounded-2xl">

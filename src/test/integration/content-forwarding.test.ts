@@ -33,6 +33,10 @@ describe('content script forwarding (finding 4)', () => {
 		});
 	});
 
+	it('adds no script element, so the extension URL never appears in the page', () => {
+		expect(document.querySelectorAll('script')).toHaveLength(0);
+	});
+
 	it('drops malformed messages and page-sent responses', () => {
 		sendMessage.mockClear();
 		post({ id: 5, ext: 'keys.band', type: 'signEvent' });

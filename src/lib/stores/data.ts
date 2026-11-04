@@ -3,8 +3,7 @@ import { Page } from '$lib/types';
 import { writable, type Writable } from 'svelte/store';
 import type { Tabs } from 'webextension-polyfill';
 import { BrowserUtil } from '$lib/utility';
-import type { Duration, SessionManager } from '$lib/types';
-import { sessionController } from '$lib/controllers/session.controller';
+import type { Duration } from '$lib/types';
 import { browserController } from '$lib/controllers';
 import { web } from '$lib/utility';
 
@@ -45,10 +44,6 @@ if (typeof document !== 'undefined') {
 	});
 }
 
-let sessionData: SessionManager;
-if (typeof document !== 'undefined') sessionData = sessionController();
-else sessionData = { getById: async () => Promise.resolve({}) };
-
 export {
 	currentPage,
 	currentTab,
@@ -56,6 +51,5 @@ export {
 	profiles,
 	theme,
 	userProfile,
-	browserController as browser,
-	sessionData
+	browserController as browser
 };

@@ -1,97 +1,83 @@
-window.nostr = {
-  _requests: {},
-  _pubkey: null,
-  _pubkeyTimestamp: 0,  // Track when the pubkey was last fetched
-  _cacheTimeout: 2000,  // Cache timeout in milliseconds (2 seconds)
+// NIP-07 provider. The browser runs this file in the page itself (manifest "world": "MAIN"),
+// so no extension URL is ever exposed to the page. Requests go to content.js via postMessage.
+(() => {
+  // a second injection (e.g. after an extension update) must not replace an object the page holds
+  if (window.nostr && window.nostr.__keysBand) return;
 
-  async getPublicKey() {
-    const now = Date.now();
-    
-    // Use cached pubkey if it exists and hasn't expired
-    // This reduces requests while still allowing account switching to be detected
-    if (this._pubkey && (now - this._pubkeyTimestamp < this._cacheTimeout)) {
+  const provider = {
+    __keysBand: true,
+    _requests: {},
+    _pubkey: null,
+    _pubkeyTimestamp: 0, // Track when the pubkey was last fetched
+    _cacheTimeout: 2000, // Cache timeout in milliseconds (2 seconds)
+
+    async getPublicKey() {
+      const now = Date.now();
+
+      // Use cached pubkey if it exists and hasn't expired
+      // This reduces requests while still allowing account switching to be detected
+      if (this._pubkey && now - this._pubkeyTimestamp < this._cacheTimeout) {
+        return this._pubkey;
+      }
+
+      this._pubkeyTimestamp = now;
+      // Get fresh pubkey from extension
+      this._pubkey = await provider._call("getPublicKey", {});
       return this._pubkey;
-    }
-    
-    this._pubkeyTimestamp = now;
-    // Get fresh pubkey from extension
-    this._pubkey = await this._call("getPublicKey", {});
-    return this._pubkey;
-  },
-
-  async signEvent(event) {
-    return this._call("signEvent", { event });
-  },
-
-  async getRelays() {
-    return this._call("getRelays", {});
-  },
-
-  nip04: {
-    async encrypt(peer, plaintext) {
-      return window.nostr._call("nip04.encrypt", { peer, plaintext });
     },
 
-    async decrypt(peer, ciphertext) {
-      return window.nostr._call("nip04.decrypt", { peer, ciphertext });
+    async signEvent(event) {
+      return provider._call("signEvent", { event });
     },
-  },
 
-  _call(type, params) {
-    let id = crypto.randomUUID
-      ? crypto.randomUUID()
-      : Math.random().toString(36).slice(2) + Date.now().toString(36);
-    return new Promise((resolve, reject) => {
-      this._requests[id] = { resolve, reject };
-      window.postMessage(
-        {
-          id,
-          ext: "keys.band",
-          type,
-          params,
-        },
-        "*"
-      );
-    });
-  },
-};
+    async getRelays() {
+      return provider._call("getRelays", {});
+    },
 
-window.addEventListener("message", (message) => {
-  if (
-    !message.data ||
-    message.data.response === null ||
-    message.data.response === undefined ||
-    message.data.ext !== "keys.band" ||
-    !window.nostr._requests[message.data.id]
-  )
-    return;
+    nip04: {
+      async encrypt(peer, plaintext) {
+        return provider._call("nip04.encrypt", { peer, plaintext });
+      },
 
-  if (message.data.response.error) {
-    let error = new Error("keys.band: " + message.data.response.error.message);
-    error.stack = message.data.response.error.stack;
-    window.nostr._requests[message.data.id].reject(error);
-  } else {
-    window.nostr._requests[message.data.id].resolve(message.data.response);
-  }
+      async decrypt(peer, ciphertext) {
+        return provider._call("nip04.decrypt", { peer, ciphertext });
+      },
+    },
 
-  delete window.nostr._requests[message.data.id];
-});
+    _call(type, params) {
+      // getRandomValues also works on plain-http pages, unlike crypto.randomUUID
+      const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+        b.toString(16).padStart(2, "0")
+      ).join("");
+      return new Promise((resolve, reject) => {
+        provider._requests[id] = { resolve, reject };
+        window.postMessage({ id, ext: "keys.band", type, params }, "*");
+      });
+    },
+  };
 
-// hack to replace nostr:nprofile.../etc links with something else
-if (typeof replacing !== "undefined") {
-  document.addEventListener("mousedown", replaceNostrSchemeLink);
-  async function replaceNostrSchemeLink(e) {
-    if (e.target.tagName !== "A" || !e.target.href.startsWith("nostr:")) return;
-    if (replacing === false) return;
+  window.nostr = provider;
 
-    let response = await window.nostr._call("replaceURL", {
-      url: e.target.href,
-    });
-    if (response === false) {
-      replacing = false;
+  window.addEventListener("message", (message) => {
+    const data = message.data;
+    if (
+      !data ||
+      data.response === null ||
+      data.response === undefined ||
+      data.ext !== "keys.band" ||
+      !provider._requests[data.id]
+    )
       return;
-    }
 
-    e.target.href = response;
-  }
-}
+    const request = provider._requests[data.id];
+    delete provider._requests[data.id];
+
+    if (data.response.error) {
+      const error = new Error("keys.band: " + data.response.error.message);
+      error.stack = data.response.error.stack;
+      request.reject(error);
+    } else {
+      request.resolve(data.response);
+    }
+  });
+})();

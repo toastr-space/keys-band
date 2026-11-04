@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
 
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	import { Page } from '$lib/types';
 	import { popup, Avatar } from '@skeletonlabs/skeleton';
@@ -43,7 +43,7 @@
 				<span class="flex flex-row gap-2 items-center justify-between w-[250px]">
 					<span class="rounded-full bg-zinc-700 ring-1 ring-zinc-600 p-0.5">
 						<Avatar
-							src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
+							src={$userProfile?.metadata?.picture || 'assets/logo-on-64.png'}
 							width="w-10"
 							rounded="rounded-full"
 						/>
@@ -77,7 +77,6 @@
 					<Icon
 						class="text-white dark:text-gray-400"
 						icon={$theme === 'dark' ? 'bi:moon-fill' : 'bi:sun-fill'}
-						rotate={32}
 					/>
 				</div>
 			</button>

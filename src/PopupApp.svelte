@@ -3,7 +3,7 @@
 	import { computePosition, autoUpdate, offset, shift, flip, arrow } from '@floating-ui/dom';
 	import { onMount } from 'svelte';
 	import { derived } from 'svelte/store';
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	
 	import { AppPage } from '$lib/components/App';
 	import { profileController } from '$lib/controllers/profile.controller';
@@ -14,7 +14,8 @@
 	import AccountDropdownMenu from '$lib/components/AccountDropdownMenu.svelte';
 	import { browserController } from '$lib/controllers';
 	import { NostrUtil } from '$lib/utility';
-	import { sessionData, userProfile } from '$lib/stores/data';
+	import { userProfile } from '$lib/stores/data';
+	import { pendingRequests } from '$lib/controllers/session.controller';
 	
 	import type { PopupParams } from '$lib/types';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
@@ -56,8 +57,7 @@
 		await profileController.loadProfiles();
 		const urlParams = new URLSearchParams(document.location.search);
 
-		// Nothing else is shown until the vault is unlocked. This must run before the request
-		// data below is read, because reading it removes it.
+		// Nothing else is shown, not even what a site is asking for, until the vault is unlocked
 		vaultStatus = await vaultController.status();
 		if (vaultStatus !== 'unlocked') return;
 		await vaultController.markActivity();
@@ -67,37 +67,22 @@
 			return;
 		}
 
-		const queryParam = urlParams?.get('query');
-		
-		console.log('[Popup] Query param:', queryParam);
-		
-		if (queryParam) {
-			try {
-				const dataId = atob(queryParam);
-				console.log('[Popup] Decoded dataId:', dataId);
-				
-				parameter = (await sessionData.getById(dataId)) || null;
-				console.log('[Popup] Session data retrieved:', parameter);
-				
-				isAuthorizationRequest = !!parameter;
-				console.log('[Popup] Is authorization request:', isAuthorizationRequest);
-				
-				if (isAuthorizationRequest) {
-					document.body.style.minWidth = '383px';
-					document.body.style.minHeight = '460px';
-					document.body.style.width = '100%';
-					document.body.style.height = '100%';
-					document.title = 'Keys.Band - Authorization';
-					console.log('[Popup] Set authorization popup dimensions');
-				}
-			} catch (e) {
-				console.error('[Popup] Error parsing query param:', e);
-				parameter = null;
-				isAuthorizationRequest = false;
+		const requestId = urlParams.get('request');
+		if (requestId && /^[0-9a-f-]{36}$/.test(requestId)) {
+			// the background removes the request once it has been answered
+			parameter = await pendingRequests.get(requestId);
+			isAuthorizationRequest = !!parameter;
+			if (isAuthorizationRequest) {
+				document.body.style.minWidth = '383px';
+				document.body.style.minHeight = '460px';
+				document.body.style.width = '100%';
+				document.body.style.height = '100%';
+				document.title = 'Keys.Band - Authorization';
 			}
 		} else {
-			console.log('[Popup] No query param - normal popup mode');
 			isAuthorizationRequest = false;
+			// update names, pictures and relay lists while the user looks at the popup
+			profileController.refreshProfiles();
 		}
 	}
 
@@ -149,7 +134,7 @@
 						<span class="flex flex-row gap-2 items-center justify-between w-full">
 							<span class="rounded-full bg-zinc-700 ring-1 ring-zinc-600 p-0.5">
 								<Avatar
-									src={$userProfile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
+									src={$userProfile?.metadata?.picture || 'assets/logo-on-64.png'}
 									width="w-10"
 									rounded="rounded-full"
 								/>

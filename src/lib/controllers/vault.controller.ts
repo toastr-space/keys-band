@@ -371,10 +371,22 @@ export const createVaultController = (
 
 	/** Replaces the vault with one from a backup and locks; it then opens with that backup's passphrase. */
 	const importEncrypted = async (stored: StoredVault) => {
+		const kdf = stored?.kdf;
+		// bounded scrypt parameters, so a crafted file cannot exhaust memory when unlocking
+		const validKdf =
+			kdf?.name === 'scrypt' &&
+			[kdf.N, kdf.r, kdf.p].every(Number.isInteger) &&
+			kdf.N >= 2 &&
+			kdf.N <= 2 ** 20 &&
+			(kdf.N & (kdf.N - 1)) === 0 &&
+			kdf.r >= 1 &&
+			kdf.r <= 16 &&
+			kdf.p >= 1 &&
+			kdf.p <= 4;
 		if (
 			stored?.version !== 1 ||
-			stored.kdf?.name !== 'scrypt' ||
-			![stored.salt, stored.iv, stored.ciphertext].every((v) => typeof v === 'string')
+			!validKdf ||
+			![stored.salt, stored.iv, stored.ciphertext].every((v) => typeof v === 'string' && /^[0-9a-f]+$/.test(v))
 		)
 			throw new Error('Invalid vault in backup');
 		await web.storage.local.set({ vault: stored });

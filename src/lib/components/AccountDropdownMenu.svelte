@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Profile } from '$lib/types/profile';
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { Avatar } from '@skeletonlabs/skeleton';
 	import { tick } from 'svelte';
 
@@ -36,7 +36,7 @@
 							>
 								<span class="rounded-full bg-zinc-700 ring-1 ring-zinc-600">
 									<Avatar
-										src={profile?.metadata?.picture || 'https://toastr.space/images/toastr.png'}
+										src={profile?.metadata?.picture || 'assets/logo-on-64.png'}
 										width="w-8"
 										rounded="rounded-full"
 									/>

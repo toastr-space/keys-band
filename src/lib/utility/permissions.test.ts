@@ -3,6 +3,7 @@ import {
 	urlToOrigin,
 	capabilityFor,
 	describeCapability,
+	loginDetails,
 	getAllowKind,
 	setPermission,
 	revokePermission,
@@ -52,6 +53,41 @@ describe('capabilityFor', () => {
 		expect(capabilityFor('getPublicKey', {})).toBe('getPublicKey');
 		expect(capabilityFor('replaceURL', {})).toBeNull();
 		expect(capabilityFor('__proto__', {})).toBeNull();
+	});
+});
+
+describe('login-style events', () => {
+	const login = (kind: number, tags: string[][]) => ({ kind, content: '', tags, created_at: 1 });
+
+	it('scope a relay login to that relay', () => {
+		const event = login(22242, [['relay', 'wss://Relay.Example/'], ['challenge', 'c']]);
+		expect(capabilityFor('signEvent', event)).toBe('signEvent:22242:wss://relay.example');
+		expect(capabilityFor('signEvent', login(22242, [['relay', 'wss://relay.example/nostr/']]))).toBe(
+			'signEvent:22242:wss://relay.example/nostr'
+		);
+	});
+
+	it('scope an HTTP login to the server it is for', () => {
+		const event = login(27235, [['u', 'https://nostr.build/api/v2/upload?x=1'], ['method', 'POST']]);
+		expect(capabilityFor('signEvent', event)).toBe('signEvent:27235:https://nostr.build');
+		expect(loginDetails(event)).toEqual(['Method: POST', 'URL: https://nostr.build/api/v2/upload?x=1']);
+	});
+
+	it('scope a Blossom authorization to its action', () => {
+		expect(capabilityFor('signEvent', login(24242, [['t', 'delete']]))).toBe('signEvent:24242:delete');
+	});
+
+	it('reject login events without a valid target', () => {
+		expect(capabilityFor('signEvent', login(22242, []))).toBeNull();
+		expect(capabilityFor('signEvent', login(22242, [['relay', 'https://relay.example']]))).toBeNull();
+		expect(capabilityFor('signEvent', login(27235, [['u', 'javascript:alert(1)']]))).toBeNull();
+		expect(capabilityFor('signEvent', login(24242, [['t', 'DROP TABLE']]))).toBeNull();
+	});
+
+	it('are described with their target', () => {
+		expect(describeCapability('signEvent:22242:wss://relay.example')).toBe('Log in to relay wss://relay.example');
+		expect(describeCapability('signEvent:27235:https://nostr.build')).toBe('Log in to https://nostr.build (HTTP auth)');
+		expect(describeCapability('signEvent:24242:delete')).toBe('Media server (Blossom): delete');
 	});
 });
 

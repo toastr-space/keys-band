@@ -1,9 +1,10 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 
-	import { profiles, browser } from '$lib/stores/data';
+	import { profiles } from '$lib/stores/data';
+	import { web } from '$lib/utility';
 	import { profileController } from '$lib/controllers/profile.controller';
 	import {
 		vaultController,
@@ -61,9 +62,10 @@
 					.map((p) => [p.id as string, p.data?.privateKey as string])
 			);
 			await vaultController.setup(passphrase, setupPin ? pin : null, legacyKeys);
-			await profileController.saveProfiles();
+			// only now that the vault holds the keys, rewrite the stored profiles without them
+			await profileController.migrateStoredProfiles();
 			// popup request data written by earlier versions could contain a key copy
-			await browser.set({ sessionData: {} });
+			await web.storage.local.remove('sessionData');
 		});
 
 	const unlock = () =>
