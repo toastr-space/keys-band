@@ -34,6 +34,9 @@ const TRANSLATIONS = {
 	nip04: "Message Encryption/Decryption",
 	"nip04.encrypt": "Message Encryption",
 	"nip04.decrypt": "Message Decryption",
+	nip44: "Message Encryption/Decryption",
+	"nip44.encrypt": "Message Encryption",
+	"nip44.decrypt": "Message Decryption",
 	getPublicKey: "Get Public Key",
 	getRelays: "Get Relays",
 } as const;

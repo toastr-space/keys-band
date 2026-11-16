@@ -3,6 +3,7 @@ import type { WebSite, Authorization, Profile } from '$lib/types/profile';
 
 import { finishEvent, getPublicKey, nip04 } from 'nostr-tools';
 import { urlToDomain, web, BrowserUtil, ProfileUtil } from '$lib/utility';
+import * as nip44 from '$lib/utility/nip44';
 import { userProfile } from '$lib/stores/data';
 import { AllowKind } from '$lib/types';
 import { get } from 'svelte/store';
@@ -99,6 +100,30 @@ const makeResponse = async (type: string, data: any) => {
 		case 'nip04.encrypt':
 			try {
 				res = await nip04.encrypt(privateKey, data.peer, data.plaintext);
+			} catch (e) {
+				res = {
+					error: {
+						message: 'Error while encrypting data',
+						stack: e
+					}
+				};
+			}
+			break;
+		case 'nip44.decrypt':
+			try {
+				res = nip44.decrypt(data.ciphertext, nip44.getConversationKey(privateKey, data.peer));
+			} catch (e) {
+				res = {
+					error: {
+						message: 'Error while decrypting data',
+						stack: e
+					}
+				};
+			}
+			break;
+		case 'nip44.encrypt':
+			try {
+				res = nip44.encrypt(data.plaintext, nip44.getConversationKey(privateKey, data.peer));
 			} catch (e) {
 				res = {
 					error: {

@@ -5,7 +5,9 @@ enum MessageType {
 	GET_RELAYS = 'getRelays',
 	SIGN_EVENT = 'signEvent',
 	NIP04_DECRYPT = 'nip04.decrypt',
-	NIP04_ENCRYPT = 'nip04.encrypt'
+	NIP04_ENCRYPT = 'nip04.encrypt',
+	NIP44_DECRYPT = 'nip44.decrypt',
+	NIP44_ENCRYPT = 'nip44.encrypt'
 }
 
 interface Message {

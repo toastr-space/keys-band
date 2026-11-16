@@ -138,7 +138,7 @@
 			</div>
 
 			<!-- Raw Event Dropdown -->
-			{#if eventData && (popupType === 'signEvent' || popupType === 'nip04.encrypt' || popupType === 'nip04.decrypt')}
+			{#if eventData && (popupType === 'signEvent' || popupType?.startsWith('nip04.') || popupType?.startsWith('nip44.'))}
 				<div class="mt-3">
 					<button
 						class="w-full flex items-center justify-between text-left text-sm text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors py-2"
